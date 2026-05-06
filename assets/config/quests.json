@@ -1,0 +1,123 @@
+{
+  "quests": [
+    {
+      "type": "orientation",
+      "threshold": 0,
+      "id": "orientation",
+      "name": "新生报到",
+      "description": "你刚踏入大学校园，一切都是新鲜的。深呼吸，从这里开始你的大学冒险！",
+      "choices": [
+        {
+          "text": "在校园里到处逛逛，熟悉环境",
+          "delta": { "social": 10, "energy": -5 }
+        }
+      ],
+      "reward": { "social": 5 }
+    },
+    {
+      "type": "course_selection",
+      "threshold": 3,
+      "id": "course_selection",
+      "name": "选课周",
+      "description": "第一周是选课周。你需要决定这学期的课程方向。不同的选择将影响你的学业和社交生活。",
+      "choices": [
+        {
+          "text": "选硬核课程（高难度，高回报）",
+          "delta": { "academic": 15, "energy": -20, "social": -5 }
+        },
+        {
+          "text": "选均衡课程（稳扎稳打）",
+          "delta": { "academic": 8, "social": 5 }
+        },
+        {
+          "text": "选轻松的水课（社交优先）",
+          "delta": { "social": 10, "academic": -5 }
+        }
+      ],
+      "reward": { "academic": 5 }
+    },
+    {
+      "type": "club_activity",
+      "threshold": 6,
+      "id": "club_signing",
+      "name": "社团招新",
+      "description": "百团大战！校园里各个社团都在招新。加入一个社团可以拓展社交圈，但也需要投入精力。",
+      "choices": [
+        {
+          "text": "加入体育社团（篮球/足球）",
+          "delta": { "energy": 15, "social": 5 }
+        },
+        {
+          "text": "加入学术社团（竞赛/研究）",
+          "delta": { "academic": 10, "social": 5 }
+        },
+        {
+          "text": "加入艺术社团（音乐/绘画）",
+          "delta": { "social": 15, "energy": -5 }
+        }
+      ],
+      "reward": { "social": 5 }
+    },
+    {
+      "type": "midterm_exam",
+      "threshold": 10,
+      "name": "期中考试",
+      "description": "半个学期过去了，期中考试如期而至。你感到一丝紧张，但这也是检验自己学习成果的机会。",
+      "subject": "基础学科",
+      "dc": 14,
+      "totalRounds": 5,
+      "requiredPasses": 3,
+      "reviewEnergyCost": 20,
+      "reviewBonus": 3,
+      "reward": { "energy": -5, "academic": 10 }
+    },
+    {
+      "type": "club_activity",
+      "threshold": 13,
+      "id": "club_advanced",
+      "name": "社团进阶活动",
+      "description": "期中过后，社团活动进入了更深入的阶段。你已经是社团的核心成员了。",
+      "choices": [
+        {
+          "text": "参加社团比赛，争取荣誉",
+          "delta": { "social": 10, "energy": -15, "academic": 5 }
+        },
+        {
+          "text": "组织社团大型活动",
+          "delta": { "social": 15, "energy": -10 }
+        },
+        {
+          "text": "专注社团内部建设",
+          "delta": { "social": 5, "energy": 5 }
+        }
+      ],
+      "reward": { "social": 10 }
+    },
+    {
+      "type": "final_exam",
+      "threshold": 17,
+      "name": "期末考试",
+      "description": "学期末，最关键的期末考试来了！整个学期的努力将在这一刻见分晓。深呼吸，集中精力。",
+      "subject": "专业综合",
+      "dc": 16,
+      "totalRounds": 7,
+      "requiredPasses": 4,
+      "reviewEnergyCost": 30,
+      "reviewBonus": 4,
+      "reward": { "energy": -10, "academic": 20, "social": 5 }
+    },
+    {
+      "type": "graduation",
+      "threshold": 20,
+      "id": "graduation",
+      "name": "毕业典礼",
+      "description": "大学四年转瞬即逝。站在毕业典礼的舞台上，回首望去，满是成长的足迹。你的努力、你的选择、你的欢笑与泪水，都化作了今天的你。",
+      "choices": [
+        {
+          "text": "满怀信心，踏上新征程！"
+        }
+      ],
+      "reward": {}
+    }
+  ]
+}
