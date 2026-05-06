@@ -1,0 +1,30 @@
+# Build
+build/
+cmake-build-*/
+out/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (API keys etc.)
+assets/config/settings.json
+
+# Binaries
+*.exe
+*.out
+*.o
+*.so
+*.dylib
+*.dll
+
+# Claude Code (local settings)
+.claude/
