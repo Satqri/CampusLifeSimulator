@@ -51,6 +51,7 @@ bool ExamQuest::handleInput(const sf::Event& event, Player& player, int& choiceM
         case ExamSubState::ANNOUNCEMENT:
             if (code == Key::Enter) {
                 subState = ExamSubState::PREP_CHOICE;
+                currentPhase = QuestPhase::PREPARATION;
                 return true;
             }
             break;
@@ -66,6 +67,7 @@ bool ExamQuest::handleInput(const sf::Event& event, Player& player, int& choiceM
                 }
                 currentRound = 1;
                 subState = ExamSubState::EXAM_ROLL;
+                currentPhase = QuestPhase::EXAM_ROUND;
                 return true;
             }
             break;
@@ -74,6 +76,7 @@ bool ExamQuest::handleInput(const sf::Event& event, Player& player, int& choiceM
             if (code == Key::Enter) {
                 performRoll(player);
                 subState = ExamSubState::ROUND_RESULT;
+                currentPhase = QuestPhase::ROUND_RESULT;
                 return true;
             }
             break;
@@ -81,6 +84,11 @@ bool ExamQuest::handleInput(const sf::Event& event, Player& player, int& choiceM
         case ExamSubState::ROUND_RESULT:
             if (code == Key::Enter) {
                 advanceRound();
+                // advanceRound sets subState → need to sync phase
+                if (subState == ExamSubState::EXAM_ROLL)
+                    currentPhase = QuestPhase::EXAM_ROUND;
+                else
+                    currentPhase = QuestPhase::FINAL_RESULT;
                 return true;
             }
             break;
@@ -88,6 +96,7 @@ bool ExamQuest::handleInput(const sf::Event& event, Player& player, int& choiceM
         case ExamSubState::FINAL_RESULT:
             if (code == Key::Enter) {
                 currentPhase = QuestPhase::COMPLETED;
+                completed = true;
                 return true;
             }
             break;

@@ -29,3 +29,6 @@ assets/config/settings.json
 
 # Claude Code (local settings)
 .claude/
+
+# LSP cache
+.cache/

@@ -103,11 +103,11 @@ sf::Color Enemy::colorForEmotion(EmotionType type) {
 
 const char* Enemy::nameForEmotion(EmotionType type) {
     switch (type) {
-        case EmotionType::ANXIETY:    return "焦虑";
-        case EmotionType::DEPRESSION: return "抑郁";
-        case EmotionType::ANGER:      return "愤怒";
-        case EmotionType::FEAR:       return "恐惧";
-        case EmotionType::LONELINESS: return "孤独";
+        case EmotionType::ANXIETY:    return "Anxiety";
+        case EmotionType::DEPRESSION: return "Depression";
+        case EmotionType::ANGER:      return "Anger";
+        case EmotionType::FEAR:       return "Fear";
+        case EmotionType::LONELINESS: return "Loneliness";
     }
-    return "未知";
+    return "Unknown";
 }

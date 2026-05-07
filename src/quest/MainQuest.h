@@ -59,6 +59,8 @@ public:
     MainQuestType getQuestType() const { return questType; }
     const std::vector<std::string>& getChoiceTexts() const { return choiceTexts; }
     const std::vector<Attributes>& getChoiceOutcomes() const { return choiceOutcomes; }
+    int getSelectedChoiceIndex() const { return selectedChoiceIndex; }
+    virtual int getHoveredChoiceIndex() const { return 0; }
 
     /**
      * @brief 推进到下一阶段

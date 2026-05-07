@@ -33,6 +33,7 @@ public:
     void execute(Player& player) override;
     void render(sf::RenderWindow& window) override;
     bool handleInput(const sf::Event& event, Player& player, int& choiceMade) override;
+    int getHoveredChoiceIndex() const override { return hoveredChoiceIndex; }
 
 private:
     std::vector<std::string> outcomeTexts; ///< 每个选项的结果描述文本

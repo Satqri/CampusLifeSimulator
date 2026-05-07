@@ -152,28 +152,35 @@ void MainQuestState::updateTextDisplay() {
         if (exam) {
             std::ostringstream ss;
             if (phase == QuestPhase::PREPARATION || phase == QuestPhase::ANNOUNCEMENT) {
-                ss << "科目: " << exam->getExamSubject()
+                ss << "Subject: " << exam->getExamSubject()
                    << " | DC: " << exam->getSubjectDC()
-                   << " | 共 " << exam->getTotalRounds() << " 轮"
-                   << " | 需通过 " << exam->getRequiredPasses() << " 轮";
+                   << " | Total " << exam->getTotalRounds() << " rounds"
+                   << " | Need " << exam->getRequiredPasses() << " passes";
+                if (phase == QuestPhase::PREPARATION) {
+                    ss << "\n\nReview before exam?";
+                    if (exam->getHasReviewed())
+                        ss << "  > [YES]    [NO]  (-" << exam->getReviewEnergyCost() << " Energy, +" << exam->getReviewBonus() << " bonus)";
+                    else
+                        ss << "    [YES]  > [NO]  (skip review)";
+                }
             } else if (phase == QuestPhase::EXAM_ROUND || phase == QuestPhase::ROUND_RESULT) {
-                ss << "第 " << exam->getCurrentRound() << "/" << exam->getTotalRounds() << " 轮"
-                   << " | 科目: " << exam->getExamSubject()
+                ss << "Round " << exam->getCurrentRound() << "/" << exam->getTotalRounds()
+                   << " | Subject: " << exam->getExamSubject()
                    << " | DC: " << exam->getSubjectDC()
-                   << " | 已通过: " << exam->getScore() << " 轮";
+                   << " | Passed: " << exam->getScore() << " rounds";
                 if (phase == QuestPhase::ROUND_RESULT) {
                     const auto& roll = exam->getLastRoll();
                     ss << "\n\nD20: " << roll.d20Roll
-                       << " | 学业加值: " << roll.academicBonus
-                       << " | 复习加值: " << roll.reviewBonus
-                       << " | 合计: " << roll.total
+                       << " | Academic Bonus: " << roll.academicBonus
+                       << " | Review Bonus: " << roll.reviewBonus
+                       << " | Total: " << roll.total
                        << " vs DC " << roll.dc
-                       << " -> " << (roll.success ? "通过!" : "未通过");
+                       << " -> " << (roll.success ? "Pass!" : "Failed");
                 }
             } else if (phase == QuestPhase::FINAL_RESULT) {
                 bool passed = exam->getPassed();
-                ss << "考试结果: " << (passed ? "通过!" : "未通过")
-                   << " | 得分: " << exam->getScore() << "/" << exam->getTotalRounds();
+                ss << "Result: " << (passed ? "Pass!" : "Failed")
+                   << " | Score: " << exam->getScore() << "/" << exam->getTotalRounds();
             }
             statText.setString(ss.str());
             statText.setFillColor(sf::Color(180, 220, 255));
@@ -187,22 +194,22 @@ void MainQuestState::updateTextDisplay() {
 
     switch (phase) {
         case QuestPhase::ANNOUNCEMENT:
-            promptText.setString("[按 Enter 继续]");
+            promptText.setString("[Press Enter to continue]");
             break;
         case QuestPhase::CHOICE:
-            promptText.setString("[↑↓ 选择  |  Enter 确认]");
+            promptText.setString("[Up/Down: Select  |  Enter: Confirm]");
             break;
         case QuestPhase::PREPARATION:
-            promptText.setString("[↑↓ 切换复习/跳过  |  Enter 确认]");
+            promptText.setString("[Up/Down: Toggle Review/Skip  |  Enter: Confirm]");
             break;
         case QuestPhase::EXAM_ROUND:
-            promptText.setString("[按 Enter 掷骰!]");
+            promptText.setString("[Press Enter to roll!]");
             break;
         case QuestPhase::ROUND_RESULT:
-            promptText.setString("[按 Enter 继续]");
+            promptText.setString("[Press Enter to continue]");
             break;
         case QuestPhase::FINAL_RESULT:
-            promptText.setString("[按 Enter 返回探索]");
+            promptText.setString("[Press Enter to return]");
             break;
         default:
             promptText.setString("");
@@ -220,9 +227,9 @@ std::string MainQuestState::formatDelta(const Attributes& delta) const {
         ss << name << (val > 0 ? "+" : "") << val;
     };
     add("SAN", delta.san);
-    add("体力", delta.energy);
-    add("学业", delta.academic);
-    add("社交", delta.social);
-    add("金钱", delta.gold);
+    add("Energy", delta.energy);
+    add("Academic", delta.academic);
+    add("Social", delta.social);
+    add("Gold", delta.gold);
     return ss.str();
 }

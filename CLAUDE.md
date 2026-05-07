@@ -38,6 +38,7 @@ Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.
 ## Code Conventions
 
 - **Comments in Chinese**, Doxygen `@brief/@param/@return` format — see `plan.md` line 484-513 for the exact templates. Every class and public method gets this comment block.
+- **UI strings in English** — all `sf::Text`, `std::cout`, and JSON data strings use English. Comments remain Chinese.
 - **Include guards**: `SLS_<DIR>_<FILE>_H` pattern (e.g., `SLS_CORE_TYPES_H`, `SLS_ENTITY_PLAYER_H`).
 - **Delta time**: all `update()` methods receive `float deltaTime` in seconds.
 - **Attribute clamping**: always call `clampAttributes()` after modifying character stats.
@@ -46,4 +47,9 @@ Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.
 
 ## Current Status
 
-Phase 1 complete (entity inheritance). `main.cpp` does not yet exist. Next: map system, game loop, and state machine (Phases 2-3 in plan.md).
+Phase 1 complete (entity inheritance). `main.cpp` exists as a class demo showcasing all inheritance trees:
+- Page 1: Entity demo — exploration map + SAN-threshold enemy spawning + d20 combat
+- Page 2-4: Quest demos (SimpleQuest / MidtermExam / FinalExam)
+- Page 5: QuestManager demo (JSON factory + quest chain)
+
+Next: map system, game loop, and state machine (Phases 2-3 in plan.md).

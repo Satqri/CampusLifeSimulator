@@ -3,9 +3,9 @@
 FinalExamQuest::FinalExamQuest()
     : ExamQuest(
         "final_exam",
-        "期末考试",
-        "学期末，最关键的期末考试来了！整个学期的努力将在这一刻见分晓。深呼吸，集中精力。",
-        "专业综合",
+        "Final Exam",
+        "End of the semester -- the most critical final exam is here! All your hard work comes down to this moment. Take a deep breath and focus.",
+        "Major Comprehensive",
         16,     // DC
         7,      // totalRounds
         4,      // requiredPasses

@@ -21,7 +21,7 @@ bool MainQuest::advancePhase() {
         case QuestPhase::NOT_STARTED:  currentPhase = QuestPhase::ANNOUNCEMENT; break;
         case QuestPhase::ANNOUNCEMENT: currentPhase = QuestPhase::CHOICE;        break;
         case QuestPhase::CHOICE:       currentPhase = QuestPhase::FINAL_RESULT;  break;
-        case QuestPhase::FINAL_RESULT: currentPhase = QuestPhase::COMPLETED;     break;
+        case QuestPhase::FINAL_RESULT: currentPhase = QuestPhase::COMPLETED; completed = true; break;
         default: return false;
     }
     return true;
