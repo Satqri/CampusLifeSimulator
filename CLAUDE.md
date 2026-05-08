@@ -33,6 +33,28 @@ brew install sfml nlohmann-json curl
 cmake --preset homebrew -S . -B build && cmake --build build
 ```
 
+### Docker（跨平台一键构建 + 运行）
+
+不安装任何本地依赖，用 Docker 构建和运行 GUI 窗口：
+
+```bash
+# Windows (WSL2 + Docker Desktop):
+#   WSLg 内建 GUI，无需额外配置
+docker compose build && docker compose up
+
+# macOS:
+#   先装 XQuartz 并允许网络连接
+brew install xquartz && open -a XQuartz
+xhost +localhost
+#   启动容器（TCP 转发 X11）
+DISPLAY=host.docker.internal:0 docker compose up
+
+# Linux:
+docker compose build && docker compose up
+```
+
+Docker 多阶段构建：builder 用 vcpkg 安装 SFML 3.0 并编译，runtime 只保留二进制和运行时库。
+
 Source globs in CMakeLists.txt (`file(GLOB_RECURSE ...)`) auto-pick up new `.h`/`.cpp` files — no need to edit CMakeLists when adding sources. Re-run cmake only when adding dependencies.
 
 ## Architecture
