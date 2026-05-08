@@ -1,5 +1,5 @@
-#ifndef SLS_ENTITY_CHARACTER_H
-#define SLS_ENTITY_CHARACTER_H
+#ifndef CLS_ENTITY_CHARACTER_H
+#define CLS_ENTITY_CHARACTER_H
 
 #include "entity/Entity.h"
 #include "core/Types.h"
@@ -74,4 +74,4 @@ protected:
     std::string name;      ///< 角色名称
 };
 
-#endif // SLS_ENTITY_CHARACTER_H
+#endif // CLS_ENTITY_CHARACTER_H

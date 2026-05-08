@@ -1,5 +1,5 @@
-#ifndef SLS_ENTITY_ENTITY_H
-#define SLS_ENTITY_ENTITY_H
+#ifndef CLS_ENTITY_ENTITY_H
+#define CLS_ENTITY_ENTITY_H
 
 #include <SFML/Graphics.hpp>
 
@@ -64,4 +64,4 @@ protected:
     bool active;  ///< 活跃标志
 };
 
-#endif // SLS_ENTITY_ENTITY_H
+#endif // CLS_ENTITY_ENTITY_H

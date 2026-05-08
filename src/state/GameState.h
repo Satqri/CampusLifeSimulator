@@ -1,5 +1,5 @@
-#ifndef SLS_STATE_GAMESTATE_H
-#define SLS_STATE_GAMESTATE_H
+#ifndef CLS_STATE_GAMESTATE_H
+#define CLS_STATE_GAMESTATE_H
 
 #include <SFML/Graphics.hpp>
 
@@ -43,4 +43,4 @@ protected:
     Game* game; ///< 指向主 Game 对象的指针
 };
 
-#endif // SLS_STATE_GAMESTATE_H
+#endif // CLS_STATE_GAMESTATE_H

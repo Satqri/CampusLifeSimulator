@@ -1,5 +1,5 @@
-#ifndef SLS_ENTITY_PLAYER_H
-#define SLS_ENTITY_PLAYER_H
+#ifndef CLS_ENTITY_PLAYER_H
+#define CLS_ENTITY_PLAYER_H
 
 #include "entity/Character.h"
 
@@ -94,4 +94,4 @@ private:
     sf::RectangleShape sprite;  ///< 简易像素精灵方块
 };
 
-#endif // SLS_ENTITY_PLAYER_H
+#endif // CLS_ENTITY_PLAYER_H

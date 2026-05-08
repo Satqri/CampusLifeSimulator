@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_MAINQUEST_H
-#define SLS_QUEST_MAINQUEST_H
+#ifndef CLS_QUEST_MAINQUEST_H
+#define CLS_QUEST_MAINQUEST_H
 
 #include <SFML/Graphics.hpp>
 #include <string>
@@ -85,4 +85,4 @@ protected:
     int selectedChoiceIndex;                  ///< 玩家选择的索引 (-1 未选择)
 };
 
-#endif // SLS_QUEST_MAINQUEST_H
+#endif // CLS_QUEST_MAINQUEST_H

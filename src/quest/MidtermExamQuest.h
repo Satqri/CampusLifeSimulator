@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_MIDTERMEXAMQUEST_H
-#define SLS_QUEST_MIDTERMEXAMQUEST_H
+#ifndef CLS_QUEST_MIDTERMEXAMQUEST_H
+#define CLS_QUEST_MIDTERMEXAMQUEST_H
 
 #include "quest/ExamQuest.h"
 
@@ -18,4 +18,4 @@ public:
     MidtermExamQuest();
 };
 
-#endif // SLS_QUEST_MIDTERMEXAMQUEST_H
+#endif // CLS_QUEST_MIDTERMEXAMQUEST_H

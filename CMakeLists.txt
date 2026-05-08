@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(SLS LANGUAGES CXX)
+project(CampusLifeSimulator LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,14 +22,14 @@ find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 
 # ── Source files ─────────────────────────────────────────
-file(GLOB_RECURSE SLS_HEADERS "src/*.h")
-file(GLOB_RECURSE SLS_SOURCES "src/*.cpp")
+file(GLOB_RECURSE CLS_HEADERS "src/*.h")
+file(GLOB_RECURSE CLS_SOURCES "src/*.cpp")
 
-add_executable(SLS ${SLS_SOURCES} ${SLS_HEADERS})
+add_executable(CampusLifeSimulator ${CLS_SOURCES} ${CLS_HEADERS})
 
-target_include_directories(SLS PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(CampusLifeSimulator PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-target_link_libraries(SLS PRIVATE
+target_link_libraries(CampusLifeSimulator PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
@@ -37,4 +37,4 @@ target_link_libraries(SLS PRIVATE
     CURL::libcurl
 )
 
-target_compile_options(SLS PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4,-Wall -Wextra>)
+target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4,-Wall -Wextra>)

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 cmake -S . -B build && cmake --build build   # configure + compile
-./build/SLS                                   # run
+./build/CampusLifeSimulator                   # run
 ```
 
 Dependencies (macOS): `brew install sfml nlohmann-json curl`. Windows MSYS2 users pass `-DCMAKE_PREFIX_PATH=...` to cmake.
@@ -39,7 +39,7 @@ Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.
 
 - **Comments in Chinese**, Doxygen `@brief/@param/@return` format — see `plan.md` line 484-513 for the exact templates. Every class and public method gets this comment block.
 - **UI strings in English** — all `sf::Text`, `std::cout`, and JSON data strings use English. Comments remain Chinese.
-- **Include guards**: `SLS_<DIR>_<FILE>_H` pattern (e.g., `SLS_CORE_TYPES_H`, `SLS_ENTITY_PLAYER_H`).
+- **Include guards**: `CLS_<DIR>_<FILE>_H` pattern (e.g., `CLS_CORE_TYPES_H`, `CLS_ENTITY_PLAYER_H`).
 - **Delta time**: all `update()` methods receive `float deltaTime` in seconds.
 - **Attribute clamping**: always call `clampAttributes()` after modifying character stats.
 - **SFML coordinate system**: positions are `float` pixel coordinates, not tile indices.

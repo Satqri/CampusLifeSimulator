@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_FINALEXAMQUEST_H
-#define SLS_QUEST_FINALEXAMQUEST_H
+#ifndef CLS_QUEST_FINALEXAMQUEST_H
+#define CLS_QUEST_FINALEXAMQUEST_H
 
 #include "quest/ExamQuest.h"
 
@@ -18,4 +18,4 @@ public:
     FinalExamQuest();
 };
 
-#endif // SLS_QUEST_FINALEXAMQUEST_H
+#endif // CLS_QUEST_FINALEXAMQUEST_H

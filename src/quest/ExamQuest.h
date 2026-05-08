@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_EXAMQUEST_H
-#define SLS_QUEST_EXAMQUEST_H
+#ifndef CLS_QUEST_EXAMQUEST_H
+#define CLS_QUEST_EXAMQUEST_H
 
 #include "quest/MainQuest.h"
 #include <string>
@@ -86,4 +86,4 @@ protected:
     ExamSubState subState;      ///< 考试内部子阶段
 };
 
-#endif // SLS_QUEST_EXAMQUEST_H
+#endif // CLS_QUEST_EXAMQUEST_H

@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_QUESTMANAGER_H
-#define SLS_QUEST_QUESTMANAGER_H
+#ifndef CLS_QUEST_QUESTMANAGER_H
+#define CLS_QUEST_QUESTMANAGER_H
 
 #include <string>
 #include <vector>
@@ -96,4 +96,4 @@ private:
     bool questActive;                        ///< 是否有任务正在处理中
 };
 
-#endif // SLS_QUEST_QUESTMANAGER_H
+#endif // CLS_QUEST_QUESTMANAGER_H

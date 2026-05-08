@@ -1,5 +1,5 @@
-#ifndef SLS_ENTITY_ENEMY_H
-#define SLS_ENTITY_ENEMY_H
+#ifndef CLS_ENTITY_ENEMY_H
+#define CLS_ENTITY_ENEMY_H
 
 #include "entity/Character.h"
 
@@ -85,4 +85,4 @@ private:
     static const char* nameForEmotion(EmotionType type);
 };
 
-#endif // SLS_ENTITY_ENEMY_H
+#endif // CLS_ENTITY_ENEMY_H

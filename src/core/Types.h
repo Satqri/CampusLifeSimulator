@@ -1,5 +1,5 @@
-#ifndef SLS_CORE_TYPES_H
-#define SLS_CORE_TYPES_H
+#ifndef CLS_CORE_TYPES_H
+#define CLS_CORE_TYPES_H
 
 /**
  * @struct Attributes
@@ -93,4 +93,4 @@ enum class StateType {
     GAME_OVER      ///< 游戏结束状态
 };
 
-#endif // SLS_CORE_TYPES_H
+#endif // CLS_CORE_TYPES_H

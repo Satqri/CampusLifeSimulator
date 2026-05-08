@@ -1,5 +1,5 @@
-#ifndef SLS_QUEST_SIMPLEQUEST_H
-#define SLS_QUEST_SIMPLEQUEST_H
+#ifndef CLS_QUEST_SIMPLEQUEST_H
+#define CLS_QUEST_SIMPLEQUEST_H
 
 #include "quest/MainQuest.h"
 #include <utility>
@@ -40,4 +40,4 @@ private:
     int hoveredChoiceIndex;                ///< 当前悬停的选项索引
 };
 
-#endif // SLS_QUEST_SIMPLEQUEST_H
+#endif // CLS_QUEST_SIMPLEQUEST_H

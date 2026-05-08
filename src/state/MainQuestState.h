@@ -1,5 +1,5 @@
-#ifndef SLS_STATE_MAINQUESTSTATE_H
-#define SLS_STATE_MAINQUESTSTATE_H
+#ifndef CLS_STATE_MAINQUESTSTATE_H
+#define CLS_STATE_MAINQUESTSTATE_H
 
 #include "state/GameState.h"
 #include "core/Types.h"
@@ -63,4 +63,4 @@ private:
     sf::Text* choiceTextPtr(int index);
 };
 
-#endif // SLS_STATE_MAINQUESTSTATE_H
+#endif // CLS_STATE_MAINQUESTSTATE_H
