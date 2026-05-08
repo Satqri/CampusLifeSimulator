@@ -30,7 +30,7 @@ COPY assets/ assets/
 RUN cmake --preset vcpkg -S . -B build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --config Release
 
-# ── Runtime Stage ─────────────────────────────────────────
+# ── Runner Stage ─────────────────────────────────────────
 FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -50,3 +50,23 @@ COPY --from=builder /app/assets /app/assets
 
 WORKDIR /app
 ENTRYPOINT ["./CampusLifeSimulator"]
+
+# ── Dev Stage（开发用：依赖预装，源码挂载）───────────────
+FROM builder AS dev
+
+# 运行时库（开发容器内直接运行，无需 runner stage）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libx11-6 libxrandr2 libxcursor1 libxi6 libudev1 \
+    libgl1 libegl1 libfreetype6 \
+    libopenal1 libflac12 libvorbis0a libvorbisenc2 libvorbisfile3 \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制 vcpkg 动态库到系统路径
+COPY --from=builder /opt/vcpkg/vcpkg_installed/x64-linux/lib /usr/local/lib
+RUN ldconfig
+
+# 源码通过 volume 挂载，此处不 COPY
+# CMD: 自动 cmake 配置 + 编译 + 运行
+WORKDIR /app
+CMD ["bash", "-c", "test -d build || cmake --preset vcpkg -S . -B build && cmake --build build && ./build/CampusLifeSimulator"]

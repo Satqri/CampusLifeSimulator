@@ -11,3 +11,16 @@ services:
       - ./assets:/app/assets:ro
     # macOS XQuartz 需要额外允许网络连接: xhost +localhost
     # 然后运行: DISPLAY=host.docker.internal:0 docker compose up
+
+  # 开发服务 — 依赖预装在镜像，源码挂载，改代码后只需 compose up dev
+  dev:
+    build:
+      target: dev
+    image: campus-life-simulator:dev
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - .:/app                        # 挂载源码，修改即时生效
+    stdin_open: true
+    tty: true
