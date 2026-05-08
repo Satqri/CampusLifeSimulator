@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ── Platform-specific hints ──────────────────────────────
-# macOS Homebrew 默认路径; Windows 下通过 -DCMAKE_PREFIX_PATH=... 传入
+# 优先使用 vcpkg manifest 模式 (cmake --preset vcpkg)
+# 备选: macOS Homebrew 自动搜索 /opt/homebrew 和 /usr/local
 if(APPLE AND EXISTS "/opt/homebrew")
     list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
 elseif(APPLE AND EXISTS "/usr/local")

@@ -1,0 +1,13 @@
+{
+  "name": "campus-life-simulator",
+  "version": "0.1.0",
+  "description": "Pixel-art campus life simulator with TRPG d20 combat",
+  "dependencies": [
+    {
+      "name": "sfml",
+      "features": ["graphics"]
+    },
+    "nlohmann-json",
+    "curl"
+  ]
+}

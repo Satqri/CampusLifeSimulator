@@ -4,12 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run
 
+### 依赖项（三端统一：vcpkg manifest 模式）
+
+项目使用 `vcpkg.json` + `CMakePresets.json` 管理依赖，一条命令即可安装并编译：
+
 ```bash
-cmake -S . -B build && cmake --build build   # configure + compile
-./build/CampusLifeSimulator                   # run
+# 1. 安装 vcpkg（仅首次）
+#    macOS:   brew install vcpkg
+#    Windows: git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg && C:/vcpkg/bootstrap-vcpkg.bat
+#    Linux:   git clone https://github.com/Microsoft/vcpkg.git ~/vcpkg && ~/vcpkg/bootstrap-vcpkg.sh
+
+# 2. 设置环境变量 VCPKG_ROOT 指向 vcpkg 目录
+#    macOS/Linux: export VCPKG_ROOT=/path/to/vcpkg
+#    Windows:     setx VCPKG_ROOT C:/vcpkg
+
+# 3. 一键配置 + 编译（vcpkg 会自动安装 sfml / nlohmann-json / curl）
+cmake --preset vcpkg -S . -B build && cmake --build build
+
+# 4. 运行
+./build/CampusLifeSimulator
 ```
 
-Dependencies (macOS): `brew install sfml nlohmann-json curl`. Windows MSYS2 users pass `-DCMAKE_PREFIX_PATH=...` to cmake.
+**依赖项清单**（见 `vcpkg.json`）：SFML (Graphics/Window/System)、nlohmann-json、libcurl。
+
+**macOS 备选方案**（不装 vcpkg，直接用 Homebrew）：
+```bash
+brew install sfml nlohmann-json curl
+cmake --preset homebrew -S . -B build && cmake --build build
+```
 
 Source globs in CMakeLists.txt (`file(GLOB_RECURSE ...)`) auto-pick up new `.h`/`.cpp` files — no need to edit CMakeLists when adding sources. Re-run cmake only when adding dependencies.
 
