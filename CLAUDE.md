@@ -55,6 +55,23 @@ docker compose build && docker compose up
 
 Docker 多阶段构建：builder 用 vcpkg 安装 SFML 3.0 并编译，runtime 只保留二进制和运行时库。
 
+**Docker 开发模式**（改代码不重建镜像）：
+
+```bash
+# 首次：构建 dev 镜像（预装所有依赖，一次性）
+docker compose build dev
+
+# 之后每次改代码，只需：
+docker compose up dev
+#   → 自动 cmake 配置 + 增量编译 + 运行
+#   → 源码通过 volume 挂载，只重编译变更的 .cpp
+
+# 退出：Ctrl+C，或 docker compose down
+
+# 进容器调试：
+docker compose run dev bash
+```
+
 Source globs in CMakeLists.txt (`file(GLOB_RECURSE ...)`) auto-pick up new `.h`/`.cpp` files — no need to edit CMakeLists when adding sources. Re-run cmake only when adding dependencies.
 
 ## Architecture
