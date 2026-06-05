@@ -488,15 +488,18 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({960, 540}), "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
 
-    // ── 字体 ────────────────────────────────────────────────
+    // ── 字体（编译期检测平台，选择对应系统字体）─────────────
     sf::Font font;
-    bool fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf");
-    if (!fontOk) fontOk = font.openFromFile("/System/Library/Fonts/PingFang.ttc");
+    bool fontOk = false;
+#if defined(__APPLE__)
+    fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf");
+#elif defined(_WIN32)
+    fontOk = font.openFromFile("C:/Windows/Fonts/arial.ttf");
+#elif defined(__linux__)
+    fontOk = font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+#endif
     if (!fontOk) {
-        fontOk = font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-    }
-    if (!fontOk) {
-        std::cerr << "ERROR: Failed to load any font file!" << std::endl;
+        std::cerr << "ERROR: Failed to load font!" << std::endl;
     }
 
     // ── 创建 Entity 对象 ─────────────────────────────────────

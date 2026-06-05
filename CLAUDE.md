@@ -78,23 +78,41 @@ Source globs in CMakeLists.txt (`file(GLOB_RECURSE ...)`) auto-pick up new `.h`/
 
 Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.0. Full design in `plan.md`.
 
-**Planned 5 inheritance trees** (plan.md §继承体系):
+**Inheritance trees** (implemented + planned from plan.md §继承体系):
 
 | # | Chain | Levels | Status |
 |---|-------|--------|--------|
 | 1 | `Entity → Character → Player / Enemy` | 3 | Done |
-| 2 | `Event → RandomEvent → LocalEvent / LLMEvent` | 3 | TODO |
-| 3 | `GameState → ExplorationState / EventDialogState / CombatState` | 2 | TODO |
-| 4 | `FileManager → JsonFileManager → SaveManager / ConfigManager` | 3 | TODO |
-| 5 | `UIComponent → HUD / DialogBox` | 2 | TODO |
+| 2 | `MainQuest → SimpleQuest` / `MainQuest → ExamQuest → MidtermExamQuest / FinalExamQuest` | 3 | Done |
+| 3 | `GameState → MainQuestState` (+ planned: ExplorationState / EventDialogState / CombatState) | 2 | Partial |
+| 4 | `Event → RandomEvent → LocalEvent / LLMEvent` | 3 | TODO |
+| 5 | `FileManager → JsonFileManager → SaveManager / ConfigManager` | 3 | TODO |
+| 6 | `UIComponent → HUD / DialogBox` | 2 | TODO |
 
-**Game loop** (state-machine driven): Exploration → event triggers → EventDialog → (if SAN low) → Combat → back to Exploration. Input and updates are dispatched to the current GameState.
+Note: the Quest tree (row 2) was added during implementation — it's not in plan.md's original 5 trees.
+
+**Quest hierarchy** (`src/quest/`):
+
+```
+MainQuest (abstract)           — questId, questName, currentPhase, choiceTexts/Outcomes
+├── SimpleQuest                — 3-phase flow: Announce → Choice → Result
+└── ExamQuest (abstract)       — multi-round d20 exam: Announce → Prep → Roll → Result → Final
+    ├── MidtermExamQuest       — DC=14, 5 rounds, need 3 passes
+    └── FinalExamQuest         — DC=16, 7 rounds, need 4 passes
+QuestManager                   — JSON factory + event-threshold chain (loads quests.json)
+```
+
+Quest phases (`QuestPhase` enum): `NOT_STARTED → ANNOUNCEMENT → CHOICE/PREPARATION → EXAM_ROUND → ROUND_RESULT → FINAL_RESULT → COMPLETED`. SimpleQuest uses CHOICE; ExamQuest uses PREPARATION → EXAM_ROUND → ROUND_RESULT loop.
+
+`QuestManager` maps JSON `"type"` strings to `MainQuestType` enum for factory creation. Quest chain is driven by `completedEventCount` meeting per-quest `threshold` values in `quests.json`.
+
+**Game loop** (state-machine driven): Exploration → event triggers → EventDialog → (if SAN low) → Combat → back to Exploration. Input and updates are dispatched to the current GameState. Currently only `MainQuestState` is implemented; Exploration/EventDialog/Combat states are TODO.
 
 **Pixel rendering**: render to `sf::RenderTexture` at 320×180, then upscale 3× to 960×540 with `setSmooth(false)`.
 
-**Shared types** (`src/core/Types.h`): `Attributes` struct (san/energy/academic/social/gold, all 0-100 except gold 0-9999), `EmotionType` enum (ANXIETY/DEPRESSION/ANGER/FEAR/LONELINESS).
+**Shared types** (`src/core/Types.h`): `Attributes` struct (san/energy/academic/social/gold, all 0-100 except gold 0-9999), `EmotionType` enum (ANXIETY/DEPRESSION/ANGER/FEAR/LONELINESS), `QuestPhase` enum, `MainQuestType` enum (factory key), `ExamRollResult` struct, `StateType` enum (EXPLORATION/EVENT_DIALOG/COMBAT/MAIN_QUEST/MENU/GAME_OVER).
 
-**SAN-triggered combat**: when player SAN drops below thresholds (30 → critical, 10 → dangerous), enemy difficulty scales with SAN level (0-3). Combat is d20 opposed rolls with attribute modifier `(stat - 50) / 10` (range [-5, +5]).
+**SAN-triggered combat**: when player SAN drops below thresholds (30 → critical, 10 → dangerous), enemy difficulty scales with SAN level (0-3). Combat is d20 opposed rolls with attribute modifier `(stat - 50) / 10` (range [-5, +5]). Each `EmotionType` maps to a different player stat for the opposed roll (e.g., ANXIETY → academic, ANGER → energy).
 
 ## Code Conventions
 
@@ -104,13 +122,25 @@ Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.
 - **Delta time**: all `update()` methods receive `float deltaTime` in seconds.
 - **Attribute clamping**: always call `clampAttributes()` after modifying character stats.
 - **SFML coordinate system**: positions are `float` pixel coordinates, not tile indices.
+- **Platform-specific code**: use compiler-predefined macros — `__APPLE__` / `_WIN32` / `__linux__`. These are auto-defined by the compiler, no build flags needed. E.g. font paths are resolved at compile time rather than runtime fallback:
+  ```cpp
+  #if defined(__APPLE__)
+      font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf");
+  #elif defined(_WIN32)
+      font.openFromFile("C:/Windows/Fonts/arial.ttf");
+  #elif defined(__linux__)
+      font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+  #endif
+  ```
 - **API keys**: store in `assets/config/settings.json` (git-ignored via `.gitignore`).
 
 ## Current Status
 
-Phase 1 complete (entity inheritance). `main.cpp` exists as a class demo showcasing all inheritance trees:
+Entity hierarchy + Quest system + QuestManager + MainQuestState all implemented. `main.cpp` is a class demo (not the final game loop) showcasing everything across 5 pages:
 - Page 1: Entity demo — exploration map + SAN-threshold enemy spawning + d20 combat
-- Page 2-4: Quest demos (SimpleQuest / MidtermExam / FinalExam)
-- Page 5: QuestManager demo (JSON factory + quest chain)
+- Page 2-4: Quest demos (SimpleQuest / MidtermExam / FinalExam) with full phase flow
+- Page 5: QuestManager demo (JSON factory + quest chain threshold triggering)
 
-Next: map system, game loop, and state machine (Phases 2-3 in plan.md).
+No test framework yet.
+
+Next: Exploration/Combat/EventDialog game states, map system, and the full state-machine game loop (Phases 2-3 in plan.md).
