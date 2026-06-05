@@ -77,6 +77,12 @@ enum class CampusPlace {
     Cafeteria
 };
 
+constexpr unsigned int kWindowWidth = 1280;
+constexpr unsigned int kWindowHeight = 720;
+constexpr float kRenderWidth = 960.0f;
+constexpr float kRenderHeight = 540.0f;
+constexpr float kPlayerHalfSize = 8.0f;
+
 struct MapPortal {
     sf::FloatRect area;
     CampusPlace target;
@@ -357,22 +363,44 @@ void drawBuilding(sf::RenderWindow& window, sf::Font& font, const MapPortal& por
     drawLabel(window, font, label, {portal.area.position.x + 14.0f, portal.area.position.y + 14.0f});
 }
 
+void clampPlayerToCurrentPlace(Player& player, CampusPlace place) {
+    float minX = kPlayerHalfSize;
+    float maxX = kRenderWidth - kPlayerHalfSize;
+    float minY = 42.0f + kPlayerHalfSize;
+    float maxY = kRenderHeight - kPlayerHalfSize;
+
+    if (place != CampusPlace::Campus) {
+        minX = 54.0f + kPlayerHalfSize;
+        maxX = 900.0f - kPlayerHalfSize;
+        minY = 84.0f + kPlayerHalfSize;
+        maxY = 524.0f - kPlayerHalfSize;
+    }
+
+    const sf::Vector2f pos = player.getPosition();
+    const float clampedX = std::clamp(pos.x, minX, maxX);
+    const float clampedY = std::clamp(pos.y, minY, maxY);
+    if (clampedX != pos.x || clampedY != pos.y) {
+        player.setPosition(clampedX, clampedY);
+        player.stopMovement();
+    }
+}
+
 void renderCampusTopDownMap(sf::RenderWindow& window, sf::Font& font, Player& player,
                             CampusPlace place) {
     static sf::Texture outdoorTiles;
     static bool outdoorTilesLoaded = loadTextureFromCandidates(outdoorTiles, "assets/tilesets/pixlab24_topdown_tileset.png");
 
-    sf::RectangleShape bg({960.0f, 540.0f});
+    sf::RectangleShape bg({kRenderWidth, kRenderHeight});
     bg.setFillColor(place == CampusPlace::Campus ? sf::Color(139, 180, 74) : sf::Color(55, 44, 34));
     window.draw(bg);
 
     if (place == CampusPlace::Campus) {
-        sf::RectangleShape mainPath({116.0f, 540.0f});
+        sf::RectangleShape mainPath({116.0f, kRenderHeight});
         mainPath.setPosition({422.0f, 0.0f});
         mainPath.setFillColor(sf::Color(214, 190, 118));
         window.draw(mainPath);
 
-        sf::RectangleShape crossPath({960.0f, 92.0f});
+        sf::RectangleShape crossPath({kRenderWidth, 92.0f});
         crossPath.setPosition({0.0f, 224.0f});
         crossPath.setFillColor(sf::Color(214, 190, 118));
         window.draw(crossPath);
@@ -382,8 +410,8 @@ void renderCampusTopDownMap(sf::RenderWindow& window, sf::Font& font, Player& pl
         plaza.setFillColor(sf::Color(188, 178, 122));
         window.draw(plaza);
 
-        for (int x = 0; x < 960; x += 32) {
-            for (int y = 42; y < 540; y += 32) {
+        for (int x = 0; x < static_cast<int>(kRenderWidth); x += 32) {
+            for (int y = 42; y < static_cast<int>(kRenderHeight); y += 32) {
                 const bool onRoad = (x > 410 && x < 550) || (y > 210 && y < 330);
                 if (onRoad) {
                     sf::CircleShape pebble(1.4f);
@@ -552,13 +580,13 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
                    Player& player, std::vector<std::unique_ptr<Enemy>>& activeEnemies,
                    const CombatResult& combatResult) {
     // --- 鍦板浘鑳屾櫙 ---
-    sf::RectangleShape mapBg({960.0f, 540.0f});
+    sf::RectangleShape mapBg({kRenderWidth, kRenderHeight});
     mapBg.setFillColor(sf::Color(30, 40, 30));
     window.draw(mapBg);
 
     // 鍦伴潰缃戞牸
-    for (int x = 0; x < 960; x += 32) {
-        for (int y = 0; y < 540; y += 32) {
+    for (int x = 0; x < static_cast<int>(kRenderWidth); x += 32) {
+        for (int y = 0; y < static_cast<int>(kRenderHeight); y += 32) {
             sf::RectangleShape tile({31.0f, 31.0f});
             tile.setPosition({static_cast<float>(x), static_cast<float>(y)});
             tile.setFillColor(sf::Color(40, 50, 40));
@@ -662,7 +690,7 @@ void renderQuestUI(sf::RenderWindow& window, sf::Font& font,
 }
 void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
                             QuestManager& qm) {
-    sf::RectangleShape bg({960.0f, 540.0f});
+    sf::RectangleShape bg({kRenderWidth, kRenderHeight});
     bg.setFillColor(sf::Color(15, 15, 25, 220));
     window.draw(bg);
 
@@ -757,7 +785,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
 // 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 int main() {
     // 鈹€鈹€ 绐楀彛 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-    sf::RenderWindow window(sf::VideoMode({960, 540}), "CampusLifeSimulator - Class Demo");
+    sf::RenderWindow window(sf::VideoMode({kWindowWidth, kWindowHeight}), "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
@@ -1190,6 +1218,7 @@ int main() {
             }
 
             player.move(dx, dy, dt);
+            clampPlayerToCurrentPlace(player, currentPlace);
 
             // 鎸夐敭 C = 鍘嬪姏浜嬩欢锛堥檷浣?SAN锛岃Е鍙戞晫浜哄嚭鐜帮級
             if (justPressed(sf::Keyboard::Key::C)) {
