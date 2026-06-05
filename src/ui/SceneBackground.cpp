@@ -1,4 +1,5 @@
 #include "ui/SceneBackground.h"
+#include "core/AssetPath.h"
 
 #include <cmath>
 
@@ -47,19 +48,10 @@ void SceneBackground::render(sf::RenderWindow& window, SceneBackgroundType type,
 }
 
 void SceneBackground::load(SceneBackgroundType type, const std::string& relativePath) {
-    const std::array<std::string, 4> candidates = {
-        relativePath,
-        "../../../" + relativePath,
-        "../../../../" + relativePath,
-        "D:/Campus_2D/CampusLifeSimulator/" + relativePath
-    };
-
     const int i = index(type);
-    for (const auto& path : candidates) {
-        if (textures[i].loadFromFile(path)) {
-            sprites[i] = std::make_unique<sf::Sprite>(textures[i]);
-            break;
-        }
+    const std::string resolvedPath = cls::resolveAssetPath(relativePath);
+    if (textures[i].loadFromFile(resolvedPath)) {
+        sprites[i] = std::make_unique<sf::Sprite>(textures[i]);
     }
 }
 

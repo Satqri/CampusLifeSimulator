@@ -18,6 +18,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include "core/AssetPath.h"
 #include "core/Types.h"
 #include "entity/Player.h"
 #include "entity/Enemy.h"
@@ -416,7 +417,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
 
     // 手动读取 JSON 展示原始数据
     using json = nlohmann::json;
-    std::ifstream f("assets/config/quests.json");
+    std::ifstream f(cls::resolveAssetPath("assets/config/quests.json"));
     if (f.is_open()) {
         json data = json::parse(f);
         int idx = 0;
@@ -537,7 +538,7 @@ int main() {
 
     // ── Quest 对象 ───────────────────────────────────────────
     QuestManager questManager;
-    questManager.loadQuestChain("assets/config/quests.json");
+    questManager.loadQuestChain(cls::resolveAssetPath("assets/config/quests.json"));
 
     // 独立 quest 对象用于 Simple/Midterm/Final 演示页面
     MainQuest* currentQuest = nullptr;
@@ -874,7 +875,7 @@ int main() {
                         }
                     } else if (code == sf::Keyboard::Key::C) {
                         questManager = QuestManager();
-                        questManager.loadQuestChain("assets/config/quests.json");
+                        questManager.loadQuestChain(cls::resolveAssetPath("assets/config/quests.json"));
                         currentQuest = nullptr;
                         questManagerQuest.reset();
                         std::cout << "[QuestManager] Reset complete" << std::endl;

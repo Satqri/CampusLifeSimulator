@@ -1,4 +1,5 @@
 #include "ui/TitleScreen.h"
+#include "core/AssetPath.h"
 
 #include <algorithm>
 #include <array>
@@ -8,17 +9,9 @@ TitleScreen::TitleScreen(sf::Font& fontRef, const std::string& backgroundPath)
     : font(fontRef),
       startButton({360.0f, 378.0f}, {240.0f, 72.0f}),
       helpButton({860.0f, 440.0f}, {68.0f, 68.0f}) {
-    const std::array<std::string, 4> candidates = {
-        backgroundPath,
-        "../../../" + backgroundPath,
-        "../../../../" + backgroundPath,
-        "D:/Campus_2D/CampusLifeSimulator/" + backgroundPath
-    };
-    for (const auto& path : candidates) {
-        if (backgroundTexture.loadFromFile(path)) {
-            backgroundSprite = std::make_unique<sf::Sprite>(backgroundTexture);
-            break;
-        }
+    const std::string resolvedPath = cls::resolveAssetPath(backgroundPath);
+    if (backgroundTexture.loadFromFile(resolvedPath)) {
+        backgroundSprite = std::make_unique<sf::Sprite>(backgroundTexture);
     }
 }
 
