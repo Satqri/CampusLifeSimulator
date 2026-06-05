@@ -23,11 +23,11 @@ MainQuestState::MainQuestState(Game* game, QuestManager* qm, Player* p)
     , hoveredChoice(0)
 {
 #if defined(__APPLE__)
-    font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf");
+    static_cast<void>(font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf"));
 #elif defined(_WIN32)
-    font.openFromFile("C:/Windows/Fonts/arial.ttf");
+    static_cast<void>(font.openFromFile("C:/Windows/Fonts/arial.ttf"));
 #elif defined(__linux__)
-    font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+    static_cast<void>(font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"));
 #endif
 
     background.setFillColor(sf::Color(0, 0, 0, 180));

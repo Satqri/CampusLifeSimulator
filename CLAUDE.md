@@ -195,8 +195,8 @@ Quest phases (`QuestPhase` enum): `NOT_STARTED → ANNOUNCEMENT → CHOICE/PREPA
 - **Attribute clamping**: always call `clampAttributes()` after modifying character stats.
 - **SFML coordinate system**: positions are `float` pixel coordinates, not tile indices.
 - **API keys**: store in `assets/config/settings.json` (git-ignored via `.gitignore`).
-- **Platform-specific code**: use compiler-predefined macros — `__APPLE__` / `_WIN32` / `__linux__`. These are auto-defined by the compiler, no build flags needed. Currently used for font path selection.
-- **Font loading**: runtime fallback loop over a `std::vector<std::string>` of candidate paths, ordered by platform priority (Windows fonts first in the remote version). Add new paths there rather than using compile-time `#if`.
+- **Platform-specific code**: use compiler-predefined macros — `__APPLE__` / `_WIN32` / `__linux__`. These are auto-defined by the compiler, no build flags needed. Both `main.cpp` and `MainQuestState.cpp` use this for font path selection. Windows branch internally uses a runtime fallback loop over multiple candidate fonts (msyh → simhei → arial) for broader compatibility.
+- **File encoding**: UTF-8 without BOM. Never save as UTF-8 with BOM — this caused a project-wide Chinese character corruption in commit f59174b when a Windows editor re-encoded all comments.
 
 ## Current Status
 
