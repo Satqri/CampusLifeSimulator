@@ -1,18 +1,9 @@
 #include "map/CampusMap.h"
+#include "core/AssetPath.h"
 #include "entity/Player.h"
-#include <array>
 
 static bool loadTextureFromCandidates(sf::Texture& texture, const std::string& relativePath) {
-    const std::array<std::string, 4> candidates = {
-        relativePath,
-        "../../../" + relativePath,
-        "../../../../" + relativePath,
-        "D:/Campus_2D/CampusLifeSimulator/" + relativePath
-    };
-    for (const auto& path : candidates) {
-        if (texture.loadFromFile(path)) return true;
-    }
-    return false;
+    return texture.loadFromFile(cls::resolveAssetPath(relativePath));
 }
 
 CampusMap::CampusMap() {
