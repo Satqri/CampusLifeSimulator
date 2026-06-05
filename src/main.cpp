@@ -27,6 +27,13 @@
 #include "quest/MidtermExamQuest.h"
 #include "quest/FinalExamQuest.h"
 #include "quest/QuestManager.h"
+#include "map/MapPortal.h"
+#include "map/BuildingInterior.h"
+#include "map/CampusMap.h"
+#include "map/DormitoryInterior.h"
+#include "map/LibraryInterior.h"
+#include "map/ClassroomInterior.h"
+#include "map/CafeteriaInterior.h"
 #include "ui/HUD.h"
 #include "ui/HelpPanel.h"
 #include "ui/QuestPanel.h"
@@ -42,6 +49,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <memory>
 #include <nlohmann/json.hpp>
 
 // ──────────────────────────────────────────────────────────────
@@ -68,29 +76,6 @@ enum class GameScreen {
     TITLE,
     DIFFICULTY,
     GAME
-};
-
-enum class CampusPlace {
-    Campus,
-    Dormitory,
-    Library,
-    Classroom,
-    Cafeteria
-};
-
-constexpr unsigned int kWindowWidth = 1280;
-constexpr unsigned int kWindowHeight = 720;
-constexpr float kRenderWidth = 960.0f;
-constexpr float kRenderHeight = 540.0f;
-constexpr float kPlayerHalfSize = 8.0f;
-
-struct MapPortal {
-    sf::FloatRect area;
-    CampusPlace target;
-    SceneBackgroundType transitionBackground;
-    sf::Vector2f spawnPosition;
-    std::string title;
-    std::string subtitle;
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -261,333 +246,19 @@ std::pair<std::string, std::string> transitionTextForPage(DemoPage page) {
     return {"Campus", "The next part of the day is about to begin."};
 }
 
-bool pointInRect(sf::Vector2f point, const sf::FloatRect& rect) {
-    return point.x >= rect.position.x
-        && point.x <= rect.position.x + rect.size.x
-        && point.y >= rect.position.y
-        && point.y <= rect.position.y + rect.size.y;
-}
-
-bool loadTextureFromCandidates(sf::Texture& texture, const std::string& relativePath) {
-    const std::array<std::string, 4> candidates = {
-        relativePath,
-        "../../../" + relativePath,
-        "../../../../" + relativePath,
-        "D:/Campus_2D/CampusLifeSimulator/" + relativePath
-    };
-    for (const auto& path : candidates) {
-        if (texture.loadFromFile(path)) return true;
-    }
-    return false;
-}
-
-void drawPixlabSprite(sf::RenderWindow& window, const sf::Texture& texture,
-                      const sf::IntRect& textureRect, sf::Vector2f position, float scale = 1.0f) {
-    sf::Sprite sprite(texture);
-    sprite.setTextureRect(textureRect);
-    sprite.setPosition(position);
-    sprite.setScale({scale, scale});
-    window.draw(sprite);
-}
-
-std::vector<MapPortal> portalsForPlace(CampusPlace place) {
-    if (place == CampusPlace::Campus) {
-        return {
-            MapPortal{sf::FloatRect({80.0f, 86.0f}, {150.0f, 92.0f}), CampusPlace::Dormitory, SceneBackgroundType::Dormitory,
-                {480.0f, 448.0f}, "Dormitory", "Backpacks drop by the bed; the next plan starts from a quiet room."},
-            MapPortal{sf::FloatRect({702.0f, 82.0f}, {168.0f, 96.0f}), CampusPlace::Library, SceneBackgroundType::Library,
-                {480.0f, 448.0f}, "Library", "Between shelves and desk lamps, tomorrow's answers begin to take shape."},
-            MapPortal{sf::FloatRect({92.0f, 352.0f}, {176.0f, 104.0f}), CampusPlace::Classroom, SceneBackgroundType::Classroom,
-                {480.0f, 448.0f}, "Classroom", "The bell rings softly; notes, questions, and pressure wait inside."},
-            MapPortal{sf::FloatRect({690.0f, 350.0f}, {182.0f, 106.0f}), CampusPlace::Cafeteria, SceneBackgroundType::Cafeteria,
-                {480.0f, 448.0f}, "Cafeteria", "Warm food and noisy tables make the campus feel briefly lighter."}
-        };
-    }
-
-    SceneBackgroundType returnBackground = SceneBackgroundType::Dormitory;
-    if (place == CampusPlace::Library) returnBackground = SceneBackgroundType::Library;
-    if (place == CampusPlace::Classroom) returnBackground = SceneBackgroundType::Classroom;
-    if (place == CampusPlace::Cafeteria) returnBackground = SceneBackgroundType::Cafeteria;
-
-    return {
-        MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus, returnBackground,
-            {480.0f, 276.0f}, "Campus Square", "The main paths open again; choose where the day goes next."}
-    };
-}
-
-std::string placeName(CampusPlace place) {
-    switch (place) {
-        case CampusPlace::Campus: return "Campus Map";
-        case CampusPlace::Dormitory: return "Dormitory";
-        case CampusPlace::Library: return "Library";
-        case CampusPlace::Classroom: return "Classroom";
-        case CampusPlace::Cafeteria: return "Cafeteria";
-    }
-    return "Campus";
-}
-
-void drawLabel(sf::RenderWindow& window, sf::Font& font, const std::string& text,
-               sf::Vector2f position, unsigned int size = 13) {
-    sf::Text label(font, text, size);
-    label.setFillColor(sf::Color(244, 238, 206));
-    label.setOutlineColor(sf::Color(30, 34, 30));
-    label.setOutlineThickness(1.0f);
-    label.setPosition(position);
-    window.draw(label);
-}
-
-void drawBuilding(sf::RenderWindow& window, sf::Font& font, const MapPortal& portal,
-                  const std::string& label, sf::Color body, sf::Color roof) {
-    sf::RectangleShape shadow({portal.area.size.x + 12.0f, portal.area.size.y + 12.0f});
-    shadow.setPosition({portal.area.position.x + 6.0f, portal.area.position.y + 8.0f});
-    shadow.setFillColor(sf::Color(20, 28, 24, 90));
-    window.draw(shadow);
-
-    sf::RectangleShape roofShape({portal.area.size.x + 18.0f, 24.0f});
-    roofShape.setPosition({portal.area.position.x - 9.0f, portal.area.position.y - 18.0f});
-    roofShape.setFillColor(roof);
-    window.draw(roofShape);
-
-    sf::RectangleShape bodyShape(portal.area.size);
-    bodyShape.setPosition(portal.area.position);
-    bodyShape.setFillColor(body);
-    bodyShape.setOutlineColor(sf::Color(78, 68, 48));
-    bodyShape.setOutlineThickness(2.0f);
-    window.draw(bodyShape);
-
-    sf::RectangleShape door({34.0f, 32.0f});
-    door.setPosition({portal.area.position.x + portal.area.size.x / 2.0f - 17.0f,
-                      portal.area.position.y + portal.area.size.y - 32.0f});
-    door.setFillColor(sf::Color(72, 48, 34));
-    window.draw(door);
-
-    drawLabel(window, font, label, {portal.area.position.x + 14.0f, portal.area.position.y + 14.0f});
-}
-
-void clampPlayerToCurrentPlace(Player& player, CampusPlace place) {
-    float minX = kPlayerHalfSize;
-    float maxX = kRenderWidth - kPlayerHalfSize;
-    float minY = 42.0f + kPlayerHalfSize;
-    float maxY = kRenderHeight - kPlayerHalfSize;
-
-    if (place != CampusPlace::Campus) {
-        minX = 54.0f + kPlayerHalfSize;
-        maxX = 900.0f - kPlayerHalfSize;
-        minY = 84.0f + kPlayerHalfSize;
-        maxY = 524.0f - kPlayerHalfSize;
-    }
-
-    const sf::Vector2f pos = player.getPosition();
-    const float clampedX = std::clamp(pos.x, minX, maxX);
-    const float clampedY = std::clamp(pos.y, minY, maxY);
-    if (clampedX != pos.x || clampedY != pos.y) {
-        player.setPosition(clampedX, clampedY);
-        player.stopMovement();
-    }
-}
-
-void renderCampusTopDownMap(sf::RenderWindow& window, sf::Font& font, Player& player,
-                            CampusPlace place) {
-    static sf::Texture outdoorTiles;
-    static bool outdoorTilesLoaded = loadTextureFromCandidates(outdoorTiles, "assets/tilesets/pixlab24_topdown_tileset.png");
-
-    sf::RectangleShape bg({kRenderWidth, kRenderHeight});
-    bg.setFillColor(place == CampusPlace::Campus ? sf::Color(139, 180, 74) : sf::Color(55, 44, 34));
-    window.draw(bg);
-
-    if (place == CampusPlace::Campus) {
-        sf::RectangleShape mainPath({116.0f, kRenderHeight});
-        mainPath.setPosition({422.0f, 0.0f});
-        mainPath.setFillColor(sf::Color(214, 190, 118));
-        window.draw(mainPath);
-
-        sf::RectangleShape crossPath({kRenderWidth, 92.0f});
-        crossPath.setPosition({0.0f, 224.0f});
-        crossPath.setFillColor(sf::Color(214, 190, 118));
-        window.draw(crossPath);
-
-        sf::CircleShape plaza(76.0f);
-        plaza.setPosition({404.0f, 194.0f});
-        plaza.setFillColor(sf::Color(188, 178, 122));
-        window.draw(plaza);
-
-        for (int x = 0; x < static_cast<int>(kRenderWidth); x += 32) {
-            for (int y = 42; y < static_cast<int>(kRenderHeight); y += 32) {
-                const bool onRoad = (x > 410 && x < 550) || (y > 210 && y < 330);
-                if (onRoad) {
-                    sf::CircleShape pebble(1.4f);
-                    pebble.setPosition({static_cast<float>(x + (y % 11)), static_cast<float>(y + (x % 7))});
-                    pebble.setFillColor(sf::Color(166, 145, 92, 95));
-                    window.draw(pebble);
-                } else if ((x + y) % 96 == 0) {
-                    if (outdoorTilesLoaded) {
-                        drawPixlabSprite(window, outdoorTiles, sf::IntRect({370, 48}, {84, 76}),
-                                         {static_cast<float>(x - 16), static_cast<float>(y - 26)}, 0.42f);
-                    } else {
-                        sf::CircleShape bush(10.0f);
-                        bush.setPosition({static_cast<float>(x + 10), static_cast<float>(y + 12)});
-                        bush.setFillColor(sf::Color(91, 145, 76));
-                        window.draw(bush);
-                    }
-                }
-            }
-        }
-
-        const auto portals = portalsForPlace(place);
-        drawBuilding(window, font, portals[0], "Dorm", sf::Color(176, 112, 72), sf::Color(146, 74, 60));
-        drawBuilding(window, font, portals[1], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
-        drawBuilding(window, font, portals[2], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
-        drawBuilding(window, font, portals[3], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
-
-        sf::CircleShape fountain(24.0f);
-        fountain.setPosition({456.0f, 250.0f});
-        fountain.setFillColor(sf::Color(82, 156, 176));
-        fountain.setOutlineColor(sf::Color(224, 220, 178));
-        fountain.setOutlineThickness(4.0f);
-        window.draw(fountain);
-
-        for (const sf::Vector2f benchPos : {sf::Vector2f{322.0f, 236.0f}, sf::Vector2f{584.0f, 236.0f},
-                                            sf::Vector2f{322.0f, 300.0f}, sf::Vector2f{584.0f, 300.0f}}) {
-            sf::RectangleShape bench({54.0f, 14.0f});
-            bench.setPosition(benchPos);
-            bench.setFillColor(sf::Color(132, 72, 42));
-            window.draw(bench);
-        }
-    } else {
-        const sf::Color floor = place == CampusPlace::Dormitory ? sf::Color(158, 110, 68)
-            : place == CampusPlace::Library ? sf::Color(92, 78, 56)
-            : place == CampusPlace::Classroom ? sf::Color(116, 126, 112)
-            : sf::Color(150, 114, 72);
-        bg.setFillColor(floor);
-        window.draw(bg);
-
-        sf::RectangleShape roomFrame({876.0f, 424.0f});
-        roomFrame.setPosition({42.0f, 72.0f});
-        roomFrame.setFillColor(sf::Color(0, 0, 0, 0));
-        roomFrame.setOutlineColor(sf::Color(42, 30, 22));
-        roomFrame.setOutlineThickness(12.0f);
-        window.draw(roomFrame);
-
-        for (int x = 54; x < 900; x += 42) {
-            for (int y = 84; y < 486; y += 42) {
-                sf::RectangleShape tile({40.0f, 40.0f});
-                tile.setPosition({static_cast<float>(x), static_cast<float>(y)});
-                tile.setFillColor(sf::Color(floor.r + 8, floor.g + 8, floor.b + 8, 70));
-                window.draw(tile);
-            }
-        }
-
-        if (place == CampusPlace::Dormitory) {
-            sf::RectangleShape bed({180.0f, 70.0f});
-            bed.setPosition({90.0f, 108.0f});
-            bed.setFillColor(sf::Color(88, 148, 142));
-            window.draw(bed);
-            sf::RectangleShape pillow({44.0f, 58.0f});
-            pillow.setPosition({98.0f, 114.0f});
-            pillow.setFillColor(sf::Color(230, 218, 180));
-            window.draw(pillow);
-            sf::RectangleShape desk({210.0f, 66.0f});
-            desk.setPosition({636.0f, 112.0f});
-            desk.setFillColor(sf::Color(120, 78, 44));
-            window.draw(desk);
-            sf::RectangleShape rug({230.0f, 110.0f});
-            rug.setPosition({365.0f, 285.0f});
-            rug.setFillColor(sf::Color(72, 126, 116));
-            window.draw(rug);
-        } else if (place == CampusPlace::Library) {
-            for (int i = 0; i < 4; ++i) {
-                sf::RectangleShape shelf({92.0f, 330.0f});
-                shelf.setPosition({72.0f + i * 220.0f, 92.0f});
-                shelf.setFillColor(sf::Color(82, 58, 36));
-                window.draw(shelf);
-            }
-            sf::RectangleShape table({180.0f, 64.0f});
-            table.setPosition({390.0f, 260.0f});
-            table.setFillColor(sf::Color(132, 92, 52));
-            window.draw(table);
-            for (int i = 0; i < 6; ++i) {
-                sf::RectangleShape lamp({12.0f, 22.0f});
-                lamp.setPosition({226.0f + i * 100.0f, 154.0f + (i % 2) * 180.0f});
-                lamp.setFillColor(sf::Color(232, 202, 108));
-                window.draw(lamp);
-            }
-        } else if (place == CampusPlace::Classroom) {
-            sf::RectangleShape board({520.0f, 58.0f});
-            board.setPosition({220.0f, 82.0f});
-            board.setFillColor(sf::Color(34, 78, 68));
-            window.draw(board);
-            for (int row = 0; row < 3; ++row) {
-                for (int col = 0; col < 5; ++col) {
-                    sf::RectangleShape desk({72.0f, 34.0f});
-                    desk.setPosition({180.0f + col * 122.0f, 202.0f + row * 72.0f});
-                    desk.setFillColor(sf::Color(156, 108, 58));
-                    window.draw(desk);
-                }
-            }
-        } else if (place == CampusPlace::Cafeteria) {
-            sf::RectangleShape counter({760.0f, 70.0f});
-            counter.setPosition({100.0f, 94.0f});
-            counter.setFillColor(sf::Color(176, 104, 58));
-            window.draw(counter);
-            for (int i = 0; i < 7; ++i) {
-                sf::CircleShape tray(12.0f);
-                tray.setPosition({132.0f + i * 100.0f, 116.0f});
-                tray.setFillColor(sf::Color(232, 184, 88));
-                window.draw(tray);
-            }
-            for (int i = 0; i < 5; ++i) {
-                sf::RectangleShape table({84.0f, 58.0f});
-                table.setPosition({130.0f + i * 160.0f, 278.0f});
-                table.setFillColor(sf::Color(120, 78, 44));
-                window.draw(table);
-            }
-        }
-
-        sf::RectangleShape exit({140.0f, 42.0f});
-        exit.setPosition({410.0f, 482.0f});
-        exit.setFillColor(sf::Color(38, 130, 100, 210));
-        window.draw(exit);
-        drawLabel(window, font, "Exit to Campus", {428.0f, 494.0f});
-    }
-
-    for (const auto& portal : portalsForPlace(place)) {
-        sf::RectangleShape marker(portal.area.size);
-        marker.setPosition(portal.area.position);
-        marker.setFillColor(sf::Color(86, 255, 186, 45));
-        marker.setOutlineColor(sf::Color(140, 255, 210, 160));
-        marker.setOutlineThickness(2.0f);
-        window.draw(marker);
-    }
-
-    player.render(window);
-
-    sf::Text title(font, placeName(place), 22);
-    title.setFillColor(sf::Color(245, 238, 205));
-    title.setOutlineColor(sf::Color(20, 30, 30));
-    title.setOutlineThickness(2.0f);
-    title.setPosition({18.0f, 50.0f});
-    window.draw(title);
-
-    sf::Text hint(font, "WASD Move  |  Enter: enter highlighted area  |  0/6 Help", 13);
-    hint.setFillColor(sf::Color(235, 235, 210));
-    hint.setPosition({18.0f, 510.0f});
-    window.draw(hint);
-}
-
-// ──────────────────────────────────────────────────────────────
 // Entity 演示: 探索地图 + SAN 阈值触发敌人出现
 // ──────────────────────────────────────────────────────────────
 void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
                    Player& player, std::vector<std::unique_ptr<Enemy>>& activeEnemies,
                    const CombatResult& combatResult) {
     // --- 地图背景 ---
-    sf::RectangleShape mapBg({kRenderWidth, kRenderHeight});
+    sf::RectangleShape mapBg({960.0f, 540.0f});
     mapBg.setFillColor(sf::Color(30, 40, 30));
     window.draw(mapBg);
 
     // 地面网格
-    for (int x = 0; x < static_cast<int>(kRenderWidth); x += 32) {
-        for (int y = 0; y < static_cast<int>(kRenderHeight); y += 32) {
+    for (int x = 0; x < 960; x += 32) {
+        for (int y = 0; y < 540; y += 32) {
             sf::RectangleShape tile({31.0f, 31.0f});
             tile.setPosition({static_cast<float>(x), static_cast<float>(y)});
             tile.setFillColor(sf::Color(40, 50, 40));
@@ -691,7 +362,7 @@ void renderQuestUI(sf::RenderWindow& window, sf::Font& font,
 }
 void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
                             QuestManager& qm) {
-    sf::RectangleShape bg({kRenderWidth, kRenderHeight});
+    sf::RectangleShape bg({960.0f, 540.0f});
     bg.setFillColor(sf::Color(15, 15, 25, 220));
     window.draw(bg);
 
@@ -790,6 +461,10 @@ int main() {
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
+    // 将 960×540 渲染坐标系映射到 1280×720 窗口
+    sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
+    window.setView(gameView);
+
     // ── 字体（编译期检测平台，选择对应系统字体）─────────────
     sf::Font font;
     bool fontOk = false;
@@ -821,6 +496,33 @@ int main() {
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
+
+    // ── 地图对象 ───────────────────────────────────────────────
+    auto campusMap     = std::make_unique<CampusMap>();
+    auto dormitoryMap  = std::make_unique<DormitoryInterior>();
+    auto libraryMap    = std::make_unique<LibraryInterior>();
+    auto classroomMap  = std::make_unique<ClassroomInterior>();
+    auto cafeteriaMap  = std::make_unique<CafeteriaInterior>();
+
+    // 设置字体
+    campusMap->setFont(&font);
+    dormitoryMap->setFont(&font);
+    libraryMap->setFont(&font);
+    classroomMap->setFont(&font);
+    cafeteriaMap->setFont(&font);
+
+    BuildingInterior* currentMap = campusMap.get();
+
+    auto setCurrentMap = [&](CampusPlace place) -> BuildingInterior* {
+        switch (place) {
+            case CampusPlace::Campus:    return campusMap.get();
+            case CampusPlace::Dormitory: return dormitoryMap.get();
+            case CampusPlace::Library:   return libraryMap.get();
+            case CampusPlace::Classroom: return classroomMap.get();
+            case CampusPlace::Cafeteria: return cafeteriaMap.get();
+        }
+        return campusMap.get();
+    };
 
     Player player(480.0f, 280.0f);
     player.setName("Protagonist");
@@ -992,6 +694,7 @@ int main() {
     auto finishSceneTransition = [&]() {
         if (hasPendingMapTransition) {
             currentPlace = pendingPlace;
+            currentMap = setCurrentMap(pendingPlace);
             player.setPosition(pendingSpawnPosition.x, pendingSpawnPosition.y);
             player.stopMovement();
             hasPendingMapTransition = false;
@@ -1068,7 +771,6 @@ int main() {
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     player.setPosition(480.0f, 276.0f);
-                    player.stopMovement();
                     screen = GameScreen::GAME;
                 };
 
@@ -1104,7 +806,6 @@ int main() {
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     player.setPosition(480.0f, 276.0f);
-                    player.stopMovement();
                 } else if (code == sf::Keyboard::Key::Num2) {
                     page = DemoPage::SIMPLE_QUEST;
                     resetSimpleDemo();
@@ -1223,7 +924,6 @@ int main() {
             }
 
             player.move(dx, dy, dt);
-            clampPlayerToCurrentPlace(player, currentPlace);
 
             // 按键 C = 压力事件（降低 SAN，触发敌人出现）
             if (justPressed(sf::Keyboard::Key::C)) {
@@ -1270,15 +970,30 @@ int main() {
             }
 
             if (justPressed(sf::Keyboard::Key::Enter)) {
-                for (const auto& portal : portalsForPlace(currentPlace)) {
+                // 第一层：场景传送门（进出建筑）
+                bool portalFound = false;
+                for (const auto& portal : currentMap->getPortals()) {
                     if (pointInRect(player.getPosition(), portal.area)) {
                         startMapTransition(portal);
+                        portalFound = true;
                         break;
+                    }
+                }
+                // 第二层：家具交互点
+                if (!portalFound) {
+                    const InteractionPoint* ip = currentMap->getInteractionAt(player.getPosition());
+                    if (ip) {
+                        std::cout << "[Interact] " << ip->label
+                                  << " (" << ip->actionId << ")"
+                                  << " — " << ip->description << std::endl;
                     }
                 }
             }
 
             player.update(dt);
+
+            // 边界限制，防止走出地图
+            currentMap->clampPlayer(player);
         }
 
         // ── 渲染 ──────────────────────────────────────────────
@@ -1286,7 +1001,8 @@ int main() {
 
         switch (page) {
             case DemoPage::ENTITY:
-                renderCampusTopDownMap(window, font, player, currentPlace);
+                currentMap->render(window);
+                player.render(window);
                 break;
             case DemoPage::SIMPLE_QUEST:
             case DemoPage::MIDTERM_EXAM:
