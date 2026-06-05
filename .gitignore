@@ -8,6 +8,7 @@ build-*/
 build_*/
 build-msys2/
 cmake-build-*/
+CMakeUserPresets.json
 out/
 bin/
 obj/
