@@ -32,6 +32,8 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 // ──────────────────────────────────────────────────────────────
@@ -490,10 +492,18 @@ int main() {
 
     // ── 字体 ────────────────────────────────────────────────
     sf::Font font;
-    bool fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf");
-    if (!fontOk) fontOk = font.openFromFile("/System/Library/Fonts/PingFang.ttc");
-    if (!fontOk) {
-        fontOk = font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+    const std::vector<std::string> fontCandidates = {
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/PingFang.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    };
+    bool fontOk = false;
+    for (const auto& path : fontCandidates) {
+        if (font.openFromFile(path)) { fontOk = true; break; }
     }
     if (!fontOk) {
         std::cerr << "ERROR: Failed to load any font file!" << std::endl;

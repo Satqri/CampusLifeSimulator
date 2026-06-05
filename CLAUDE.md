@@ -33,6 +33,56 @@ brew install sfml nlohmann-json curl
 cmake --preset homebrew -S . -B build && cmake --build build
 ```
 
+### Windows MSYS2（本机开发备选方案）
+
+如果已经安装 MSYS2，可以不使用 vcpkg，直接通过 MSYS2 的包管理器安装依赖并编译。推荐使用 **MSYS2 UCRT64** 终端（不要用普通的 MSYS 终端）：
+
+```bash
+# 进入项目目录
+cd /c/Users/ASUS/Desktop/demo2
+
+# 首次或需要更新时：更新 MSYS2
+pacman -Syu
+# 如果提示关闭窗口，关闭后重新打开 MSYS2 UCRT64，再继续安装依赖
+
+# 安装编译工具和依赖
+pacman -S --needed \
+  mingw-w64-ucrt-x86_64-gcc \
+  mingw-w64-ucrt-x86_64-cmake \
+  mingw-w64-ucrt-x86_64-ninja \
+  mingw-w64-ucrt-x86_64-sfml \
+  mingw-w64-ucrt-x86_64-nlohmann-json \
+  mingw-w64-ucrt-x86_64-curl
+
+# 配置 + 编译
+cmake -S . -B build-msys2 -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-msys2
+
+# 运行
+./build-msys2/CampusLifeSimulator.exe
+```
+
+如果使用的是 **MSYS2 MINGW64** 终端，则依赖包名前缀改为 `mingw-w64-x86_64-`：
+
+```bash
+pacman -S --needed \
+  mingw-w64-x86_64-gcc \
+  mingw-w64-x86_64-cmake \
+  mingw-w64-x86_64-ninja \
+  mingw-w64-x86_64-sfml \
+  mingw-w64-x86_64-nlohmann-json \
+  mingw-w64-x86_64-curl
+```
+
+依赖已安装后，日常启动只需要：
+
+```bash
+cd /c/Users/ASUS/Desktop/demo2
+cmake -S . -B build-msys2 -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-msys2
+./build-msys2/CampusLifeSimulator.exe
+```
+
 ### Docker（跨平台一键构建 + 运行）
 
 不安装任何本地依赖，用 Docker 构建和运行 GUI 窗口：

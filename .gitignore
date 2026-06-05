@@ -1,37 +1,80 @@
 # vcpkg
 vcpkg_installed/
+.vcpkg-root
 
-# Build
+# Build directories
 build/
+build-*/
+build_*/
+build-msys2/
 cmake-build-*/
 out/
+bin/
+obj/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+install_manifest.txt
 compile_commands.json
 
-# IDE
+# Ninja / Make generated files
+.ninja_deps
+.ninja_log
+*.ninja
+Makefile
+
+# IDE / editors
 .vs/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.user
+*.suo
+*.vcxproj.user
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Secrets (API keys etc.)
 assets/config/settings.json
+assets/config/*.local.json
+.env
+.env.*
+!.env.example
 
-# Binaries
+# Binaries / libraries / objects
 *.exe
 *.out
+*.app
 *.o
+*.obj
+*.a
+*.lib
 *.so
+*.so.*
 *.dylib
 *.dll
+*.pdb
+*.ilk
+*.exp
+
+# Logs / runtime files
+*.log
+logs/
 
 # Claude Code (local settings)
 .claude/
 
-# LSP cache
+# LSP / tool cache
 .cache/
+.ccls-cache/
+clangd/
