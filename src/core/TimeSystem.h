@@ -3,6 +3,14 @@
 
 #include <string>
 
+enum class TimePhase {
+    EarlyMorning,
+    Noon,
+    Afternoon,
+    Evening,
+    Night
+};
+
 class TimeSystem {
 public:
     static constexpr int kMaxDay = 14;
@@ -30,7 +38,9 @@ public:
     bool crossedClassTime(int previousMinute) const;
     bool shouldForceClass() const;
     bool isMealTime() const;
+    int mealSlotId() const;
     bool canSleep() const;
+    TimePhase currentPhase() const;
 
     std::string clockText() const;
     std::string dayLabel() const;

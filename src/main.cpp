@@ -154,17 +154,20 @@ struct ChoicePrompt {
     std::string body;
     std::string first;
     std::string second;
+    std::string third;
 
     void show(const std::string& heading, const std::string& message,
-              const std::string& optionA, const std::string& optionB) {
+              const std::string& optionA, const std::string& optionB,
+              const std::string& optionC = "") {
         active = true;
         title = heading;
         body = message;
         first = optionA;
         second = optionB;
+        third = optionC;
     }
 
-    void clear() { active = false; title.clear(); body.clear(); first.clear(); second.clear(); }
+    void clear() { active = false; title.clear(); body.clear(); first.clear(); second.clear(); third.clear(); }
 };
 
 struct TimeSkipFlash {
@@ -290,7 +293,10 @@ void renderChoicePrompt(sf::RenderWindow& window, sf::Font& font, const ChoicePr
     body << prompt.body << "\n\n"
          << "[1] " << prompt.first << "\n"
          << "[2] " << prompt.second;
-    renderModalBox(window, font, prompt.title, body.str(), "Press 1 or 2");
+    if (!prompt.third.empty()) {
+        body << "\n[3] " << prompt.third;
+    }
+    renderModalBox(window, font, prompt.title, body.str(), prompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
 }
 
 void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSkipFlash& flash) {
@@ -628,6 +634,7 @@ int main() {
     TimeSystem timeSystem;
     ActivityNotice activityNotice;
     ChoicePrompt classChoicePrompt;
+    ChoicePrompt mealChoicePrompt;
     TimeSkipFlash timeSkipFlash;
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
@@ -640,6 +647,21 @@ int main() {
     const std::array<std::string, 4> librarySkillNames = {
         "Research", "Reflection", "Logic", "Context"
     };
+    struct MealOption {
+        std::string name;
+        int cost;
+        Attributes reward;
+        std::string description;
+    };
+    const std::array<MealOption, 3> mealOptions = {{
+        {"Meal A", 8,  Attributes(3, 12, 0, 1, 0), "Meal A: Gold -8, SAN +3, Energy +12, Social +1"},
+        {"Meal B", 15, Attributes(6, 20, 0, 2, 0), "Meal B: Gold -15, SAN +6, Energy +20, Social +2"},
+        {"Meal C", 28, Attributes(10, 30, 2, 4, 0), "Meal C: Gold -28, SAN +10, Energy +30, Academic +2, Social +4"}
+    }};
+    int heldMealIndex = -1;
+    int lastMealPickupSlot = -1;
+    int gamePlayDay = 1;
+    int gamesPlayedToday = 0;
 
     // ── 地图对象 ───────────────────────────────────────────────
     auto campusMap     = std::make_unique<CampusMap>();
@@ -651,6 +673,7 @@ int main() {
 
     // 设置字体
     campusMap->setFont(&font);
+    campusMap->setTimeSystem(&timeSystem);
     dormitoryMap->setFont(&font);
     gymMap->setFont(&font);
     libraryMap->setFont(&font);
@@ -942,6 +965,41 @@ int main() {
         }
     };
 
+    auto resolveMealChoice = [&](int mealIndex) {
+        mealChoicePrompt.clear();
+        if (mealIndex < 0 || mealIndex >= static_cast<int>(mealOptions.size())) return;
+        if (!timeSystem.isMealTime()) {
+            activityNotice.show("Meal Time Closed",
+                "Food is available from 12:00-14:00 and 17:00-19:00.");
+            return;
+        }
+        if (heldMealIndex >= 0) {
+            activityNotice.show("Already Holding Food",
+                "You already have a tray. Sit at a table and eat it before taking another meal.");
+            return;
+        }
+
+        const int slot = timeSystem.mealSlotId();
+        if (slot >= 0 && lastMealPickupSlot == slot) {
+            activityNotice.show("Already Served",
+                "You can only take food once during the current meal period.");
+            return;
+        }
+
+        const MealOption& meal = mealOptions[mealIndex];
+        if (player.getAttributes().gold < meal.cost) {
+            activityNotice.show("Not Enough Gold",
+                "You do not have enough Gold for " + meal.name + ".");
+            return;
+        }
+
+        player.modifyAttributes(Attributes(0, 0, 0, 0, -meal.cost));
+        heldMealIndex = mealIndex;
+        lastMealPickupSlot = slot;
+        activityNotice.show("Food Taken",
+            meal.name + " is on your tray. Find a cafeteria table and press Enter to eat.");
+    };
+
     auto sleepFromDormitory = [&]() {
         if (!timeSystem.canSleep()) {
             activityNotice.show("Too Early",
@@ -958,6 +1016,9 @@ int main() {
         player.stopMovement();
         currentPlace = CampusPlace::Dormitory;
         currentMap = dormitoryMap.get();
+        heldMealIndex = -1;
+        gamePlayDay = timeSystem.getDay();
+        gamesPlayedToday = 0;
 
         std::ostringstream body;
         if (timeSystem.isFinished()) {
@@ -1000,15 +1061,41 @@ int main() {
             return;
         }
 
-        if (id == "cafeteria_counter" || id.rfind("cafeteria_table_", 0) == 0) {
+        if (id == "cafeteria_counter") {
             if (!timeSystem.isMealTime()) {
                 activityNotice.show("Meal Time Closed",
                     "Food is available from 12:00-14:00 and 17:00-19:00.");
                 return;
             }
-            runTimedActivity(20, Attributes(5, 18, 0, 2, -15),
-                             "Meal Complete",
-                             "Campus meal placeholder: Gold -15, SAN +5, Energy +18, Social +2.");
+            if (heldMealIndex >= 0) {
+                activityNotice.show("Already Holding Food",
+                    "You already have a tray. Sit at a table and eat it before taking another meal.");
+                return;
+            }
+            const int slot = timeSystem.mealSlotId();
+            if (slot >= 0 && lastMealPickupSlot == slot) {
+                activityNotice.show("Already Served",
+                    "You can only take food once during the current meal period.");
+                return;
+            }
+            mealChoicePrompt.show("Choose Meal",
+                "Take food from the counter, then sit at a table to eat.",
+                mealOptions[0].description,
+                mealOptions[1].description,
+                mealOptions[2].description);
+            return;
+        }
+
+        if (id.rfind("cafeteria_table_", 0) == 0) {
+            if (heldMealIndex < 0) {
+                activityNotice.show("No Food",
+                    "You need to take Meal A, B, or C from the counter before eating at a table.");
+                return;
+            }
+            const MealOption& meal = mealOptions[heldMealIndex];
+            heldMealIndex = -1;
+            runTimedActivity(20, meal.reward, "Meal Complete",
+                             meal.name + " eaten. " + meal.description + ".");
             return;
         }
 
@@ -1035,6 +1122,26 @@ int main() {
             runTimedActivity(45, Attributes(-6, -10, 7, 0, 0),
                              "Study Complete",
                              "Desk study: Academic +7, SAN -6, Energy -10.");
+            return;
+        }
+
+        if (id == "dormitory_games") {
+            if (gamePlayDay != timeSystem.getDay()) {
+                gamePlayDay = timeSystem.getDay();
+                gamesPlayedToday = 0;
+            }
+            ++gamesPlayedToday;
+            if (gamesPlayedToday <= 2) {
+                runTimedActivity(60, Attributes(12, 8, 0, 0, 0),
+                                 "Game Break Complete",
+                                 "Healthy game break: SAN +12, Energy +8. Daily plays: "
+                                     + std::to_string(gamesPlayedToday) + "/2.");
+            } else {
+                runTimedActivity(60, Attributes(4, -12, -2, 0, 0),
+                                 "Overplayed",
+                                 "Too much gaming today: SAN +4, Energy -12, Academic -2. Daily plays: "
+                                     + std::to_string(gamesPlayedToday) + ".");
+            }
             return;
         }
 
@@ -1133,6 +1240,11 @@ int main() {
                     timeSystem = TimeSystem();
                     activityNotice.clear();
                     classChoicePrompt.clear();
+                    mealChoicePrompt.clear();
+                    heldMealIndex = -1;
+                    lastMealPickupSlot = -1;
+                    gamePlayDay = timeSystem.getDay();
+                    gamesPlayedToday = 0;
                     screen = GameScreen::GAME;
                 };
 
@@ -1172,6 +1284,21 @@ int main() {
                     } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2
                                || keyEv->code == sf::Keyboard::Key::Escape) {
                         resolveClassChoice(false);
+                    }
+                }
+                continue;
+            }
+
+            if (mealChoicePrompt.active) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) {
+                        resolveMealChoice(0);
+                    } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) {
+                        resolveMealChoice(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Num3 || keyEv->code == sf::Keyboard::Key::Numpad3) {
+                        resolveMealChoice(2);
+                    } else if (keyEv->code == sf::Keyboard::Key::Escape) {
+                        mealChoicePrompt.clear();
                     }
                 }
                 continue;
@@ -1303,7 +1430,7 @@ int main() {
             continue;
         }
 
-        if (page == DemoPage::ENTITY && !classChoicePrompt.active && !activityNotice.active) {
+        if (page == DemoPage::ENTITY && !classChoicePrompt.active && !mealChoicePrompt.active && !activityNotice.active) {
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -1430,6 +1557,7 @@ int main() {
         }
         renderNotice(window, font, activityNotice);
         renderChoicePrompt(window, font, classChoicePrompt);
+        renderChoicePrompt(window, font, mealChoicePrompt);
 
         window.display();
     }

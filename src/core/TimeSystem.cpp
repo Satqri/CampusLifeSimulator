@@ -57,8 +57,24 @@ bool TimeSystem::isMealTime() const {
     return lunch || dinner;
 }
 
+int TimeSystem::mealSlotId() const {
+    const int minute = displayMinute();
+    if (minute >= 12 * 60 && minute < 14 * 60) return day * 10 + 1;
+    if (minute >= 17 * 60 && minute < 19 * 60) return day * 10 + 2;
+    return -1;
+}
+
 bool TimeSystem::canSleep() const {
     return minuteOfDay >= kSleepAllowedMinute;
+}
+
+TimePhase TimeSystem::currentPhase() const {
+    const int minute = displayMinute();
+    if (minute >= 6 * 60 && minute < 11 * 60) return TimePhase::EarlyMorning;
+    if (minute >= 11 * 60 && minute < 14 * 60) return TimePhase::Noon;
+    if (minute >= 14 * 60 && minute < 17 * 60 + 30) return TimePhase::Afternoon;
+    if (minute >= 17 * 60 + 30 && minute < 18 * 60 + 30) return TimePhase::Evening;
+    return TimePhase::Night;
 }
 
 std::string TimeSystem::clockText() const {
