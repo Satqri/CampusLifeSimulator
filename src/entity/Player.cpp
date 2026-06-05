@@ -1,20 +1,37 @@
 #include "entity/Player.h"
+#include <algorithm>
+#include <cmath>
+
+namespace {
+constexpr float kDefaultMoveSpeed = 210.0f;
+constexpr float kDefaultAcceleration = 900.0f;
+constexpr float kDefaultDeceleration = 1200.0f;
+constexpr float kDefaultStopThreshold = 8.0f;
+
+float vectorLength(const sf::Vector2f& value) {
+    return std::sqrt(value.x * value.x + value.y * value.y);
+}
+}
 
 Player::Player()
     : Character()
-    , moveCooldown(0.15f)
-    , moveCooldownTimer(0.0f)
+    , velocity(0.0f, 0.0f)
+    , acceleration(kDefaultAcceleration)
+    , deceleration(kDefaultDeceleration)
+    , stopSpeedThreshold(kDefaultStopThreshold)
 {
-    setMoveSpeed(210.0f);
+    setMoveSpeed(kDefaultMoveSpeed);
     sprite.setSize(sf::Vector2f(16.0f, 16.0f));
     sprite.setFillColor(sf::Color(100, 200, 255)); // 浅蓝色代表玩家
     sprite.setOrigin({8.0f, 8.0f});
 }
 
 Player::Player(float x, float y)
-    : Character(x, y, Attributes(), 210.0f)
-    , moveCooldown(0.15f)
-    , moveCooldownTimer(0.0f)
+    : Character(x, y, Attributes(), kDefaultMoveSpeed)
+    , velocity(0.0f, 0.0f)
+    , acceleration(kDefaultAcceleration)
+    , deceleration(kDefaultDeceleration)
+    , stopSpeedThreshold(kDefaultStopThreshold)
 {
     sprite.setSize(sf::Vector2f(16.0f, 16.0f));
     sprite.setFillColor(sf::Color(100, 200, 255));
@@ -22,9 +39,7 @@ Player::Player(float x, float y)
 }
 
 void Player::update(float deltaTime) {
-    if (moveCooldownTimer > 0.0f) {
-        moveCooldownTimer -= deltaTime;
-    }
+    (void)deltaTime;
 }
 
 void Player::render(sf::RenderWindow& window) {
@@ -34,14 +49,52 @@ void Player::render(sf::RenderWindow& window) {
 }
 
 void Player::move(float directionX, float directionY, float deltaTime) {
-    if (moveCooldownTimer > 0.0f) return;
-    if (directionX == 0.0f && directionY == 0.0f) return;
+    if (deltaTime <= 0.0f) return;
 
-    float distance = moveSpeed * deltaTime;
-    posX += directionX * distance;
-    posY += directionY * distance;
+    sf::Vector2f inputDirection(directionX, directionY);
+    sf::Vector2f targetVelocity(0.0f, 0.0f);
+    float inputLength = vectorLength(inputDirection);
 
-    moveCooldownTimer = 0.035f;
+    if (inputLength > 0.0f) {
+        if (inputLength > 1.0f) {
+            inputDirection.x /= inputLength;
+            inputDirection.y /= inputLength;
+        }
+        targetVelocity = {inputDirection.x * moveSpeed, inputDirection.y * moveSpeed};
+
+        float accelStep = acceleration * deltaTime;
+        sf::Vector2f velocityDelta(targetVelocity.x - velocity.x, targetVelocity.y - velocity.y);
+        float velocityDeltaLength = vectorLength(velocityDelta);
+        if (velocityDeltaLength <= accelStep || velocityDeltaLength == 0.0f) {
+            velocity = targetVelocity;
+        } else {
+            velocity.x += velocityDelta.x / velocityDeltaLength * accelStep;
+            velocity.y += velocityDelta.y / velocityDeltaLength * accelStep;
+        }
+    } else {
+        float currentSpeed = vectorLength(velocity);
+        if (currentSpeed > 0.0f) {
+            float decelStep = deceleration * deltaTime;
+            float nextSpeed = std::max(0.0f, currentSpeed - decelStep);
+            if (nextSpeed <= stopSpeedThreshold) {
+                velocity = {0.0f, 0.0f};
+            } else {
+                float scale = nextSpeed / currentSpeed;
+                velocity.x *= scale;
+                velocity.y *= scale;
+            }
+        }
+    }
+
+    float currentSpeed = vectorLength(velocity);
+    if (currentSpeed > moveSpeed && currentSpeed > 0.0f) {
+        float scale = moveSpeed / currentSpeed;
+        velocity.x *= scale;
+        velocity.y *= scale;
+    }
+
+    posX += velocity.x * deltaTime;
+    posY += velocity.y * deltaTime;
 }
 
 void Player::modifyAttributes(const Attributes& delta) {
@@ -78,4 +131,8 @@ const CombatBuffs& Player::getCombatBuffs() const {
 
 void Player::clearBuffs() {
     combatBuffs.clear();
+}
+
+void Player::stopMovement() {
+    velocity = {0.0f, 0.0f};
 }

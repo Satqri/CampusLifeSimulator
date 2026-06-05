@@ -6,6 +6,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
+class Player;
+
 /**
  * @class BuildingInterior
  * @brief 建筑地图抽象基类，继承 UIComponent
@@ -46,6 +48,14 @@ public:
     }
 
     void setFont(const sf::Font* f) { font = f; }
+
+    /**
+     * @brief 将玩家限制在当前地图边界内
+     *
+     * 室外地图边界为全屏，室内地图边界为房间框架内。
+     * 超出边界时停止玩家移动。
+     */
+    void clampPlayer(Player& player) const;
 
 protected:
     const sf::Font* font = nullptr;

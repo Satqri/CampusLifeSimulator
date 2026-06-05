@@ -1,7 +1,30 @@
 #include "map/BuildingInterior.h"
+#include "entity/Player.h"
+
+void BuildingInterior::clampPlayer(Player& player) const {
+    float minX = kPlayerHalfSize;
+    float maxX = kRenderWidth - kPlayerHalfSize;
+    float minY = 42.0f + kPlayerHalfSize;
+    float maxY = kRenderHeight - kPlayerHalfSize;
+
+    if (getPlace() != CampusPlace::Campus) {
+        minX = 54.0f + kPlayerHalfSize;
+        maxX = 900.0f - kPlayerHalfSize;
+        minY = 84.0f + kPlayerHalfSize;
+        maxY = 524.0f - kPlayerHalfSize;
+    }
+
+    const sf::Vector2f pos = player.getPosition();
+    const float clampedX = std::clamp(pos.x, minX, maxX);
+    const float clampedY = std::clamp(pos.y, minY, maxY);
+    if (clampedX != pos.x || clampedY != pos.y) {
+        player.setPosition(clampedX, clampedY);
+        player.stopMovement();
+    }
+}
 
 void BuildingInterior::drawRoomFrame(sf::RenderWindow& window, sf::Color floorColor) const {
-    sf::RectangleShape bg({960.0f, 540.0f});
+    sf::RectangleShape bg({kRenderWidth, kRenderHeight});
     bg.setFillColor(floorColor);
     window.draw(bg);
 

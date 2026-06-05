@@ -5,6 +5,16 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <algorithm>
+
+/// 窗口分辨率
+constexpr unsigned int kWindowWidth = 1280;
+constexpr unsigned int kWindowHeight = 720;
+/// 渲染分辨率（像素风格放大前）
+constexpr float kRenderWidth = 960.0f;
+constexpr float kRenderHeight = 540.0f;
+/// 玩家半尺寸（用于边界 clamp）
+constexpr float kPlayerHalfSize = 8.0f;
 
 /**
  * @enum CampusPlace

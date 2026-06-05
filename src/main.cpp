@@ -457,9 +457,13 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
 // ──────────────────────────────────────────────────────────────
 int main() {
     // ── 窗口 ────────────────────────────────────────────────
-    sf::RenderWindow window(sf::VideoMode({960, 540}), "CampusLifeSimulator - Class Demo");
+    sf::RenderWindow window(sf::VideoMode({kWindowWidth, kWindowHeight}), "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
+
+    // 将 960×540 渲染坐标系映射到 1280×720 窗口
+    sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
+    window.setView(gameView);
 
     // ── 字体（编译期检测平台，选择对应系统字体）─────────────
     sf::Font font;
@@ -692,6 +696,7 @@ int main() {
             currentPlace = pendingPlace;
             currentMap = setCurrentMap(pendingPlace);
             player.setPosition(pendingSpawnPosition.x, pendingSpawnPosition.y);
+            player.stopMovement();
             hasPendingMapTransition = false;
         }
         sceneTransition.skip();
@@ -986,6 +991,9 @@ int main() {
             }
 
             player.update(dt);
+
+            // 边界限制，防止走出地图
+            currentMap->clampPlayer(player);
         }
 
         // ── 渲染 ──────────────────────────────────────────────
