@@ -5,14 +5,14 @@ Player::Player()
     , moveCooldown(0.15f)
     , moveCooldownTimer(0.0f)
 {
-    setMoveSpeed(120.0f);
+    setMoveSpeed(210.0f);
     sprite.setSize(sf::Vector2f(16.0f, 16.0f));
     sprite.setFillColor(sf::Color(100, 200, 255)); // 浅蓝色代表玩家
     sprite.setOrigin({8.0f, 8.0f});
 }
 
 Player::Player(float x, float y)
-    : Character(x, y, Attributes(), 120.0f)
+    : Character(x, y, Attributes(), 210.0f)
     , moveCooldown(0.15f)
     , moveCooldownTimer(0.0f)
 {
@@ -41,7 +41,7 @@ void Player::move(float directionX, float directionY, float deltaTime) {
     posX += directionX * distance;
     posY += directionY * distance;
 
-    moveCooldownTimer = moveCooldown;
+    moveCooldownTimer = 0.035f;
 }
 
 void Player::modifyAttributes(const Attributes& delta) {
