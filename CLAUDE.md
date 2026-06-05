@@ -128,23 +128,63 @@ Source globs in CMakeLists.txt (`file(GLOB_RECURSE ...)`) auto-pick up new `.h`/
 
 Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.0. Full design in `plan.md`.
 
-**Planned 5 inheritance trees** (plan.md §继承体系):
+**Inheritance trees** (implemented + planned):
 
 | # | Chain | Levels | Status |
 |---|-------|--------|--------|
 | 1 | `Entity → Character → Player / Enemy` | 3 | Done |
-| 2 | `Event → RandomEvent → LocalEvent / LLMEvent` | 3 | TODO |
-| 3 | `GameState → ExplorationState / EventDialogState / CombatState` | 2 | TODO |
-| 4 | `FileManager → JsonFileManager → SaveManager / ConfigManager` | 3 | TODO |
-| 5 | `UIComponent → HUD / DialogBox` | 2 | TODO |
+| 2 | `MainQuest → SimpleQuest` / `MainQuest → ExamQuest → MidtermExamQuest / FinalExamQuest` | 3 | Done |
+| 3 | `UIComponent → HUD / DialogBox / TitleScreen / DifficultyPanel / HelpPanel / QuestPanel / SceneBackground` | 2 | Done |
+| 4 | `GameState → MainQuestState` (+ planned: ExplorationState / EventDialogState / CombatState) | 2 | Partial |
+| 5 | `Event → RandomEvent → LocalEvent / LLMEvent` | 3 | TODO |
+| 6 | `FileManager → JsonFileManager → SaveManager / ConfigManager` | 3 | TODO |
 
-**Game loop** (state-machine driven): Exploration → event triggers → EventDialog → (if SAN low) → Combat → back to Exploration. Input and updates are dispatched to the current GameState.
+Note: trees 2 and 3 were added during implementation — not in plan.md's original 5 trees.
+
+**Game screen flow** (`GameScreen` enum in main.cpp): `TITLE → DIFFICULTY → GAME`. TitleScreen handles start/help, DifficultyPanel sets Easy/Normal/Hard (modifies player starting attributes), then enters the main game loop.
+
+**Scene / portal system**: `CampusPlace` enum (Campus/Dormitory/Library/Classroom/Cafeteria) + `MapPortal` struct (trigger area → target place + transition background + spawn position). `SceneBackground` renders per-location backgrounds from `assets/backgrounds/`. `SceneTransition` handles the fade-in overlay between scenes.
+
+**UI component tree** (`src/ui/`, all inherit `UIComponent`):
+
+```
+UIComponent (abstract)       — update(dt) + render(window) pure virtual
+├── HUD                      — top status bar: SAN/EN/ACD/SOC/Gold + page name + help hints
+├── DialogBox                — reusable text panel (title + body + custom lines)
+├── TitleScreen              — title screen with background + Start/Help buttons
+├── DifficultyPanel          — 3 difficulty cards (Easy/Normal/Hard)
+├── HelpPanel                — controls & game rules reference
+├── QuestPanel               — quest description, choices, exam status rendering
+└── SceneBackground          — 4 location backgrounds with optional tint
+```
+
+**Quest hierarchy** (`src/quest/`):
+
+```
+MainQuest (abstract)           — questId, questName, currentPhase, choiceTexts/Outcomes
+├── SimpleQuest                — 3-phase flow: Announce → Choice → Result
+└── ExamQuest (abstract)       — multi-round d20 exam: Announce → Prep → Roll → Result → Final
+    ├── MidtermExamQuest       — DC=14, 5 rounds, need 3 passes
+    └── FinalExamQuest         — DC=16, 7 rounds, need 4 passes
+QuestManager                   — JSON factory + event-threshold chain (loads quests.json)
+```
+
+Quest phases (`QuestPhase` enum): `NOT_STARTED → ANNOUNCEMENT → CHOICE/PREPARATION → EXAM_ROUND → ROUND_RESULT → FINAL_RESULT → COMPLETED`. SimpleQuest uses CHOICE; ExamQuest uses PREPARATION → EXAM_ROUND → ROUND_RESULT loop.
+
+**Game loop** (state-machine driven): Exploration → event triggers → EventDialog → (if SAN low) → Combat → back to Exploration. Input and updates are dispatched to the current GameState. Currently only `MainQuestState` is implemented; Exploration/EventDialog/Combat states are TODO.
 
 **Pixel rendering**: render to `sf::RenderTexture` at 320×180, then upscale 3× to 960×540 with `setSmooth(false)`.
 
-**Shared types** (`src/core/Types.h`): `Attributes` struct (san/energy/academic/social/gold, all 0-100 except gold 0-9999), `EmotionType` enum (ANXIETY/DEPRESSION/ANGER/FEAR/LONELINESS).
+**Shared types** (`src/core/Types.h`): `Attributes` struct (san/energy/academic/social/gold, all 0-100 except gold 0-9999), `EmotionType` enum (ANXIETY/DEPRESSION/ANGER/FEAR/LONELINESS), `QuestPhase` enum, `MainQuestType` enum (factory key), `ExamRollResult` struct, `StateType` enum (EXPLORATION/EVENT_DIALOG/COMBAT/MAIN_QUEST/MENU/GAME_OVER).
 
-**SAN-triggered combat**: when player SAN drops below thresholds (30 → critical, 10 → dangerous), enemy difficulty scales with SAN level (0-3). Combat is d20 opposed rolls with attribute modifier `(stat - 50) / 10` (range [-5, +5]).
+**SAN-triggered combat**: when player SAN drops below thresholds (30 → critical, 10 → dangerous), enemy difficulty scales with SAN level (0-3). Combat is d20 opposed rolls with attribute modifier `(stat - 50) / 10` (range [-5, +5]). Each `EmotionType` maps to a different player stat for the opposed roll (e.g., ANXIETY → academic, ANGER → energy).
+
+**Assets** (`assets/`):
+- `backgrounds/` — 4 location PNGs (dormitory, library, classroom, cafeteria)
+- `tilesets/` — pixel art tile sheets + reference images + license docs
+- `ui/` — title screen background image
+- `config/quests.json` — quest chain data (7 quests, threshold-based triggers)
+- `maps/` — (reserved for future tilemap data)
 
 ## Code Conventions
 
@@ -155,12 +195,17 @@ Pixel-art campus life simulator with TRPG d20 combat, built with C++17 + SFML 3.
 - **Attribute clamping**: always call `clampAttributes()` after modifying character stats.
 - **SFML coordinate system**: positions are `float` pixel coordinates, not tile indices.
 - **API keys**: store in `assets/config/settings.json` (git-ignored via `.gitignore`).
+- **Platform-specific code**: use compiler-predefined macros — `__APPLE__` / `_WIN32` / `__linux__`. These are auto-defined by the compiler, no build flags needed. Currently used for font path selection.
+- **Font loading**: runtime fallback loop over a `std::vector<std::string>` of candidate paths, ordered by platform priority (Windows fonts first in the remote version). Add new paths there rather than using compile-time `#if`.
 
 ## Current Status
 
-Phase 1 complete (entity inheritance). `main.cpp` exists as a class demo showcasing all inheritance trees:
-- Page 1: Entity demo — exploration map + SAN-threshold enemy spawning + d20 combat
-- Page 2-4: Quest demos (SimpleQuest / MidtermExam / FinalExam)
-- Page 5: QuestManager demo (JSON factory + quest chain)
+Entity hierarchy + Quest system + QuestManager + all UI components + scene/portal system + MainQuestState all implemented. `main.cpp` is a class demo (not the final game loop) with:
+- Title screen → difficulty selection → game entry flow
+- 6 demo pages: Entity demo, SimpleQuest, MidtermExam, FinalExam, QuestManager, Help/Settings
+- Scene transitions between 5 campus locations with background images
+- SAN-threshold enemy spawning + d20 combat
 
-Next: map system, game loop, and state machine (Phases 2-3 in plan.md).
+No test framework yet.
+
+Next: Exploration/Combat/EventDialog game states, map system, and the full state-machine game loop (Phases 2-3 in plan.md).
