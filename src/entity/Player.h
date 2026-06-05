@@ -19,7 +19,7 @@ struct CombatBuffs {
  * @brief 玩家类，游戏中的玩家角色
  *
  * 继承关系: Entity → Character → Player（3 层继承）
- * 属性: position (继承自 Entity), attributes (继承自 Character), moveCooldown, combatBuffs
+ * 属性: position (继承自 Entity), attributes (继承自 Character), velocity, combatBuffs
  * 行为: 键盘移动、属性修改、SAN 值检测
  * 派生关系: 无（具体类，不再派生）
  */
@@ -35,9 +35,9 @@ public:
      * @param deltaTime 帧间隔时间（秒）
      *
      * 算法步骤:
-     * 1. 检查移动冷却时间是否已过
-     * 2. 计算目标坐标（移动速度 × deltaTime × 方向）
-     * 3. 如可移动，更新位置并重置冷却；否则保持原位
+     * 1. 根据输入方向计算目标速度
+     * 2. 按加速度/减速度平滑调整当前速度
+     * 3. 限制最大速度后推进玩家位置
      */
     void move(float directionX, float directionY, float deltaTime) override;
 
@@ -45,7 +45,7 @@ public:
      * @brief 更新玩家状态（每帧调用）
      * @param deltaTime 帧间隔时间（秒）
      *
-     * 更新冷却时间递减等
+     * 当前用于保留玩家帧更新接口
      */
     void update(float deltaTime) override;
 
@@ -87,9 +87,18 @@ public:
     /** @brief 清除所有战斗增益/减益 */
     void clearBuffs();
 
+    /**
+     * @brief 停止当前移动速度
+     *
+     * 用于场景切换或重置位置后，避免残余惯性继续移动。
+     */
+    void stopMovement();
+
 private:
-    float moveCooldown;         ///< 移动冷却时间（秒）
-    float moveCooldownTimer;    ///< 当前冷却计时器
+    sf::Vector2f velocity;      ///< 当前移动速度
+    float acceleration;         ///< 按住方向键时的加速度
+    float deceleration;         ///< 松开方向键时的减速度
+    float stopSpeedThreshold;   ///< 低于该速度时直接停止，避免抖动
     CombatBuffs combatBuffs;    ///< 战斗增益/减益效果
     sf::RectangleShape sprite;  ///< 简易像素精灵方块
 };

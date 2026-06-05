@@ -960,6 +960,7 @@ int main() {
         if (hasPendingMapTransition) {
             currentPlace = pendingPlace;
             player.setPosition(pendingSpawnPosition.x, pendingSpawnPosition.y);
+            player.stopMovement();
             hasPendingMapTransition = false;
         }
         sceneTransition.skip();
@@ -1034,6 +1035,7 @@ int main() {
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     player.setPosition(480.0f, 276.0f);
+                    player.stopMovement();
                     screen = GameScreen::GAME;
                 };
 
@@ -1069,6 +1071,7 @@ int main() {
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     player.setPosition(480.0f, 276.0f);
+                    player.stopMovement();
                 } else if (code == sf::Keyboard::Key::Num2) {
                     page = DemoPage::SIMPLE_QUEST;
                     resetSimpleDemo();
