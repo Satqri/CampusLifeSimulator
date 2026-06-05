@@ -1,17 +1,18 @@
-﻿/**
+/**
  * @file main.cpp
- * @brief 绫绘紨绀虹▼搴?鈥?灞曠ず Entity/Quest/State/Manager 鍚勭户鎵夸綋绯荤殑鎵€鏈夌被
+ * @brief 类演示程序 — 展示 Entity/Quest/State/Manager 各继承体系的所有类
  *
- * 鎿嶄綔璇存槑:
- *   WASD/鏂瑰悜閿?鈥?绉诲姩鐜╁
- *   1 鈥?Entity 婕旂ず锛堟帰绱?+ SAN 闃堝€艰Е鍙戞垬鏂楋級
- *   2 鈥?SimpleQuest 婕旂ず锛堟柊鐢熸姤鍒?3 娈靛紡浠诲姟锛?
- *   3 鈥?MidtermExamQuest 婕旂ず锛堟湡涓€冭瘯 d20 妫€瀹氾級
- *   4 鈥?FinalExamQuest 婕旂ず锛堟湡鏈€冭瘯 d20 妫€瀹氾級
- *   5 鈥?QuestManager 婕旂ず锛圝SON 鍔犺浇 + 宸ュ巶鍒涘缓 + 浠诲姟閾撅級
- *   C 鈥?闄嶄綆 SAN / 娓呴櫎 buff
- *   F 鈥?涓庨檮杩戞晫浜烘垬鏂?
- *   Enter/鈫戔啌 鈥?浠诲姟妯″紡涓嬫搷浣?
+ * 操作说明:
+ *   WASD/方向键 — 移动玩家
+ *   1 — Entity 演示（探索 + SAN 阈值触发战斗）
+ *   2 — SimpleQuest 演示（新生报到 3 段式任务）
+ *   3 — MidtermExamQuest 演示（期中考试 d20 检定）
+ *   4 — FinalExamQuest 演示（期末考试 d20 检定）
+ *   5 — QuestManager 演示（JSON 加载 + 工厂创建 + 任务链）
+ *   0/6 — Help 帮助/设置页面
+ *   C — 降低 SAN / 清除 buff
+ *   F — 与附近敌人战斗
+ *   Enter — 场景切换 / 任务模式下操作
  */
 
 #include <SFML/Graphics.hpp>
@@ -43,22 +44,22 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 鏈€灏?Game 绫?鈥?MainQuestState 鐨勪緷璧栵紙褰撳墠鏈娇鐢?Game* 鎴愬憳锛?
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 最小 Game 类 — MainQuestState 的依赖（当前未使用 Game* 成员）
+// ──────────────────────────────────────────────────────────────
 class Game {
 public:
     sf::RenderWindow* window = nullptr;
 };
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 婕旂ず妯″紡
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 演示模式
+// ──────────────────────────────────────────────────────────────
 enum class DemoPage {
-    ENTITY,          // Entity 缁ф壙浣撶郴婕旂ず
-    SIMPLE_QUEST,    // SimpleQuest 婕旂ず
-    MIDTERM_EXAM,    // MidtermExamQuest 婕旂ず
-    FINAL_EXAM,      // FinalExamQuest 婕旂ず
+    ENTITY,          // Entity 继承体系演示
+    SIMPLE_QUEST,    // SimpleQuest 演示
+    MIDTERM_EXAM,    // MidtermExamQuest 演示
+    FINAL_EXAM,      // FinalExamQuest 演示
     QUEST_MANAGER,   // QuestManager demo
     HELP             // Help and settings page
 };
@@ -86,9 +87,9 @@ struct MapPortal {
     std::string subtitle;
 };
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 鎴樻枟缁撴灉
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 战斗结果
+// ──────────────────────────────────────────────────────────────
 struct CombatResult {
     bool active = false;
     bool victory = false;
@@ -139,9 +140,9 @@ struct SceneTransition {
     }
 };
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 鏍规嵁鎯呯华绫诲瀷鑾峰彇瀵瑰簲鐜╁灞炴€у€硷紙鐢ㄤ簬鎴樻枟妫€瀹氾級
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 根据情绪类型获取对应玩家属性值（用于战斗检定）
+// ──────────────────────────────────────────────────────────────
 static int statForEmotion(const Player& player, EmotionType type) {
     const auto& a = player.getAttributes();
     switch (type) {
@@ -165,9 +166,9 @@ static const char* actionNameForEmotion(EmotionType type) {
     return "Unknown";
 }
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 娓叉煋褰撳墠灞炴€ч潰鏉匡紙鎵€鏈夋ā寮忎笅閮藉湪椤堕儴鏄剧ず锛?
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 渲染当前属性面板（所有模式下都在顶部显示）
+// ──────────────────────────────────────────────────────────────
 void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
                       const Player& player, DemoPage page) {
     const char* pageNames[] = {
@@ -545,18 +546,18 @@ void renderCampusTopDownMap(sf::RenderWindow& window, sf::Font& font, Player& pl
     window.draw(hint);
 }
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// Entity 婕旂ず: 鎺㈢储鍦板浘 + SAN 闃堝€艰Е鍙戞晫浜哄嚭鐜?
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// Entity 演示: 探索地图 + SAN 阈值触发敌人出现
+// ──────────────────────────────────────────────────────────────
 void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
                    Player& player, std::vector<std::unique_ptr<Enemy>>& activeEnemies,
                    const CombatResult& combatResult) {
-    // --- 鍦板浘鑳屾櫙 ---
+    // --- 地图背景 ---
     sf::RectangleShape mapBg({960.0f, 540.0f});
     mapBg.setFillColor(sf::Color(30, 40, 30));
     window.draw(mapBg);
 
-    // 鍦伴潰缃戞牸
+    // 地面网格
     for (int x = 0; x < 960; x += 32) {
         for (int y = 0; y < 540; y += 32) {
             sf::RectangleShape tile({31.0f, 31.0f});
@@ -566,7 +567,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
         }
     }
 
-    // --- 鎺㈢储鐐逛綅鏍囪锛堜簨浠惰Е鍙戠偣锛?--
+    // --- 探索点位标记（事件触发点）---
     const float markers[4][2] = {{400.f, 160.f}, {600.f, 320.f}, {240.f, 360.f}, {720.f, 120.f}};
     for (auto& m : markers) {
         sf::RectangleShape marker({16.0f, 16.0f});
@@ -581,7 +582,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     markerLabel.setPosition({8.0f, 70.0f});
     window.draw(markerLabel);
 
-    // --- 娓叉煋娲昏穬鏁屼汉锛圫AN 浣庢椂鍑虹幇锛?--
+    // --- 渲染活跃敌人（SAN 低时出现）---
     for (auto& e : activeEnemies) {
         e->render(window);
         sf::Text label(font, e->getName(), 11);
@@ -590,7 +591,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
         label.setPosition({pos.x - 20.0f, pos.y - 18.0f});
         window.draw(label);
 
-        // DC/ATK 淇℃伅
+        // DC/ATK 信息
         std::ostringstream ss;
         ss << "DC:" << e->getDC() << " ATK:" << e->getAttackPower();
         sf::Text info(font, ss.str(), 9);
@@ -599,7 +600,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
         window.draw(info);
     }
 
-    // --- 娓叉煋鐜╁ ---
+    // --- 渲染玩家 ---
     player.render(window);
     sf::Text pLabel(font, "You", 11);
     pLabel.setFillColor(sf::Color(100, 200, 255));
@@ -607,7 +608,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     pLabel.setPosition({ppos.x - 8.0f, ppos.y + 10.0f});
     window.draw(pLabel);
 
-    // --- 璇存槑鏂囧瓧锛堝彸涓嬭锛?--
+    // --- 说明文字（右下角）---
     sf::RectangleShape legendBg({420.0f, 88.0f});
     legendBg.setPosition({530.0f, 444.0f});
     legendBg.setFillColor(sf::Color(0, 0, 0, 200));
@@ -625,7 +626,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     legend.setPosition({536.0f, 448.0f});
     window.draw(legend);
 
-    // --- 鎴樻枟缁撴灉瑕嗙洊 ---
+    // --- 战斗结果覆盖 ---
     if (combatResult.active) {
         sf::RectangleShape overlay({400.0f, 130.0f});
         overlay.setPosition({280.0f, 200.0f});
@@ -649,9 +650,9 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     }
 }
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-// 閫氱敤 Quest UI 娓叉煋锛堢敤浜?SimpleQuest / ExamQuest 婕旂ず锛?
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
+// 通用 Quest UI 渲染（用于 SimpleQuest / ExamQuest 演示）
+// ──────────────────────────────────────────────────────────────
 void renderQuestUI(sf::RenderWindow& window, sf::Font& font,
                    MainQuest* quest, Player* /*player*/) {
     if (!quest) return;
@@ -671,7 +672,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
     title.setPosition({40.0f, 30.0f});
     window.draw(title);
 
-    // 杩涘害淇℃伅
+    // 进度信息
     std::ostringstream info;
     info << "Events Completed: " << qm.getCompletedEventCount()
          << "  |  Current Quest: " << qm.getCurrentQuestIndex() << "/" << qm.getTotalQuests()
@@ -684,7 +685,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
     infoText.setPosition({40.0f, 75.0f});
     window.draw(infoText);
 
-    // 褰撳墠娲昏穬浠诲姟
+    // 当前活跃任务
     auto* curr = qm.getCurrentQuest();
     if (curr) {
         sf::RectangleShape activeBg({880.0f, 100.0f});
@@ -708,13 +709,13 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
         window.draw(activeDesc);
     }
 
-    // 浠诲姟閾惧垪琛?
+    // 任务链列表
     sf::Text chainTitle(font, "Quest Chain (triggered by threshold):", 16);
     chainTitle.setFillColor(sf::Color(200, 200, 200));
     chainTitle.setPosition({40.0f, 230.0f});
     window.draw(chainTitle);
 
-    // 鎵嬪姩璇诲彇 JSON 灞曠ず鍘熷鏁版嵁
+    // 手动读取 JSON 展示原始数据
     using json = nlohmann::json;
     std::ifstream f("assets/config/quests.json");
     if (f.is_open()) {
@@ -742,7 +743,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
         }
     }
 
-    // 鎿嶄綔鎻愮ず
+    // 操作提示
     sf::Text hint(font,
         "[Enter] Create next quest (factory method)  |  [S] Simulate trigger check\n"
         "[E] Simulate completing a random event (+1 count)  |  [C] Reset demo",
@@ -752,35 +753,39 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
     window.draw(hint);
 }
 
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
 // main
-// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+// ──────────────────────────────────────────────────────────────
 int main() {
-    // 鈹€鈹€ 绐楀彛 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── 窗口 ────────────────────────────────────────────────
     sf::RenderWindow window(sf::VideoMode({960, 540}), "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
-    // 鈹€鈹€ 瀛椾綋 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── 字体（编译期检测平台，选择对应系统字体）─────────────
     sf::Font font;
+    bool fontOk = false;
+#if defined(_WIN32)
     const std::vector<std::string> fontCandidates = {
         "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/msyh.ttf",
         "C:/Windows/Fonts/simhei.ttf",
         "C:/Windows/Fonts/arial.ttf",
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
-        "/System/Library/Fonts/PingFang.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     };
-    bool fontOk = false;
     for (const auto& path : fontCandidates) {
         if (font.openFromFile(path)) { fontOk = true; break; }
     }
+#elif defined(__APPLE__)
+    fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf")
+          || font.openFromFile("/System/Library/Fonts/PingFang.ttc");
+#elif defined(__linux__)
+    fontOk = font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+#endif
     if (!fontOk) {
-        std::cerr << "ERROR: Failed to load any font file!" << std::endl;
+        std::cerr << "ERROR: Failed to load font!" << std::endl;
     }
 
-    // 鈹€鈹€ 鍒涘缓 Entity 瀵硅薄 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── 创建 Entity 对象 ─────────────────────────────────────
     TitleScreen titleScreen(font, "assets/ui/campus_title_bg.png");
     DifficultyPanel difficultyPanel(font);
     SceneBackground sceneBackground;
@@ -796,27 +801,27 @@ int main() {
     sf::Vector2f pendingSpawnPosition(480.0f, 276.0f);
     bool hasPendingMapTransition = false;
 
-    // 娲昏穬鏁屼汉鍒楄〃锛圫AN 浣庢椂鍔ㄦ€佺敓鎴愶紝涓嶅湪鎺㈢储鍦板浘涓婇鏀剧疆锛?
+    // 活跃敌人列表（SAN 低时动态生成，不在探索地图上预放置）
     std::vector<std::unique_ptr<Enemy>> activeEnemies;
     CombatResult combatResult;
 
-    // 鈹€鈹€ Quest 瀵硅薄 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── Quest 对象 ───────────────────────────────────────────
     QuestManager questManager;
     questManager.loadQuestChain("assets/config/quests.json");
 
-    // 鐙珛 quest 瀵硅薄鐢ㄤ簬 Simple/Midterm/Final 婕旂ず椤甸潰
+    // 独立 quest 对象用于 Simple/Midterm/Final 演示页面
     MainQuest* currentQuest = nullptr;
     std::unique_ptr<SimpleQuest> simpleQuest;
     std::unique_ptr<MidtermExamQuest> midtermQuest;
     std::unique_ptr<FinalExamQuest> finalExamQuest;
     std::unique_ptr<MainQuest> questManagerQuest;
 
-    // 鈹€鈹€ 鐘舵€?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── 状态 ─────────────────────────────────────────────────
     DemoPage page = DemoPage::ENTITY;
     sf::Clock clock;
     bool keyWasPressed[static_cast<int>(sf::Keyboard::KeyCount)] = {};
 
-    // Lambda: 妫€娴嬪崟娆℃寜閿紙闃叉杩炲彂锛?
+    // Lambda: 检测单次按键（防止连发）
     auto justPressed = [&](sf::Keyboard::Key k) -> bool {
         bool pressed = sf::Keyboard::isKeyPressed(k);
         bool prev = keyWasPressed[static_cast<int>(k)];
@@ -824,24 +829,24 @@ int main() {
         return pressed && !prev;
     };
 
-    // 鈹€鈹€ Entity Demo 鐘舵€?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-    int spawnCounter = 0;   // 姣忔寜 C 绱锛岀敤浜庡喅瀹氱敓鎴愬摢涓儏缁被鍨?
+    // ── Entity Demo 状态 ─────────────────────────────────────
+    int spawnCounter = 0;   // 每按 C 累计，用于决定生成哪个情绪类型
 
-    // Lambda: 灏濊瘯鏍规嵁 SAN 绛夌骇鐢熸垚鏁屼汉
-    // 瑙勫垯: SAN<30 姣忔寜涓€娆?C 姒傜巼鐢熸垚锛堢瓑绾ц秺楂樻鐜囪秺澶э級锛屾渶澶?3 涓椿璺?
+    // Lambda: 尝试根据 SAN 等级生成敌人
+    // 规则: SAN<30 每按一次 C 概率生成（等级越高概率越大），最多 3 个活跃
     auto trySpawnEnemy = [&]() {
         int lvl = player.getSanLevel();
-        if (lvl == 0) return;  // SAN >= 30, 鏃犳晫浜?
+        if (lvl == 0) return;  // SAN >= 30, 无敌人
 
-        // 鏈€澶ф椿璺冩晫浜烘暟闅?SAN 绛夌骇閫掑
+        // 最大活跃敌人数随 SAN 等级递增
         int maxEnemies = (lvl == 1) ? 1 : (lvl == 2) ? 2 : 3;
         if (static_cast<int>(activeEnemies.size()) >= maxEnemies) return;
 
-        // 姒傜巼: lvl=1: 40%, lvl=2: 60%, lvl=3: 90%
+        // 概率: lvl=1: 40%, lvl=2: 60%, lvl=3: 90%
         int chance = lvl == 1 ? 40 : (lvl == 2 ? 60 : 90);
         if ((std::rand() % 100) >= chance) return;
 
-        // 闅忔満鎯呯华绫诲瀷
+        // 随机情绪类型
         EmotionType types[] = {
             EmotionType::ANXIETY, EmotionType::DEPRESSION, EmotionType::ANGER,
             EmotionType::FEAR, EmotionType::LONELINESS
@@ -849,7 +854,7 @@ int main() {
         EmotionType type = types[spawnCounter % 5];
         spawnCounter++;
 
-        // 鍦ㄧ帺瀹堕檮杩戦殢鏈轰綅缃敓鎴?
+        // 在玩家附近随机位置生成
         float ox = player.getPosition().x + ((std::rand() % 160) - 80);
         float oy = player.getPosition().y + ((std::rand() % 160) - 80);
         ox = std::clamp(ox, 40.0f, 920.0f);
@@ -866,11 +871,11 @@ int main() {
                   << " ATK=" << activeEnemies.back()->getAttackPower() << std::endl;
     };
 
-    // Lambda: 涓庨檮杩戞晫浜烘垬鏂?
+    // Lambda: 与附近敌人战斗
     auto fightNearestEnemy = [&]() -> bool {
         if (activeEnemies.empty() || combatResult.active) return false;
 
-        // 鎵炬渶杩戠殑鏁屼汉锛堣窛绂?< 60px 鍐咃級
+        // 找最近的敌人（距离 < 100px 内）
         float minDist = 100.0f;
         int nearestIdx = -1;
         sf::Vector2f pp = player.getPosition();
@@ -889,7 +894,7 @@ int main() {
         Enemy& enemy = *activeEnemies[nearestIdx];
         EmotionType etype = enemy.getEmotionType();
 
-        // 璁＄畻妫€瀹?
+        // 计算检定
         int statVal = statForEmotion(player, etype);
         int modifier = (statVal - 50) / 10;
         int buffMod = player.getCombatBuffs().nextRollModifier;
@@ -917,12 +922,12 @@ int main() {
 
         combatResult.show(win, enemy.getName(), d20, modifier + buffMod, total, dc);
 
-        // 鎴樻枟鍚庢晫浜烘秷澶?
+        // 战斗后敌人消失
         activeEnemies.erase(activeEnemies.begin() + nearestIdx);
         return true;
     };
 
-    // Lambda: 閲嶇疆婕旂ず quest
+    // Lambda: 重置演示 quest
     auto resetSimpleDemo = [&]() {
         simpleQuest = std::make_unique<SimpleQuest>(
             "orientation_demo", "Freshman Orientation",
@@ -965,19 +970,19 @@ int main() {
         sceneTransition.skip();
     };
 
-    // 鍒濆鍖?
+    // 初始化
     resetSimpleDemo();
 
-    // 鈹€鈹€ 涓诲惊鐜?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+    // ── 主循环 ───────────────────────────────────────────────
     while (window.isOpen()) {
         float dt = clock.restart().asSeconds();
 
-        // 鏇存柊鎴樻枟缁撴灉璁℃椂鍣?
+        // 更新战斗结果计时器
         combatResult.update(dt);
         sceneBackground.update(dt);
         sceneTransition.update(dt);
 
-        // 鈹€鈹€ 浜嬩欢澶勭悊 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ── 事件处理 ────────────────────────────────────────
         while (const auto eventOpt = window.pollEvent()) {
             const auto& event = *eventOpt;
 
@@ -1061,7 +1066,7 @@ int main() {
                 continue;
             }
 
-            // 椤甸潰鍒囨崲
+            // 页面切换
             if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                 auto code = keyEv->code;
                 if (code == sf::Keyboard::Key::Num1) {
@@ -1087,7 +1092,7 @@ int main() {
                 }
             }
 
-            // Quest 妯″紡杈撳叆
+            // Quest 模式输入
             if (currentQuest && !currentQuest->isCompleted()
                 && (page == DemoPage::SIMPLE_QUEST || page == DemoPage::MIDTERM_EXAM
                     || page == DemoPage::FINAL_EXAM || page == DemoPage::QUEST_MANAGER)) {
@@ -1106,7 +1111,7 @@ int main() {
                 }
             }
 
-            // QuestManager 椤甸潰浜嬩欢锛堜粎鍦ㄦ棤娲昏穬 quest 鏃惰Е鍙戯級
+            // QuestManager 页面事件（仅在无活跃 quest 时触发）
             if (page == DemoPage::QUEST_MANAGER && !currentQuest) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     auto code = keyEv->code;
@@ -1146,7 +1151,7 @@ int main() {
             }
         }
 
-        // 鈹€鈹€ 鎸佺画鎬ц緭鍏?绉诲姩) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ── 持续性输入(移动) ─────────────────────────────────
         if (screen == GameScreen::TITLE) {
             titleScreen.update(dt);
             window.clear(sf::Color(20, 20, 30));
@@ -1188,34 +1193,34 @@ int main() {
 
             player.move(dx, dy, dt);
 
-            // 鎸夐敭 C = 鍘嬪姏浜嬩欢锛堥檷浣?SAN锛岃Е鍙戞晫浜哄嚭鐜帮級
+            // 按键 C = 压力事件（降低 SAN，触发敌人出现）
             if (justPressed(sf::Keyboard::Key::C)) {
                 player.modifyAttributes(Attributes(-15, 0, 0, 0, 0));
                 int lvl = player.getSanLevel();
                 std::cout << "[Stress] SAN dropped to " << player.getAttributes().san
                           << " Level=" << lvl << std::endl;
-                // 灏濊瘯鐢熸垚鏁屼汉锛圫AN 瓒婁綆姒傜巼瓒婂ぇ锛?
+                // 尝试生成敌人（SAN 越低概率越大）
                 trySpawnEnemy();
             }
 
-            // 鎸夐敭 F = 涓庨檮杩戞晫浜烘垬鏂?
+            // 按键 F = 与附近敌人战斗
             if (justPressed(sf::Keyboard::Key::F)) {
                 if (!fightNearestEnemy()) {
                     std::cout << "[Combat] No enemy nearby! Get closer or spawn one first (press C)." << std::endl;
                 }
             }
 
-            // 鎸夐敭 V = 鎭㈠ SAN锛堟ā鎷熶紤鎭?鑷垜鍏虫€€锛?
+            // 按键 V = 恢复 SAN（模拟休息/自我关怀）
             if (justPressed(sf::Keyboard::Key::V)) {
                 player.modifyAttributes(Attributes(15, 0, 0, 0, 0));
                 int lvl = player.getSanLevel();
-                // 鎭㈠鍚庨噸鏂扮缉鏀惧凡鐢熸垚鐨勬晫浜?
+                // 恢复后重新缩放已生成的敌人
                 for (auto& e : activeEnemies) {
                     e->scaleWithSanLevel(lvl);
                 }
                 std::cout << "[Rest] SAN restored to " << player.getAttributes().san
                           << " Level=" << lvl << std::endl;
-                // SAN 鎭㈠鍚庨儴鍒嗘晫浜烘秷澶?
+                // SAN 恢复后部分敌人消失
                 if (lvl == 0) {
                     activeEnemies.clear();
                     std::cout << "[Combat] All enemies retreated (SAN >= 30)" << std::endl;
@@ -1225,7 +1230,7 @@ int main() {
                 }
             }
 
-            // 鎸夐敭 X = 璁剧疆鎴樻枟 buff
+            // 按键 X = 设置战斗 buff
             if (justPressed(sf::Keyboard::Key::X)) {
                 player.getCombatBuffs().nextEventPositive = true;
                 player.getCombatBuffs().nextRollModifier = 2;
@@ -1244,7 +1249,7 @@ int main() {
             player.update(dt);
         }
 
-        // 鈹€鈹€ 娓叉煋 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ── 渲染 ──────────────────────────────────────────────
         window.clear(sf::Color(20, 20, 30));
 
         switch (page) {
@@ -1271,7 +1276,7 @@ int main() {
             }
         }
 
-        // 椤堕儴灞炴€ч潰鏉匡紙鎵€鏈夐〉闈㈤€氱敤锛?
+        // 顶部属性面板（所有页面通用）
         if (fontOk) {
             renderStatsPanel(window, font, player, page);
         }
