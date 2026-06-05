@@ -19,6 +19,7 @@
 #include <SFML/Window.hpp>
 
 #include "core/AssetPath.h"
+#include "core/TimeSystem.h"
 #include "core/Types.h"
 #include "entity/Player.h"
 #include "entity/Enemy.h"
@@ -133,6 +134,60 @@ struct SceneTransition {
     }
 };
 
+struct ActivityNotice {
+    bool active = false;
+    std::string title;
+    std::string body;
+
+    void show(const std::string& heading, const std::string& message) {
+        active = true;
+        title = heading;
+        body = message;
+    }
+
+    void clear() { active = false; title.clear(); body.clear(); }
+};
+
+struct ChoicePrompt {
+    bool active = false;
+    std::string title;
+    std::string body;
+    std::string first;
+    std::string second;
+
+    void show(const std::string& heading, const std::string& message,
+              const std::string& optionA, const std::string& optionB) {
+        active = true;
+        title = heading;
+        body = message;
+        first = optionA;
+        second = optionB;
+    }
+
+    void clear() { active = false; title.clear(); body.clear(); first.clear(); second.clear(); }
+};
+
+struct TimeSkipFlash {
+    bool active = false;
+    float timer = 0.0f;
+    std::string text;
+
+    void start(const std::string& message) {
+        active = true;
+        timer = 0.58f;
+        text = message;
+    }
+
+    void update(float dt) {
+        if (!active) return;
+        timer -= dt;
+        if (timer <= 0.0f) {
+            active = false;
+            timer = 0.0f;
+        }
+    }
+};
+
 // ──────────────────────────────────────────────────────────────
 // 根据情绪类型获取对应玩家属性值（用于战斗检定）
 // ──────────────────────────────────────────────────────────────
@@ -173,6 +228,81 @@ void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
     hud.setPlayer(&player);
     hud.setPageName(pageNames[static_cast<int>(page)]);
     hud.render(window);
+}
+
+void renderTimePanel(sf::RenderWindow& window, sf::Font& font, const TimeSystem& time) {
+    sf::RectangleShape panel({182.0f, 34.0f});
+    panel.setPosition({655.0f, 4.0f});
+    panel.setFillColor(sf::Color(10, 18, 26, 230));
+    panel.setOutlineColor(time.isMidtermDay() ? sf::Color(255, 190, 90) : sf::Color(80, 96, 118));
+    panel.setOutlineThickness(1.0f);
+    window.draw(panel);
+
+    sf::Text clock(font, time.clockText(), 12);
+    clock.setFillColor(sf::Color(235, 238, 220));
+    clock.setPosition({665.0f, 8.0f});
+    window.draw(clock);
+
+    sf::Text label(font, time.dayLabel(), 10);
+    label.setFillColor(time.isMidtermDay() ? sf::Color(255, 210, 120) : sf::Color(155, 180, 205));
+    label.setPosition({665.0f, 23.0f});
+    window.draw(label);
+}
+
+void renderModalBox(sf::RenderWindow& window, sf::Font& font,
+                    const std::string& title, const std::string& body,
+                    const std::string& footer) {
+    sf::RectangleShape shade({kRenderWidth, kRenderHeight});
+    shade.setFillColor(sf::Color(0, 0, 0, 105));
+    window.draw(shade);
+
+    sf::RectangleShape box({620.0f, 178.0f});
+    box.setPosition({190.0f, 174.0f});
+    box.setFillColor(sf::Color(14, 24, 31, 235));
+    box.setOutlineColor(sf::Color(230, 210, 148, 180));
+    box.setOutlineThickness(2.0f);
+    window.draw(box);
+
+    sf::Text heading(font, title, 22);
+    heading.setFillColor(sf::Color(250, 238, 200));
+    heading.setPosition({218.0f, 196.0f});
+    window.draw(heading);
+
+    sf::Text message(font, body, 15);
+    message.setFillColor(sf::Color(218, 230, 220));
+    message.setPosition({218.0f, 238.0f});
+    window.draw(message);
+
+    sf::Text hint(font, footer, 12);
+    hint.setFillColor(sf::Color(172, 184, 178));
+    hint.setPosition({218.0f, 320.0f});
+    window.draw(hint);
+}
+
+void renderNotice(sf::RenderWindow& window, sf::Font& font, const ActivityNotice& notice) {
+    if (!notice.active) return;
+    renderModalBox(window, font, notice.title, notice.body, "Press Enter to continue");
+}
+
+void renderChoicePrompt(sf::RenderWindow& window, sf::Font& font, const ChoicePrompt& prompt) {
+    if (!prompt.active) return;
+    std::ostringstream body;
+    body << prompt.body << "\n\n"
+         << "[1] " << prompt.first << "\n"
+         << "[2] " << prompt.second;
+    renderModalBox(window, font, prompt.title, body.str(), "Press 1 or 2");
+}
+
+void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSkipFlash& flash) {
+    if (!flash.active) return;
+    sf::RectangleShape blackout({kRenderWidth, kRenderHeight});
+    blackout.setFillColor(sf::Color(0, 0, 0, 245));
+    window.draw(blackout);
+
+    sf::Text text(font, flash.text, 20);
+    text.setFillColor(sf::Color(230, 230, 220));
+    text.setPosition({360.0f, 252.0f});
+    window.draw(text);
 }
 
 void applyDifficulty(Player& player, Difficulty difficulty) {
@@ -495,9 +625,21 @@ int main() {
     DifficultyPanel difficultyPanel(font);
     SceneBackground sceneBackground;
     SceneTransition sceneTransition;
+    TimeSystem timeSystem;
+    ActivityNotice activityNotice;
+    ChoicePrompt classChoicePrompt;
+    TimeSkipFlash timeSkipFlash;
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
+    int selectedLibraryBook = 0;
+    std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
+    const std::array<std::string, 4> libraryBookNames = {
+        "Reference Methods", "Literature Notes", "Science Primer", "Campus History"
+    };
+    const std::array<std::string, 4> librarySkillNames = {
+        "Research", "Reflection", "Logic", "Context"
+    };
 
     // ── 地图对象 ───────────────────────────────────────────────
     auto campusMap     = std::make_unique<CampusMap>();
@@ -707,6 +849,216 @@ int main() {
         sceneTransition.skip();
     };
 
+    auto forceMorningClass = [&]() {
+        timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+        timeSystem.markClassPrompted();
+        currentPlace = CampusPlace::Classroom;
+        currentMap = classroomMap.get();
+
+        std::vector<const InteractionPoint*> desks;
+        for (const auto& ip : classroomMap->getInteractionPoints()) {
+            if (ip.label == "Sit at Desk") desks.push_back(&ip);
+        }
+        if (!desks.empty()) {
+            const InteractionPoint* desk = desks[std::rand() % desks.size()];
+            player.setPosition(desk->area.position.x + desk->area.size.x * 0.5f,
+                               desk->area.position.y + desk->area.size.y * 0.5f);
+        } else {
+            player.setPosition(480.0f, 276.0f);
+        }
+        player.stopMovement();
+
+        classChoicePrompt.show(
+            timeSystem.isMidtermDay() ? "Midterm Morning" : "Morning Class",
+            timeSystem.isMidtermDay()
+                ? "It is Day 7. The midterm starts from this classroom seat."
+                : "The bell rings at 08:50. Choose how to handle this class.",
+            timeSystem.isMidtermDay() ? "Take the midterm seriously" : "Attend class carefully",
+            "Skip class"
+        );
+    };
+
+    auto checkClassSchedule = [&](int previousMinute) {
+        if (timeSystem.crossedClassTime(previousMinute) || timeSystem.shouldForceClass()) {
+            activityNotice.clear();
+            forceMorningClass();
+        }
+    };
+
+    auto showTimedResult = [&](const std::string& title, const std::string& body) {
+        std::ostringstream message;
+        message << body << "\nCurrent time: " << timeSystem.clockText();
+        activityNotice.show(title, message.str());
+    };
+
+    auto runTimedActivity = [&](int minutes, const Attributes& delta,
+                                const std::string& title, const std::string& body) {
+        const int previousMinute = timeSystem.advanceMinutes(minutes);
+        player.modifyAttributes(delta);
+        timeSkipFlash.start("Time passes...");
+        showTimedResult(title, body);
+        checkClassSchedule(previousMinute);
+    };
+
+    auto resolveClassChoice = [&](bool attend) {
+        classChoicePrompt.clear();
+        timeSystem.markClassResolved();
+
+        if (attend) {
+            timeSystem.setTimeAbsolute(TimeSystem::kClassEndMinute);
+            std::ostringstream body;
+            if (timeSystem.isMidtermDay()) {
+                const int roll = (std::rand() % 20) + 1;
+                const int academicBonus = (player.getAttributes().academic - 50) / 10;
+                const int total = roll + academicBonus;
+                const bool passed = total >= 12;
+                player.modifyAttributes(passed
+                    ? Attributes(-10, -16, 12, 0, 0)
+                    : Attributes(-16, -18, 4, 0, 0));
+                body << "Midterm finished. Roll " << roll
+                     << " + Academic Bonus " << academicBonus
+                     << " = " << total << (passed ? " (pass)." : " (struggle).");
+            } else {
+                player.modifyAttributes(Attributes(-8, -12, 8, 0, 0));
+                body << "You focused through the morning lecture. Academic +8, SAN -8, Energy -12.";
+            }
+            timeSkipFlash.start("Class time passes...");
+            showTimedResult(timeSystem.isMidtermDay() ? "Midterm Complete" : "Class Complete", body.str());
+        } else {
+            timeSystem.setTimeAbsolute(TimeSystem::kRollCallMinute);
+            const bool called = (std::rand() % 100) < (timeSystem.isMidtermDay() ? 80 : 45);
+            std::ostringstream body;
+            if (called) {
+                player.modifyAttributes(timeSystem.isMidtermDay()
+                    ? Attributes(-18, -4, -18, -12, 0)
+                    : Attributes(-10, -2, -10, -8, 0));
+                body << "At 10:20 the teacher calls attendance. You are absent and take a penalty.";
+            } else {
+                player.modifyAttributes(Attributes(3, -2, -2, 0, 0));
+                body << "At 10:20 there is no roll call. You avoid the immediate penalty, but lose study momentum.";
+            }
+            timeSkipFlash.start("Skipping class...");
+            showTimedResult("Roll Call Notice", body.str());
+        }
+    };
+
+    auto sleepFromDormitory = [&]() {
+        if (!timeSystem.canSleep()) {
+            activityNotice.show("Too Early",
+                "You can choose sleep after 22:30. Until then, the bed is only a short rest spot.");
+            return;
+        }
+
+        const int sleptMinutes = timeSystem.sleepToNextDay();
+        const int sleptHours = sleptMinutes / 60;
+        const int sanGain = std::min(45, sleptHours * 5);
+        const int energyGain = std::min(70, sleptHours * 8);
+        player.modifyAttributes(Attributes(sanGain, energyGain, 0, 0, 0));
+        player.setPosition(480.0f, 276.0f);
+        player.stopMovement();
+        currentPlace = CampusPlace::Dormitory;
+        currentMap = dormitoryMap.get();
+
+        std::ostringstream body;
+        if (timeSystem.isFinished()) {
+            body << "The 14-day project period is complete. Sleep recovered SAN +"
+                 << sanGain << " and Energy +" << energyGain << ".";
+        } else {
+            body << "You slept " << sleptHours << " hours and woke at 08:00. SAN +"
+                 << sanGain << ", Energy +" << energyGain << ".";
+        }
+        timeSkipFlash.start("Sleeping...");
+        showTimedResult(timeSystem.isFinished() ? "Fourteen Days Complete" : "New Day", body.str());
+    };
+
+    auto handleInteraction = [&](const InteractionPoint& ip) {
+        const std::string& id = ip.actionId;
+
+        if (id.rfind("library_shelf_", 0) == 0) {
+            selectedLibraryBook = std::clamp(id.back() - '0', 0, 3);
+            std::ostringstream body;
+            body << ip.label << " selected " << libraryBookNames[selectedLibraryBook]
+                 << ". Reading progress: " << libraryBookProgress[selectedLibraryBook]
+                 << "%. Browse Shelf does not consume time.";
+            activityNotice.show("Shelf Browsed", body.str());
+            return;
+        }
+
+        if (id == "library_table") {
+            const int book = selectedLibraryBook;
+            libraryBookProgress[book] = std::min(100, libraryBookProgress[book] + 25);
+            Attributes delta(-3, -6, 4, 0, 0);
+            if (book == 1) delta = Attributes(2, -5, 0, 3, 0);
+            if (book == 2) delta = Attributes(-4, -7, 6, 0, 0);
+            if (book == 3) delta = Attributes(-2, -5, 2, 4, 0);
+
+            std::ostringstream body;
+            body << "Read " << libraryBookNames[book] << " for 30 minutes. "
+                 << librarySkillNames[book] << " progress is now "
+                 << libraryBookProgress[book] << "%.";
+            runTimedActivity(30, delta, "Reading Complete", body.str());
+            return;
+        }
+
+        if (id == "cafeteria_counter" || id.rfind("cafeteria_table_", 0) == 0) {
+            if (!timeSystem.isMealTime()) {
+                activityNotice.show("Meal Time Closed",
+                    "Food is available from 12:00-14:00 and 17:00-19:00.");
+                return;
+            }
+            runTimedActivity(20, Attributes(5, 18, 0, 2, -15),
+                             "Meal Complete",
+                             "Campus meal placeholder: Gold -15, SAN +5, Energy +18, Social +2.");
+            return;
+        }
+
+        if (id.rfind("gym_treadmill_", 0) == 0) {
+            runTimedActivity(40, Attributes(-4, -14, 0, 2, 0),
+                             "Training Complete",
+                             "Treadmill run: SAN -4, Energy -14, Social +2.");
+            return;
+        }
+
+        if (id.rfind("gym_barbell_", 0) == 0) {
+            runTimedActivity(40, Attributes(-5, -16, 0, 1, 0),
+                             "Training Complete",
+                             "Barbell training: SAN -5, Energy -16, Social +1.");
+            return;
+        }
+
+        if (id == "dormitory_bed") {
+            sleepFromDormitory();
+            return;
+        }
+
+        if (id == "dormitory_desk") {
+            runTimedActivity(45, Attributes(-6, -10, 7, 0, 0),
+                             "Study Complete",
+                             "Desk study: Academic +7, SAN -6, Energy -10.");
+            return;
+        }
+
+        if (id == "dormitory_rug") {
+            activityNotice.show("Quiet Moment",
+                "You sit down and collect your thoughts. This currently does not consume time.");
+            return;
+        }
+
+        if (id == "classroom_board") {
+            activityNotice.show("Board Reviewed",
+                "The board shows today's notes. Review here is informational and does not consume time.");
+            return;
+        }
+
+        if (id.rfind("classroom_desk_", 0) == 0) {
+            activityNotice.show("Desk",
+                "Morning class is handled by the 08:50 forced class event.");
+            return;
+        }
+
+        activityNotice.show(ip.label, ip.description);
+    };
+
     // 初始化
     resetSimpleDemo();
 
@@ -718,6 +1070,7 @@ int main() {
         combatResult.update(dt);
         sceneBackground.update(dt);
         sceneTransition.update(dt);
+        timeSkipFlash.update(dt);
 
         // ── 事件处理 ────────────────────────────────────────
         while (const auto eventOpt = window.pollEvent()) {
@@ -775,7 +1128,11 @@ int main() {
                     page = DemoPage::ENTITY;
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
+                    currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
+                    timeSystem = TimeSystem();
+                    activityNotice.clear();
+                    classChoicePrompt.clear();
                     screen = GameScreen::GAME;
                 };
 
@@ -799,6 +1156,34 @@ int main() {
                     } else if (action.type == DifficultyActionType::Select) {
                         startGameWithDifficulty(action.difficulty);
                     }
+                }
+                continue;
+            }
+
+            if (timeSkipFlash.active) {
+                continue;
+            }
+
+            if (classChoicePrompt.active) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1
+                        || keyEv->code == sf::Keyboard::Key::Enter) {
+                        resolveClassChoice(true);
+                    } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2
+                               || keyEv->code == sf::Keyboard::Key::Escape) {
+                        resolveClassChoice(false);
+                    }
+                }
+                continue;
+            }
+
+            if (activityNotice.active) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Enter || keyEv->code == sf::Keyboard::Key::Escape) {
+                        activityNotice.clear();
+                    }
+                } else if (event.is<sf::Event::MouseButtonPressed>()) {
+                    activityNotice.clear();
                 }
                 continue;
             }
@@ -911,7 +1296,14 @@ int main() {
             continue;
         }
 
-        if (page == DemoPage::ENTITY) {
+        if (timeSkipFlash.active) {
+            window.clear(sf::Color(0, 0, 0));
+            renderTimeSkipFlash(window, font, timeSkipFlash);
+            window.display();
+            continue;
+        }
+
+        if (page == DemoPage::ENTITY && !classChoicePrompt.active && !activityNotice.active) {
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -991,6 +1383,7 @@ int main() {
                         std::cout << "[Interact] " << ip->label
                                   << " (" << ip->actionId << ")"
                                   << " — " << ip->description << std::endl;
+                        handleInteraction(*ip);
                     }
                 }
             }
@@ -1031,8 +1424,12 @@ int main() {
 
         // 顶部属性面板（所有页面通用）
         if (fontOk) {
+        if (fontOk) {
             renderStatsPanel(window, font, player, page);
+            renderTimePanel(window, font, timeSystem);
         }
+        renderNotice(window, font, activityNotice);
+        renderChoicePrompt(window, font, classChoicePrompt);
 
         window.display();
     }
