@@ -1,0 +1,69 @@
+#ifndef CLS_MAP_MAPPORTAL_H
+#define CLS_MAP_MAPPORTAL_H
+
+#include "ui/SceneBackground.h"
+#include <SFML/Graphics.hpp>
+#include <string>
+#include <vector>
+
+/**
+ * @enum CampusPlace
+ * @brief 校园地点枚举
+ */
+enum class CampusPlace {
+    Campus,
+    Dormitory,
+    Library,
+    Classroom,
+    Cafeteria
+};
+
+/**
+ * @struct MapPortal
+ * @brief 场景传送门 — 玩家走入区域按 Enter 触发场景切换
+ */
+struct MapPortal {
+    sf::FloatRect area;
+    CampusPlace target;
+    SceneBackgroundType transitionBackground;
+    sf::Vector2f spawnPosition;
+    std::string title;
+    std::string subtitle;
+};
+
+/**
+ * @struct InteractionPoint
+ * @brief 建筑内的家具交互点 — 玩家靠近按 Enter 触发事件
+ */
+struct InteractionPoint {
+    sf::FloatRect area;
+    std::string actionId;
+    std::string label;
+    std::string description;
+};
+
+/**
+ * @brief AABB 碰撞检测
+ */
+inline bool pointInRect(sf::Vector2f point, const sf::FloatRect& rect) {
+    return point.x >= rect.position.x
+        && point.x <= rect.position.x + rect.size.x
+        && point.y >= rect.position.y
+        && point.y <= rect.position.y + rect.size.y;
+}
+
+/**
+ * @brief 获取地点显示名称
+ */
+inline std::string placeName(CampusPlace place) {
+    switch (place) {
+        case CampusPlace::Campus:    return "Campus Map";
+        case CampusPlace::Dormitory: return "Dormitory";
+        case CampusPlace::Library:   return "Library";
+        case CampusPlace::Classroom: return "Classroom";
+        case CampusPlace::Cafeteria: return "Cafeteria";
+    }
+    return "Campus";
+}
+
+#endif // CLS_MAP_MAPPORTAL_H
