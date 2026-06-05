@@ -32,6 +32,7 @@
 #include "map/BuildingInterior.h"
 #include "map/CampusMap.h"
 #include "map/DormitoryInterior.h"
+#include "map/GymInterior.h"
 #include "map/LibraryInterior.h"
 #include "map/ClassroomInterior.h"
 #include "map/CafeteriaInterior.h"
@@ -501,6 +502,7 @@ int main() {
     // ── 地图对象 ───────────────────────────────────────────────
     auto campusMap     = std::make_unique<CampusMap>();
     auto dormitoryMap  = std::make_unique<DormitoryInterior>();
+    auto gymMap        = std::make_unique<GymInterior>();
     auto libraryMap    = std::make_unique<LibraryInterior>();
     auto classroomMap  = std::make_unique<ClassroomInterior>();
     auto cafeteriaMap  = std::make_unique<CafeteriaInterior>();
@@ -508,6 +510,7 @@ int main() {
     // 设置字体
     campusMap->setFont(&font);
     dormitoryMap->setFont(&font);
+    gymMap->setFont(&font);
     libraryMap->setFont(&font);
     classroomMap->setFont(&font);
     cafeteriaMap->setFont(&font);
@@ -518,6 +521,7 @@ int main() {
         switch (place) {
             case CampusPlace::Campus:    return campusMap.get();
             case CampusPlace::Dormitory: return dormitoryMap.get();
+            case CampusPlace::Gym:       return gymMap.get();
             case CampusPlace::Library:   return libraryMap.get();
             case CampusPlace::Classroom: return classroomMap.get();
             case CampusPlace::Cafeteria: return cafeteriaMap.get();

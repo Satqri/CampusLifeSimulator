@@ -5,6 +5,7 @@
 
 SceneBackground::SceneBackground() {
     load(SceneBackgroundType::Dormitory, "assets/backgrounds/dormitory.png");
+    load(SceneBackgroundType::Gym, "assets/backgrounds/gym.png");
     load(SceneBackgroundType::Library, "assets/backgrounds/library.png");
     load(SceneBackgroundType::Classroom, "assets/backgrounds/classroom.png");
     load(SceneBackgroundType::Cafeteria, "assets/backgrounds/cafeteria.png");
@@ -30,9 +31,7 @@ void SceneBackground::render(sf::RenderWindow& window, SceneBackgroundType type,
         }
         window.draw(*sprites[i]);
     } else {
-        sf::RectangleShape fallback({960.0f, 540.0f});
-        fallback.setFillColor(sf::Color(30, 40, 45));
-        window.draw(fallback);
+        renderFallback(window, type);
     }
 
     const float breathe = (std::sin(elapsedTime * 0.75f) + 1.0f) * 0.5f;
@@ -47,6 +46,55 @@ void SceneBackground::render(sf::RenderWindow& window, SceneBackgroundType type,
     }
 }
 
+void SceneBackground::renderFallback(sf::RenderWindow& window, SceneBackgroundType type) const {
+    sf::RectangleShape floor({960.0f, 540.0f});
+    floor.setFillColor(type == SceneBackgroundType::Gym
+        ? sf::Color(86, 96, 90)
+        : sf::Color(30, 40, 45));
+    window.draw(floor);
+
+    if (type != SceneBackgroundType::Gym) return;
+
+    sf::RectangleShape mat({720.0f, 300.0f});
+    mat.setPosition({120.0f, 118.0f});
+    mat.setFillColor(sf::Color(54, 70, 67));
+    mat.setOutlineColor(sf::Color(138, 164, 150));
+    mat.setOutlineThickness(4.0f);
+    window.draw(mat);
+
+    for (const sf::Vector2f pos : {sf::Vector2f{166.0f, 174.0f}, sf::Vector2f{596.0f, 174.0f}}) {
+        sf::RectangleShape treadmill({150.0f, 56.0f});
+        treadmill.setPosition(pos);
+        treadmill.setFillColor(sf::Color(34, 42, 44));
+        treadmill.setOutlineColor(sf::Color(150, 176, 166));
+        treadmill.setOutlineThickness(3.0f);
+        window.draw(treadmill);
+
+        sf::RectangleShape belt({106.0f, 24.0f});
+        belt.setPosition({pos.x + 22.0f, pos.y + 16.0f});
+        belt.setFillColor(sf::Color(22, 25, 28));
+        window.draw(belt);
+    }
+
+    for (const sf::Vector2f pos : {sf::Vector2f{178.0f, 326.0f}, sf::Vector2f{348.0f, 326.0f},
+                                  sf::Vector2f{518.0f, 326.0f}, sf::Vector2f{688.0f, 326.0f}}) {
+        sf::RectangleShape bar({92.0f, 10.0f});
+        bar.setPosition({pos.x, pos.y + 16.0f});
+        bar.setFillColor(sf::Color(196, 200, 188));
+        window.draw(bar);
+
+        sf::RectangleShape leftPlate({16.0f, 34.0f});
+        leftPlate.setPosition({pos.x - 12.0f, pos.y + 4.0f});
+        leftPlate.setFillColor(sf::Color(46, 52, 52));
+        window.draw(leftPlate);
+
+        sf::RectangleShape rightPlate({16.0f, 34.0f});
+        rightPlate.setPosition({pos.x + 88.0f, pos.y + 4.0f});
+        rightPlate.setFillColor(sf::Color(46, 52, 52));
+        window.draw(rightPlate);
+    }
+}
+
 void SceneBackground::load(SceneBackgroundType type, const std::string& relativePath) {
     const int i = index(type);
     const std::string resolvedPath = cls::resolveAssetPath(relativePath);
@@ -58,9 +106,10 @@ void SceneBackground::load(SceneBackgroundType type, const std::string& relative
 int SceneBackground::index(SceneBackgroundType type) const {
     switch (type) {
         case SceneBackgroundType::Dormitory: return 0;
-        case SceneBackgroundType::Library: return 1;
-        case SceneBackgroundType::Classroom: return 2;
-        case SceneBackgroundType::Cafeteria: return 3;
+        case SceneBackgroundType::Gym: return 1;
+        case SceneBackgroundType::Library: return 2;
+        case SceneBackgroundType::Classroom: return 3;
+        case SceneBackgroundType::Cafeteria: return 4;
     }
     return 0;
 }

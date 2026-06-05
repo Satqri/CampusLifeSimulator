@@ -9,6 +9,7 @@
 
 enum class SceneBackgroundType {
     Dormitory,
+    Gym,
     Library,
     Classroom,
     Cafeteria
@@ -23,11 +24,12 @@ public:
     void render(sf::RenderWindow& window, SceneBackgroundType type, sf::Color tint = sf::Color(0, 0, 0, 0));
 
 private:
-    std::array<sf::Texture, 4> textures;
-    std::array<std::unique_ptr<sf::Sprite>, 4> sprites;
+    std::array<sf::Texture, 5> textures;
+    std::array<std::unique_ptr<sf::Sprite>, 5> sprites;
     float elapsedTime = 0.0f;
 
     void load(SceneBackgroundType type, const std::string& relativePath);
+    void renderFallback(sf::RenderWindow& window, SceneBackgroundType type) const;
     int index(SceneBackgroundType type) const;
 };
 

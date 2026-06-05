@@ -97,9 +97,10 @@ void CampusMap::render(sf::RenderWindow& window) {
     // 建筑
     const auto portals = getPortals();
     drawBuilding(window, portals[0], "Dorm", sf::Color(176, 112, 72), sf::Color(146, 74, 60));
-    drawBuilding(window, portals[1], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
-    drawBuilding(window, portals[2], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
-    drawBuilding(window, portals[3], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
+    drawBuilding(window, portals[1], "Gym", sf::Color(90, 134, 112), sf::Color(48, 92, 78));
+    drawBuilding(window, portals[2], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
+    drawBuilding(window, portals[3], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
+    drawBuilding(window, portals[4], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
 
     // 喷泉
     sf::CircleShape fountain(24.0f);
@@ -142,6 +143,8 @@ std::vector<MapPortal> CampusMap::getPortals() const {
     return {
         MapPortal{sf::FloatRect({80.0f, 86.0f}, {150.0f, 92.0f}), CampusPlace::Dormitory, SceneBackgroundType::Dormitory,
             {480.0f, 448.0f}, "Dormitory", "Backpacks drop by the bed; the next plan starts from a quiet room."},
+        MapPortal{sf::FloatRect({260.0f, 100.0f}, {110.0f, 76.0f}), CampusPlace::Gym, SceneBackgroundType::Gym,
+            {480.0f, 448.0f}, "Gym", "Rubber mats, bright lights, and steady breathing make room for training."},
         MapPortal{sf::FloatRect({702.0f, 82.0f}, {168.0f, 96.0f}), CampusPlace::Library, SceneBackgroundType::Library,
             {480.0f, 448.0f}, "Library", "Between shelves and desk lamps, tomorrow's answers begin to take shape."},
         MapPortal{sf::FloatRect({92.0f, 352.0f}, {176.0f, 104.0f}), CampusPlace::Classroom, SceneBackgroundType::Classroom,

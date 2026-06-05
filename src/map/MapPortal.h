@@ -23,6 +23,7 @@ constexpr float kPlayerHalfSize = 8.0f;
 enum class CampusPlace {
     Campus,
     Dormitory,
+    Gym,
     Library,
     Classroom,
     Cafeteria
@@ -69,6 +70,7 @@ inline std::string placeName(CampusPlace place) {
     switch (place) {
         case CampusPlace::Campus:    return "Campus Map";
         case CampusPlace::Dormitory: return "Dormitory";
+        case CampusPlace::Gym:       return "Gym";
         case CampusPlace::Library:   return "Library";
         case CampusPlace::Classroom: return "Classroom";
         case CampusPlace::Cafeteria: return "Cafeteria";
