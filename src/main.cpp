@@ -1551,7 +1551,6 @@ int main() {
 
         // 顶部属性面板（所有页面通用）
         if (fontOk) {
-        if (fontOk) {
             renderStatsPanel(window, font, player, page);
             renderTimePanel(window, font, timeSystem);
         }
