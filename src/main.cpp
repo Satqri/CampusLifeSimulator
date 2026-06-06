@@ -19,8 +19,21 @@
 #include <SFML/Window.hpp>
 
 #include "core/AssetPath.h"
+#include "core/CombatResult.h"
+#include "core/LibraryConfig.h"
+#include "core/MealConfig.h"
+#include "core/SceneConfig.h"
+#include "core/SceneTransition.h"
+#include "core/TimeSkipFlash.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
+#include "entity/CombatHelper.h"
+#include "ui/ActivityNotice.h"
+#include "ui/ChoicePrompt.h"
+#include "ui/EntityDemoPage.h"
+#include "ui/ModalBox.h"
+#include "ui/QuestManagerDemoPage.h"
+#include "ui/TimePanel.h"
 #include "entity/Player.h"
 #include "entity/Enemy.h"
 #include "quest/MainQuest.h"
@@ -46,14 +59,11 @@
 
 #include <cmath>
 #include <sstream>
-#include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <array>
 #include <string>
 #include <vector>
 #include <memory>
-#include <nlohmann/json.hpp>
 
 // ──────────────────────────────────────────────────────────────
 // 最小 Game 类 — MainQuestState 的依赖（当前未使用 Game* 成员）
@@ -81,141 +91,17 @@ enum class GameScreen {
     GAME
 };
 
-// ──────────────────────────────────────────────────────────────
-// 战斗结果
-// ──────────────────────────────────────────────────────────────
-struct CombatResult {
-    bool active = false;
-    bool victory = false;
-    float timer = 0.0f;
-    std::string enemyName;
-    int d20Roll = 0;
-    int modifier = 0;
-    int total = 0;
-    int dc = 0;
-
-    void show(bool win, const std::string& name, int d20, int mod, int tot, int d) {
-        active = true; victory = win; timer = 3.0f;
-        enemyName = name; d20Roll = d20; modifier = mod; total = tot; dc = d;
-    }
-    void update(float dt) {
-        if (active) { timer -= dt; if (timer <= 0.0f) active = false; }
-    }
-    void clear() { active = false; timer = 0.0f; }
-};
-
-struct SceneTransition {
-    bool active = false;
-    float timer = 0.0f;
-    SceneBackgroundType background = SceneBackgroundType::Dormitory;
-    std::string title;
-    std::string subtitle;
-
-    void start(SceneBackgroundType bg, const std::string& heading, const std::string& line) {
-        active = true;
-        timer = 0.0f;
-        background = bg;
-        title = heading;
-        subtitle = line;
-    }
-
-    void update(float dt) {
-        if (!active) return;
-        timer += dt;
-    }
-
-    bool canContinue() const {
-        return timer >= 0.45f;
-    }
-
-    void skip() {
-        active = false;
-        timer = 0.0f;
-    }
-};
-
-struct ActivityNotice {
-    bool active = false;
-    std::string title;
-    std::string body;
-
-    void show(const std::string& heading, const std::string& message) {
-        active = true;
-        title = heading;
-        body = message;
-    }
-
-    void clear() { active = false; title.clear(); body.clear(); }
-};
-
-struct ChoicePrompt {
-    bool active = false;
-    std::string title;
-    std::string body;
-    std::string first;
-    std::string second;
-    std::string third;
-
-    void show(const std::string& heading, const std::string& message,
-              const std::string& optionA, const std::string& optionB,
-              const std::string& optionC = "") {
-        active = true;
-        title = heading;
-        body = message;
-        first = optionA;
-        second = optionB;
-        third = optionC;
-    }
-
-    void clear() { active = false; title.clear(); body.clear(); first.clear(); second.clear(); third.clear(); }
-};
-
-struct TimeSkipFlash {
-    bool active = false;
-    float timer = 0.0f;
-    std::string text;
-
-    void start(const std::string& message) {
-        active = true;
-        timer = 0.58f;
-        text = message;
-    }
-
-    void update(float dt) {
-        if (!active) return;
-        timer -= dt;
-        if (timer <= 0.0f) {
-            active = false;
-            timer = 0.0f;
-        }
-    }
-};
+// 数据 struct 已拆离至独立 header：
+//   CombatResult   → src/core/CombatResult.h
+//   SceneTransition → src/core/SceneTransition.h
+//   TimeSkipFlash  → src/core/TimeSkipFlash.h
+//   ActivityNotice → src/ui/ActivityNotice.h
+//   ChoicePrompt   → src/ui/ChoicePrompt.h
 
 // ──────────────────────────────────────────────────────────────
 // 根据情绪类型获取对应玩家属性值（用于战斗检定）
 // ──────────────────────────────────────────────────────────────
-static int statForEmotion(const Player& player, EmotionType type) {
-    const auto& a = player.getAttributes();
-    switch (type) {
-        case EmotionType::ANXIETY:    return a.academic;
-        case EmotionType::ANGER:      return a.energy;
-        case EmotionType::LONELINESS: return a.social;
-        case EmotionType::DEPRESSION: // fallthrough
-        case EmotionType::FEAR:       return a.san;
-    }
-    return a.san;
-}
-
-static const char* actionNameForEmotion(EmotionType type) {
-    switch (type) {
-        case EmotionType::ANXIETY:    return "Rational Analysis";
-        case EmotionType::DEPRESSION: return "Will Stand";
-        case EmotionType::ANGER:      return "Vent / Release";
-        case EmotionType::FEAR:       return "Will Stand";
-        case EmotionType::LONELINESS: return "Confide / Seek Help";
-    }
-    return "Unknown";
-}
+// statForEmotion / actionNameForEmotion 已拆离至 src/entity/CombatHelper.h
 
 // ──────────────────────────────────────────────────────────────
 // 渲染当前属性面板（所有模式下都在顶部显示）
@@ -233,71 +119,11 @@ void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
     hud.render(window);
 }
 
-void renderTimePanel(sf::RenderWindow& window, sf::Font& font, const TimeSystem& time) {
-    sf::RectangleShape panel({182.0f, 34.0f});
-    panel.setPosition({655.0f, 4.0f});
-    panel.setFillColor(sf::Color(10, 18, 26, 230));
-    panel.setOutlineColor(time.isMidtermDay() ? sf::Color(255, 190, 90) : sf::Color(80, 96, 118));
-    panel.setOutlineThickness(1.0f);
-    window.draw(panel);
+// renderTimePanel 已拆离至 src/ui/TimePanel
 
-    sf::Text clock(font, time.clockText(), 12);
-    clock.setFillColor(sf::Color(235, 238, 220));
-    clock.setPosition({665.0f, 8.0f});
-    window.draw(clock);
+// renderModalBox 已拆离至 src/ui/ModalBox
 
-    sf::Text label(font, time.dayLabel(), 10);
-    label.setFillColor(time.isMidtermDay() ? sf::Color(255, 210, 120) : sf::Color(155, 180, 205));
-    label.setPosition({665.0f, 23.0f});
-    window.draw(label);
-}
-
-void renderModalBox(sf::RenderWindow& window, sf::Font& font,
-                    const std::string& title, const std::string& body,
-                    const std::string& footer) {
-    sf::RectangleShape shade({kRenderWidth, kRenderHeight});
-    shade.setFillColor(sf::Color(0, 0, 0, 105));
-    window.draw(shade);
-
-    sf::RectangleShape box({620.0f, 178.0f});
-    box.setPosition({190.0f, 174.0f});
-    box.setFillColor(sf::Color(14, 24, 31, 235));
-    box.setOutlineColor(sf::Color(230, 210, 148, 180));
-    box.setOutlineThickness(2.0f);
-    window.draw(box);
-
-    sf::Text heading(font, title, 22);
-    heading.setFillColor(sf::Color(250, 238, 200));
-    heading.setPosition({218.0f, 196.0f});
-    window.draw(heading);
-
-    sf::Text message(font, body, 15);
-    message.setFillColor(sf::Color(218, 230, 220));
-    message.setPosition({218.0f, 238.0f});
-    window.draw(message);
-
-    sf::Text hint(font, footer, 12);
-    hint.setFillColor(sf::Color(172, 184, 178));
-    hint.setPosition({218.0f, 320.0f});
-    window.draw(hint);
-}
-
-void renderNotice(sf::RenderWindow& window, sf::Font& font, const ActivityNotice& notice) {
-    if (!notice.active) return;
-    renderModalBox(window, font, notice.title, notice.body, "Press Enter to continue");
-}
-
-void renderChoicePrompt(sf::RenderWindow& window, sf::Font& font, const ChoicePrompt& prompt) {
-    if (!prompt.active) return;
-    std::ostringstream body;
-    body << prompt.body << "\n\n"
-         << "[1] " << prompt.first << "\n"
-         << "[2] " << prompt.second;
-    if (!prompt.third.empty()) {
-        body << "\n[3] " << prompt.third;
-    }
-    renderModalBox(window, font, prompt.title, body.str(), prompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
-}
+// renderNotice / renderChoicePrompt 已内联至 main loop，使用 ModalBox 组件
 
 void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSkipFlash& flash) {
     if (!flash.active) return;
@@ -354,138 +180,9 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
     window.draw(hint);
 }
 
-SceneBackgroundType backgroundForPage(DemoPage page) {
-    switch (page) {
-        case DemoPage::ENTITY: return SceneBackgroundType::Dormitory;
-        case DemoPage::SIMPLE_QUEST: return SceneBackgroundType::Cafeteria;
-        case DemoPage::MIDTERM_EXAM:
-        case DemoPage::FINAL_EXAM: return SceneBackgroundType::Classroom;
-        case DemoPage::QUEST_MANAGER: return SceneBackgroundType::Library;
-        case DemoPage::HELP: return SceneBackgroundType::Library;
-    }
-    return SceneBackgroundType::Dormitory;
-}
+// scene_transition 配置已移至 assets/config/scene_transitions.json (由 src/core/SceneConfig.h 加载)
 
-std::pair<std::string, std::string> transitionTextForPage(DemoPage page) {
-    switch (page) {
-        case DemoPage::ENTITY:
-            return {"Dormitory", "A quiet room gives you a moment to gather yourself before the day begins."};
-        case DemoPage::SIMPLE_QUEST:
-            return {"Cafeteria Break", "Warm lights, crowded tables, and one small choice after another."};
-        case DemoPage::MIDTERM_EXAM:
-            return {"Classroom Bell", "The midterm is close; every page reviewed now may matter later."};
-        case DemoPage::FINAL_EXAM:
-            return {"Final Classroom", "The semester narrows to one room, one paper, and one last deep breath."};
-        case DemoPage::QUEST_MANAGER:
-            return {"Library Route", "Plans, deadlines, and future quests gather between the shelves."};
-        case DemoPage::HELP:
-            return {"Campus Guide", "Before moving on, check the rules and controls of campus life."};
-    }
-    return {"Campus", "The next part of the day is about to begin."};
-}
-
-// Entity 演示: 探索地图 + SAN 阈值触发敌人出现
-// ──────────────────────────────────────────────────────────────
-void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
-                   Player& player, std::vector<std::unique_ptr<Enemy>>& activeEnemies,
-                   const CombatResult& combatResult) {
-    // --- 地图背景 ---
-    sf::RectangleShape mapBg({960.0f, 540.0f});
-    mapBg.setFillColor(sf::Color(30, 40, 30));
-    window.draw(mapBg);
-
-    // 地面网格
-    for (int x = 0; x < 960; x += 32) {
-        for (int y = 0; y < 540; y += 32) {
-            sf::RectangleShape tile({31.0f, 31.0f});
-            tile.setPosition({static_cast<float>(x), static_cast<float>(y)});
-            tile.setFillColor(sf::Color(40, 50, 40));
-            window.draw(tile);
-        }
-    }
-
-    // --- 探索点位标记（事件触发点）---
-    const float markers[4][2] = {{400.f, 160.f}, {600.f, 320.f}, {240.f, 360.f}, {720.f, 120.f}};
-    for (auto& m : markers) {
-        sf::RectangleShape marker({16.0f, 16.0f});
-        marker.setPosition({m[0], m[1]});
-        marker.setFillColor(sf::Color(80, 80, 120));
-        marker.setOutlineColor(sf::Color(120, 120, 180));
-        marker.setOutlineThickness(1.0f);
-        window.draw(marker);
-    }
-    sf::Text markerLabel(font, "Event Points (step on to trigger events in full game)", 10);
-    markerLabel.setFillColor(sf::Color(100, 100, 140));
-    markerLabel.setPosition({8.0f, 70.0f});
-    window.draw(markerLabel);
-
-    // --- 渲染活跃敌人（SAN 低时出现）---
-    for (auto& e : activeEnemies) {
-        e->render(window);
-        sf::Text label(font, e->getName(), 11);
-        label.setFillColor(sf::Color(255, 180, 80));
-        auto pos = e->getPosition();
-        label.setPosition({pos.x - 20.0f, pos.y - 18.0f});
-        window.draw(label);
-
-        // DC/ATK 信息
-        std::ostringstream ss;
-        ss << "DC:" << e->getDC() << " ATK:" << e->getAttackPower();
-        sf::Text info(font, ss.str(), 9);
-        info.setFillColor(sf::Color(200, 160, 100));
-        info.setPosition({pos.x - 20.0f, pos.y + 10.0f});
-        window.draw(info);
-    }
-
-    // --- 渲染玩家 ---
-    player.render(window);
-    sf::Text pLabel(font, "You", 11);
-    pLabel.setFillColor(sf::Color(100, 200, 255));
-    auto ppos = player.getPosition();
-    pLabel.setPosition({ppos.x - 8.0f, ppos.y + 10.0f});
-    window.draw(pLabel);
-
-    // --- 说明文字（右下角）---
-    sf::RectangleShape legendBg({420.0f, 88.0f});
-    legendBg.setPosition({530.0f, 444.0f});
-    legendBg.setFillColor(sf::Color(0, 0, 0, 200));
-    window.draw(legendBg);
-
-    sf::Text legend(font,
-        "How it works (aligned with plan.md):\n"
-        "  [C] Stress event -- lowers SAN\n"
-        "  SAN < 30/20/10: enemies randomly appear!\n"
-        "  [F] Fight nearby enemy (d20 combat)\n"
-        "  Enemies are NOT always on map -- they spawn when SAN drops\n"
-        "  Event Points (purple) = exploration triggers (future)",
-        10);
-    legend.setFillColor(sf::Color(180, 180, 190));
-    legend.setPosition({536.0f, 448.0f});
-    window.draw(legend);
-
-    // --- 战斗结果覆盖 ---
-    if (combatResult.active) {
-        sf::RectangleShape overlay({400.0f, 130.0f});
-        overlay.setPosition({280.0f, 200.0f});
-        overlay.setFillColor(sf::Color(20, 20, 40, 230));
-        overlay.setOutlineColor(combatResult.victory ? sf::Color(100, 200, 100) : sf::Color(200, 100, 100));
-        overlay.setOutlineThickness(2.0f);
-        window.draw(overlay);
-
-        std::ostringstream css;
-        css << (combatResult.victory ? "VICTORY!" : "DEFEAT!")
-            << "  vs " << combatResult.enemyName << "\n\n"
-            << "  D20: " << combatResult.d20Roll
-            << " + MOD: " << (combatResult.modifier >= 0 ? "+" : "") << combatResult.modifier
-            << " = " << combatResult.total
-            << " vs DC " << combatResult.dc << "\n\n"
-            << (combatResult.victory ? "  SAN restored! Buff gained!" : "  SAN -15! Debuff applied!");
-        sf::Text resultText(font, css.str(), 14);
-        resultText.setFillColor(combatResult.victory ? sf::Color(100, 255, 100) : sf::Color(255, 100, 100));
-        resultText.setPosition({300.0f, 215.0f});
-        window.draw(resultText);
-    }
-}
+// runEntityDemo 已拆离至 src/ui/EntityDemoPage
 
 // ──────────────────────────────────────────────────────────────
 // 通用 Quest UI 渲染（用于 SimpleQuest / ExamQuest 演示）
@@ -498,97 +195,7 @@ void renderQuestUI(sf::RenderWindow& window, sf::Font& font,
     questPanel.setQuest(quest);
     questPanel.render(window);
 }
-void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
-                            QuestManager& qm) {
-    sf::RectangleShape bg({960.0f, 540.0f});
-    bg.setFillColor(sf::Color(15, 15, 25, 220));
-    window.draw(bg);
-
-    sf::Text title(font, "QuestManager -- JSON Factory + Quest Chain", 26);
-    title.setFillColor(sf::Color::White);
-    title.setPosition({40.0f, 30.0f});
-    window.draw(title);
-
-    // 进度信息
-    std::ostringstream info;
-    info << "Events Completed: " << qm.getCompletedEventCount()
-         << "  |  Current Quest: " << qm.getCurrentQuestIndex() << "/" << qm.getTotalQuests()
-         << "  |  Semester Progress: " << std::fixed << std::setprecision(1)
-         << (qm.getSemesterProgress() * 100.0f) << "%"
-         << "  |  Next Threshold: " << (qm.getNextThreshold() >= 0
-                ? std::to_string(qm.getNextThreshold()) : "None");
-    sf::Text infoText(font, info.str(), 14);
-    infoText.setFillColor(sf::Color(180, 200, 230));
-    infoText.setPosition({40.0f, 75.0f});
-    window.draw(infoText);
-
-    // 当前活跃任务
-    auto* curr = qm.getCurrentQuest();
-    if (curr) {
-        sf::RectangleShape activeBg({880.0f, 100.0f});
-        activeBg.setFillColor(sf::Color(30, 60, 30, 200));
-        activeBg.setPosition({40.0f, 110.0f});
-        window.draw(activeBg);
-
-        sf::Text activeLabel(font, "> Active Quest", 16);
-        activeLabel.setFillColor(sf::Color(100, 255, 100));
-        activeLabel.setPosition({50.0f, 115.0f});
-        window.draw(activeLabel);
-
-        sf::Text activeName(font, curr->getQuestName(), 20);
-        activeName.setFillColor(sf::Color::White);
-        activeName.setPosition({50.0f, 140.0f});
-        window.draw(activeName);
-
-        sf::Text activeDesc(font, curr->getDescription(), 14);
-        activeDesc.setFillColor(sf::Color(200, 200, 200));
-        activeDesc.setPosition({50.0f, 170.0f});
-        window.draw(activeDesc);
-    }
-
-    // 任务链列表
-    sf::Text chainTitle(font, "Quest Chain (triggered by threshold):", 16);
-    chainTitle.setFillColor(sf::Color(200, 200, 200));
-    chainTitle.setPosition({40.0f, 230.0f});
-    window.draw(chainTitle);
-
-    // 手动读取 JSON 展示原始数据
-    using json = nlohmann::json;
-    std::ifstream f(cls::resolveAssetPath("assets/config/quests.json"));
-    if (f.is_open()) {
-        json data = json::parse(f);
-        int idx = 0;
-        for (const auto& q : data["quests"]) {
-            float y = 260.0f + idx * 30.0f;
-            std::string typeStr = q.value("type", "?");
-
-            sf::Color rowColor = (idx == qm.getCurrentQuestIndex())
-                ? sf::Color(255, 200, 100)
-                : sf::Color(150, 150, 150);
-
-            std::ostringstream line;
-            line << "#" << idx << "  [" << q.value("threshold", 0) << " events trigger]  "
-                 << q.value("name", "???") << "  ("
-                 << (typeStr == "midterm_exam" || typeStr == "final_exam"
-                    ? "ExamQuest subclass" : "SimpleQuest")
-                 << ")";
-            sf::Text row(font, line.str(), 13);
-            row.setFillColor(rowColor);
-            row.setPosition({60.0f, y});
-            window.draw(row);
-            idx++;
-        }
-    }
-
-    // 操作提示
-    sf::Text hint(font,
-        "[Enter] Create next quest (factory method)  |  [S] Simulate trigger check\n"
-        "[E] Simulate completing a random event (+1 count)  |  [C] Reset demo",
-        13);
-    hint.setFillColor(sf::Color(130, 130, 150));
-    hint.setPosition({40.0f, 490.0f});
-    window.draw(hint);
-}
+// renderQuestManagerDemo 已拆离至 src/ui/QuestManagerDemoPage
 
 // ──────────────────────────────────────────────────────────────
 // main
@@ -636,28 +243,17 @@ int main() {
     ChoicePrompt classChoicePrompt;
     ChoicePrompt mealChoicePrompt;
     TimeSkipFlash timeSkipFlash;
+    TimePanel timePanel(font);
+    ModalBox modalBox(font);
+    EntityDemoPage entityDemoPage(font);
+    QuestManagerDemoPage questManagerDemoPage(font);
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
-    const std::array<std::string, 4> libraryBookNames = {
-        "Reference Methods", "Literature Notes", "Science Primer", "Campus History"
-    };
-    const std::array<std::string, 4> librarySkillNames = {
-        "Research", "Reflection", "Logic", "Context"
-    };
-    struct MealOption {
-        std::string name;
-        int cost;
-        Attributes reward;
-        std::string description;
-    };
-    const std::array<MealOption, 3> mealOptions = {{
-        {"Meal A", 8,  Attributes(3, 12, 0, 1, 0), "Meal A: Gold -8, SAN +3, Energy +12, Social +1"},
-        {"Meal B", 15, Attributes(6, 20, 0, 2, 0), "Meal B: Gold -15, SAN +6, Energy +20, Social +2"},
-        {"Meal C", 28, Attributes(10, 30, 2, 4, 0), "Meal C: Gold -28, SAN +10, Energy +30, Academic +2, Social +4"}
-    }};
+    auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
+    auto mealOptions = loadMealConfig(cls::resolveAssetPath("assets/config/meals.json"));
     int heldMealIndex = -1;
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
@@ -1038,7 +634,7 @@ int main() {
         if (id.rfind("library_shelf_", 0) == 0) {
             selectedLibraryBook = std::clamp(id.back() - '0', 0, 3);
             std::ostringstream body;
-            body << ip.label << " selected " << libraryBookNames[selectedLibraryBook]
+            body << ip.label << " selected " << libraryBooks[selectedLibraryBook].name
                  << ". Reading progress: " << libraryBookProgress[selectedLibraryBook]
                  << "%. Browse Shelf does not consume time.";
             activityNotice.show("Shelf Browsed", body.str());
@@ -1048,14 +644,11 @@ int main() {
         if (id == "library_table") {
             const int book = selectedLibraryBook;
             libraryBookProgress[book] = std::min(100, libraryBookProgress[book] + 25);
-            Attributes delta(-3, -6, 4, 0, 0);
-            if (book == 1) delta = Attributes(2, -5, 0, 3, 0);
-            if (book == 2) delta = Attributes(-4, -7, 6, 0, 0);
-            if (book == 3) delta = Attributes(-2, -5, 2, 4, 0);
+            const Attributes& delta = libraryBooks[book].delta;
 
             std::ostringstream body;
-            body << "Read " << libraryBookNames[book] << " for 30 minutes. "
-                 << librarySkillNames[book] << " progress is now "
+            body << "Read " << libraryBooks[book].name << " for 30 minutes. "
+                 << libraryBooks[book].skill << " progress is now "
                  << libraryBookProgress[book] << "%.";
             runTimedActivity(30, delta, "Reading Complete", body.str());
             return;
@@ -1537,7 +1130,8 @@ int main() {
                 }
                 break;
             case DemoPage::QUEST_MANAGER:
-                renderQuestManagerDemo(window, font, questManager);
+                questManagerDemoPage.setQuestManager(&questManager);
+                questManagerDemoPage.render(window);
                 if (currentQuest && !currentQuest->isCompleted()) {
                     renderQuestUI(window, font, currentQuest, &player);
                 }
@@ -1552,11 +1146,36 @@ int main() {
         // 顶部属性面板（所有页面通用）
         if (fontOk) {
             renderStatsPanel(window, font, player, page);
-            renderTimePanel(window, font, timeSystem);
+            timePanel.setTimeSystem(&timeSystem);
+            timePanel.render(window);
         }
-        renderNotice(window, font, activityNotice);
-        renderChoicePrompt(window, font, classChoicePrompt);
-        renderChoicePrompt(window, font, mealChoicePrompt);
+        if (activityNotice.active) {
+            modalBox.setContent(activityNotice.title, activityNotice.body,
+                                "Press Enter to continue");
+            modalBox.render(window);
+        }
+        if (classChoicePrompt.active) {
+            std::ostringstream body;
+            body << classChoicePrompt.body << "\n\n"
+                 << "[1] " << classChoicePrompt.first
+                 << "\n[2] " << classChoicePrompt.second;
+            if (!classChoicePrompt.third.empty())
+                body << "\n[3] " << classChoicePrompt.third;
+            modalBox.setContent(classChoicePrompt.title, body.str(),
+                                classChoicePrompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
+            modalBox.render(window);
+        }
+        if (mealChoicePrompt.active) {
+            std::ostringstream body;
+            body << mealChoicePrompt.body << "\n\n"
+                 << "[1] " << mealChoicePrompt.first
+                 << "\n[2] " << mealChoicePrompt.second;
+            if (!mealChoicePrompt.third.empty())
+                body << "\n[3] " << mealChoicePrompt.third;
+            modalBox.setContent(mealChoicePrompt.title, body.str(),
+                                mealChoicePrompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
+            modalBox.render(window);
+        }
 
         window.display();
     }

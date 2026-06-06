@@ -1,23 +1,9 @@
 #include "map/GymInterior.h"
-
-#include <string>
+#include "core/AssetPath.h"
 
 GymInterior::GymInterior() {
-    interactions = {
-        {sf::FloatRect({128.0f, 118.0f}, {190.0f, 76.0f}), "gym_treadmill_0", "Run on Treadmill",
-         "A treadmill by the wall. A focused run could improve energy and clear your head."},
-        {sf::FloatRect({610.0f, 118.0f}, {190.0f, 76.0f}), "gym_treadmill_1", "Run on Treadmill",
-         "A treadmill facing the room. Keep pace and turn stress into motion."},
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        interactions.push_back(InteractionPoint{
-            sf::FloatRect({168.0f + i * 170.0f, 315.0f}, {108.0f, 58.0f}),
-            "gym_barbell_" + std::to_string(i),
-            "Lift Barbell",
-            "A barbell station. Good timing and control could turn effort into strength."
-        });
-    }
+    interactions = loadInteractionsFromJson(
+        cls::resolveAssetPath("assets/config/interiors/gym.json"));
 }
 
 void GymInterior::render(sf::RenderWindow& window) {

@@ -1,0 +1,34 @@
+{
+  "pages": {
+    "ENTITY": {
+      "background": "Dormitory",
+      "title": "Dormitory",
+      "subtitle": "A quiet room gives you a moment to gather yourself before the day begins."
+    },
+    "SIMPLE_QUEST": {
+      "background": "Cafeteria",
+      "title": "Cafeteria Break",
+      "subtitle": "Warm lights, crowded tables, and one small choice after another."
+    },
+    "MIDTERM_EXAM": {
+      "background": "Classroom",
+      "title": "Classroom Bell",
+      "subtitle": "The midterm is close; every page reviewed now may matter later."
+    },
+    "FINAL_EXAM": {
+      "background": "Classroom",
+      "title": "Final Classroom",
+      "subtitle": "The semester narrows to one room, one paper, and one last deep breath."
+    },
+    "QUEST_MANAGER": {
+      "background": "Library",
+      "title": "Library Route",
+      "subtitle": "Plans, deadlines, and future quests gather between the shelves."
+    },
+    "HELP": {
+      "background": "Library",
+      "title": "Campus Guide",
+      "subtitle": "Before moving on, check the rules and controls of campus life."
+    }
+  }
+}
