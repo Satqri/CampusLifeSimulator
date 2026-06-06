@@ -136,3 +136,38 @@ void Player::clearBuffs() {
 void Player::stopMovement() {
     velocity = {0.0f, 0.0f};
 }
+
+// ── Stamina & Canteen ──────────────────────────────────────────────
+
+void Player::restoreStamina(int amount) {
+    attributes.energy = std::min(100, attributes.energy + amount);
+}
+
+void Player::consumeStamina(int amount) {
+    attributes.energy = std::max(0, attributes.energy - amount);
+}
+
+bool Player::canVisitCanteen() const {
+    return canteenVisitsToday < kCanteenLimit;
+}
+
+int Player::getCanteenVisitsToday() const {
+    return canteenVisitsToday;
+}
+
+int Player::getCanteenLimit() const {
+    return kCanteenLimit;
+}
+
+void Player::useCanteenVisit() {
+    if (canteenVisitsToday < kCanteenLimit) canteenVisitsToday++;
+}
+
+void Player::resetCanteenVisits() {
+    canteenVisitsToday = 0;
+}
+
+void Player::advanceToNextDay() {
+    attributes.energy = 100;
+    canteenVisitsToday = 0;
+}

@@ -3,10 +3,8 @@
 
 #include "map/BuildingInterior.h"
 
-/**
- * @class DormitoryInterior
- * @brief 宿舍室内场景
- */
+class Student;
+
 class DormitoryInterior : public BuildingInterior {
 public:
     DormitoryInterior();
@@ -14,6 +12,11 @@ public:
     void render(sf::RenderWindow& window) override;
     std::vector<MapPortal> getPortals() const override;
     CampusPlace getPlace() const override { return CampusPlace::Dormitory; }
+
+    void setStudent(Student* s) { student = s; }
+
+private:
+    Student* student = nullptr;
 };
 
-#endif // CLS_MAP_DORMITORYINTERIOR_H
+#endif

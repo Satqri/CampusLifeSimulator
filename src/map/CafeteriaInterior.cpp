@@ -1,20 +1,18 @@
 #include "map/CafeteriaInterior.h"
+#include "entity/Student.h"
 #include <string>
 
 CafeteriaInterior::CafeteriaInterior() {
-    // 柜台
     interactions.push_back(InteractionPoint{
-        sf::FloatRect({100.0f, 94.0f}, {760.0f, 70.0f}), "cafeteria_counter", "Get Food",
-        "The counter is lined with hot dishes. A good meal could restore your energy."});
+        sf::FloatRect({100.0f, 94.0f}, {760.0f, 70.0f}),
+        "cafeteria_counter", "Get Food",
+        "The counter is lined with hot dishes."});
 
-    // 桌子 × 5
     for (int i = 0; i < 5; ++i) {
         interactions.push_back(InteractionPoint{
             sf::FloatRect({130.0f + i * 160.0f, 278.0f}, {84.0f, 58.0f}),
-            "cafeteria_table_" + std::to_string(i),
-            "Eat at Table",
-            "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
-        });
+            "cafeteria_table_" + std::to_string(i), "Eat at Table",
+            "A table in the cafeteria."});
     }
 }
 
@@ -40,14 +38,25 @@ void CafeteriaInterior::render(sf::RenderWindow& window) {
         window.draw(table);
     }
 
+    // Always render NPC regardless of daily limits
+    if (student) {
+        student->render(window);
+        if (font) {
+            sf::Text label(*font, "Chef (L to order)", 10);
+            label.setFillColor(sf::Color(255, 200, 100));
+            auto sp = student->getPosition();
+            label.setPosition({sp.x - 40.0f, sp.y + 20.0f});
+            window.draw(label);
+        }
+    }
+
     drawExitPortal(window);
     drawPortalMarkers(window);
 }
 
 std::vector<MapPortal> CafeteriaInterior::getPortals() const {
-    return {
-        MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
-                  SceneBackgroundType::Cafeteria, {480.0f, 448.0f},
-                  "Campus Square", "The main paths open again; choose where the day goes next."}
-    };
+    return { MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}),
+            CampusPlace::Campus, SceneBackgroundType::Cafeteria,
+            {480.0f, 448.0f}, "Campus Square",
+            "The main paths open again."} };
 }
