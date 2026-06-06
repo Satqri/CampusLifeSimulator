@@ -21,7 +21,14 @@
 #include "core/TimeSkipFlash.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
+#include "combat/CombatSystem.h"
+#include "engine/GameContext.h"
 #include "entity/CombatHelper.h"
+#include "interaction/CafeteriaInteraction.h"
+#include "interaction/ClassroomInteraction.h"
+#include "interaction/DormitoryInteraction.h"
+#include "interaction/GymInteraction.h"
+#include "interaction/LibraryInteraction.h"
 #include "ui/ActivityNotice.h"
 #include "ui/ChoicePrompt.h"
 #include "ui/ModalBox.h"
@@ -254,411 +261,122 @@ int main() {
         return pressed && !prev;
     };
 
-    // ── Entity Demo 状态 ─────────────────────────────────────
-    int spawnCounter = 0;   // 每按 C 累计，用于决定生成哪个情绪类型
+    // ── 战斗状态 ─────────────────────────────────────────────
+    int spawnCounter = 0;
 
-    // Lambda: 尝试根据 SAN 等级生成敌人
-    // 规则: SAN<30 每按一次 C 概率生成（等级越高概率越大），最多 3 个活跃
-    auto trySpawnEnemy = [&]() {
-        int lvl = player.getSanLevel();
-        if (lvl == 0) return;  // SAN >= 30, 无敌人
-
-        // 最大活跃敌人数随 SAN 等级递增
-        int maxEnemies = (lvl == 1) ? 1 : (lvl == 2) ? 2 : 3;
-        if (static_cast<int>(activeEnemies.size()) >= maxEnemies) return;
-
-        // 概率: lvl=1: 40%, lvl=2: 60%, lvl=3: 90%
-        int chance = lvl == 1 ? 40 : (lvl == 2 ? 60 : 90);
-        if ((std::rand() % 100) >= chance) return;
-
-        // 随机情绪类型
-        EmotionType types[] = {
-            EmotionType::ANXIETY, EmotionType::DEPRESSION, EmotionType::ANGER,
-            EmotionType::FEAR, EmotionType::LONELINESS
-        };
-        EmotionType type = types[spawnCounter % 5];
-        spawnCounter++;
-
-        // 在玩家附近随机位置生成
-        float ox = player.getPosition().x + ((std::rand() % 160) - 80);
-        float oy = player.getPosition().y + ((std::rand() % 160) - 80);
-        ox = std::clamp(ox, 40.0f, 920.0f);
-        oy = std::clamp(oy, 80.0f, 500.0f);
-
-        auto enemy = std::make_unique<Enemy>(ox, oy, type, 12, 5);
-        enemy->scaleWithSanLevel(lvl);
-        activeEnemies.push_back(std::move(enemy));
-
-        std::cout << "[Combat] " << activeEnemies.back()->getName()
-                  << " appeared! SAN=" << player.getAttributes().san
-                  << " Level=" << lvl
-                  << " DC=" << activeEnemies.back()->getDC()
-                  << " ATK=" << activeEnemies.back()->getAttackPower() << std::endl;
+    // ── GameContext：打包共享状态给各 handler ──────────────────
+    GameContext ctx{
+        player, currentPlace, currentMap,
+        campusMap.get(), dormitoryMap.get(), gymMap.get(),
+        libraryMap.get(), classroomMap.get(), cafeteriaMap.get(),
+        timeSystem, combatResult, timeSkipFlash,
+        activityNotice, classChoicePrompt, mealChoicePrompt,
+        pendingPlace, pendingSpawnPosition, hasPendingMapTransition,
+        activeEnemies, mealOptions, libraryBooks, libraryBookProgress,
+        selectedLibraryBook, heldMealIndex, lastMealPickupSlot,
+        gamePlayDay, gamesPlayedToday, spawnCounter,
+        {}, {}, {}, {}  // callbacks 稍后注入
     };
 
-    // Lambda: 与附近敌人战斗
-    auto fightNearestEnemy = [&]() -> bool {
-        if (activeEnemies.empty() || combatResult.active) return false;
+    // ── 核心回调（handler 通过 ctx 调用）───────────────────────
+    auto showTimedResult = [&ctx](const std::string& title, const std::string& body) {
+        std::ostringstream message;
+        message << body << "\nCurrent time: " << ctx.timeSystem.clockText();
+        ctx.activityNotice.show(title, message.str());
+    };
 
-        // 找最近的敌人（距离 < 100px 内）
-        float minDist = 100.0f;
-        int nearestIdx = -1;
-        sf::Vector2f pp = player.getPosition();
-        for (int i = 0; i < static_cast<int>(activeEnemies.size()); ++i) {
-            sf::Vector2f ep = activeEnemies[i]->getPosition();
-            float dx = pp.x - ep.x;
-            float dy = pp.y - ep.y;
-            float dist = std::sqrt(dx * dx + dy * dy);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestIdx = i;
-            }
+    auto checkClassSchedule = [&ctx](int prev) {
+        ClassroomInteraction::checkClassSchedule(ctx, prev);
+    };
+
+    auto sleepFromDormitory = [&ctx, &showTimedResult]() {
+        if (!ctx.timeSystem.canSleep()) {
+            ctx.activityNotice.show("Too Early",
+                "You can choose sleep after 22:30.");
+            return;
         }
-        if (nearestIdx < 0) return false;
-
-        Enemy& enemy = *activeEnemies[nearestIdx];
-        EmotionType etype = enemy.getEmotionType();
-
-        // 计算检定
-        int statVal = statForEmotion(player, etype);
-        int modifier = (statVal - 50) / 10;
-        int buffMod = player.getCombatBuffs().nextRollModifier;
-        int d20 = (std::rand() % 20) + 1;
-        int total = d20 + modifier + buffMod;
-        int dc = enemy.getDC();
-        bool win = total >= dc;
-
-        std::cout << "[Combat] " << actionNameForEmotion(etype)
-                  << " vs " << enemy.getName()
-                  << " | D20:" << d20 << " MOD:" << modifier
-                  << " Buff:" << buffMod << " = " << total
-                  << " vs DC:" << dc
-                  << " -> " << (win ? "WIN" : "LOSE") << std::endl;
-
-        if (win) {
-            player.modifyAttributes(Attributes(20, 0, 0, 0, 0));
-            player.getCombatBuffs().nextEventPositive = true;
-            player.getCombatBuffs().nextRollModifier = 2;
+        const int sleptMinutes = ctx.timeSystem.sleepToNextDay();
+        const int sleptHours = sleptMinutes / 60;
+        const int sanGain = std::min(45, sleptHours * 5);
+        const int energyGain = std::min(70, sleptHours * 8);
+        ctx.player.modifyAttributes(Attributes(sanGain, energyGain, 0, 0, 0));
+        ctx.player.setPosition(480.0f, 276.0f);
+        ctx.player.stopMovement();
+        ctx.currentPlace = CampusPlace::Dormitory;
+        ctx.currentMap = ctx.dormitoryMap;
+        ctx.heldMealIndex = -1;
+        ctx.gamePlayDay = ctx.timeSystem.getDay();
+        ctx.gamesPlayedToday = 0;
+        std::ostringstream body;
+        if (ctx.timeSystem.isFinished()) {
+            body << "The 14-day project period is complete. SAN +"
+                 << sanGain << ", Energy +" << energyGain << ".";
         } else {
-            player.modifyAttributes(Attributes(-15, 0, 0, 0, 0));
-            player.getCombatBuffs().nextEventPositive = false;
-            player.getCombatBuffs().nextRollModifier = -2;
+            body << "You slept " << sleptHours << " hours. SAN +"
+                 << sanGain << ", Energy +" << energyGain << ".";
         }
-
-        combatResult.show(win, enemy.getName(), d20, modifier + buffMod, total, dc);
-
-        // 战斗后敌人消失
-        activeEnemies.erase(activeEnemies.begin() + nearestIdx);
-        return true;
+        ctx.timeSkipFlash.start("Sleeping...");
+        showTimedResult(ctx.timeSystem.isFinished()
+            ? "Fourteen Days Complete" : "New Day", body.str());
     };
 
-    auto startMapTransition = [&](const MapPortal& portal) {
-        pendingPlace = portal.target;
-        pendingSpawnPosition = portal.spawnPosition;
-        hasPendingMapTransition = true;
+    auto runTimedActivity = [&ctx, &checkClassSchedule, &showTimedResult](
+            int minutes, const Attributes& delta,
+            const std::string& title, const std::string& body) {
+        const int prev = ctx.timeSystem.advanceMinutes(minutes);
+        ctx.player.modifyAttributes(delta);
+        ctx.timeSkipFlash.start("Time passes...");
+        showTimedResult(title, body);
+        checkClassSchedule(prev);
+    };
+
+    ctx.runTimedActivity = runTimedActivity;
+    ctx.showTimedResult = showTimedResult;
+    ctx.checkClassSchedule = checkClassSchedule;
+    ctx.sleepFromDormitory = sleepFromDormitory;
+
+    // ── 薄封装 lambda ──────────────────────────────────────────
+    auto trySpawnEnemy = [&ctx]() {
+        CombatSystem::trySpawnEnemy(ctx);
+    };
+
+    auto fightNearestEnemy = [&ctx]() -> bool {
+        return CombatSystem::fightNearestEnemy(ctx);
+    };
+
+    auto startMapTransition = [&ctx, &sceneTransition](const MapPortal& portal) {
+        ctx.pendingPlace = portal.target;
+        ctx.pendingSpawnPosition = portal.spawnPosition;
+        ctx.hasPendingMapTransition = true;
         sceneTransition.start(portal.transitionBackground, portal.title, portal.subtitle);
     };
 
-    auto finishSceneTransition = [&]() {
-        if (hasPendingMapTransition) {
-            currentPlace = pendingPlace;
-            currentMap = setCurrentMap(pendingPlace);
-            player.setPosition(pendingSpawnPosition.x, pendingSpawnPosition.y);
-            player.stopMovement();
-            hasPendingMapTransition = false;
+    auto finishSceneTransition = [&ctx, &setCurrentMap, &sceneTransition]() {
+        if (ctx.hasPendingMapTransition) {
+            ctx.currentPlace = ctx.pendingPlace;
+            ctx.currentMap = setCurrentMap(ctx.pendingPlace);
+            ctx.player.setPosition(ctx.pendingSpawnPosition.x, ctx.pendingSpawnPosition.y);
+            ctx.player.stopMovement();
+            ctx.hasPendingMapTransition = false;
         }
         sceneTransition.skip();
     };
 
-    auto forceMorningClass = [&]() {
-        timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
-        timeSystem.markClassPrompted();
-        currentPlace = CampusPlace::Classroom;
-        currentMap = classroomMap.get();
-
-        std::vector<const InteractionPoint*> desks;
-        for (const auto& ip : classroomMap->getInteractionPoints()) {
-            if (ip.label == "Sit at Desk") desks.push_back(&ip);
-        }
-        if (!desks.empty()) {
-            const InteractionPoint* desk = desks[std::rand() % desks.size()];
-            player.setPosition(desk->area.position.x + desk->area.size.x * 0.5f,
-                               desk->area.position.y + desk->area.size.y * 0.5f);
-        } else {
-            player.setPosition(480.0f, 276.0f);
-        }
-        player.stopMovement();
-
-        classChoicePrompt.show(
-            timeSystem.isMidtermDay() ? "Midterm Morning" : "Morning Class",
-            timeSystem.isMidtermDay()
-                ? "It is Day 7. The midterm starts from this classroom seat."
-                : "The bell rings at 08:50. Choose how to handle this class.",
-            timeSystem.isMidtermDay() ? "Take the midterm seriously" : "Attend class carefully",
-            "Skip class"
-        );
+    auto resolveClassChoice = [&ctx](bool attend) {
+        ClassroomInteraction::resolveClassChoice(ctx, attend);
     };
 
-    auto checkClassSchedule = [&](int previousMinute) {
-        if (timeSystem.crossedClassTime(previousMinute) || timeSystem.shouldForceClass()) {
-            activityNotice.clear();
-            forceMorningClass();
-        }
+    auto resolveMealChoice = [&ctx](int mealIndex) {
+        CafeteriaInteraction::resolveMealChoice(ctx, mealIndex);
     };
 
-    auto showTimedResult = [&](const std::string& title, const std::string& body) {
-        std::ostringstream message;
-        message << body << "\nCurrent time: " << timeSystem.clockText();
-        activityNotice.show(title, message.str());
-    };
-
-    auto runTimedActivity = [&](int minutes, const Attributes& delta,
-                                const std::string& title, const std::string& body) {
-        const int previousMinute = timeSystem.advanceMinutes(minutes);
-        player.modifyAttributes(delta);
-        timeSkipFlash.start("Time passes...");
-        showTimedResult(title, body);
-        checkClassSchedule(previousMinute);
-    };
-
-    auto resolveClassChoice = [&](bool attend) {
-        classChoicePrompt.clear();
-        timeSystem.markClassResolved();
-
-        if (attend) {
-            timeSystem.setTimeAbsolute(TimeSystem::kClassEndMinute);
-            std::ostringstream body;
-            if (timeSystem.isMidtermDay()) {
-                const int roll = (std::rand() % 20) + 1;
-                const int academicBonus = (player.getAttributes().academic - 50) / 10;
-                const int total = roll + academicBonus;
-                const bool passed = total >= 12;
-                player.modifyAttributes(passed
-                    ? Attributes(-10, -16, 12, 0, 0)
-                    : Attributes(-16, -18, 4, 0, 0));
-                body << "Midterm finished. Roll " << roll
-                     << " + Academic Bonus " << academicBonus
-                     << " = " << total << (passed ? " (pass)." : " (struggle).");
-            } else {
-                player.modifyAttributes(Attributes(-8, -12, 8, 0, 0));
-                body << "You focused through the morning lecture. Academic +8, SAN -8, Energy -12.";
-            }
-            timeSkipFlash.start("Class time passes...");
-            showTimedResult(timeSystem.isMidtermDay() ? "Midterm Complete" : "Class Complete", body.str());
-        } else {
-            timeSystem.setTimeAbsolute(TimeSystem::kRollCallMinute);
-            const bool called = (std::rand() % 100) < (timeSystem.isMidtermDay() ? 80 : 45);
-            std::ostringstream body;
-            if (called) {
-                player.modifyAttributes(timeSystem.isMidtermDay()
-                    ? Attributes(-18, -4, -18, -12, 0)
-                    : Attributes(-10, -2, -10, -8, 0));
-                body << "At 10:20 the teacher calls attendance. You are absent and take a penalty.";
-            } else {
-                player.modifyAttributes(Attributes(3, -2, -2, 0, 0));
-                body << "At 10:20 there is no roll call. You avoid the immediate penalty, but lose study momentum.";
-            }
-            timeSkipFlash.start("Skipping class...");
-            showTimedResult("Roll Call Notice", body.str());
-        }
-    };
-
-    auto resolveMealChoice = [&](int mealIndex) {
-        mealChoicePrompt.clear();
-        if (mealIndex < 0 || mealIndex >= static_cast<int>(mealOptions.size())) return;
-        if (!timeSystem.isMealTime()) {
-            activityNotice.show("Meal Time Closed",
-                "Food is available from 12:00-14:00 and 17:00-19:00.");
-            return;
-        }
-        if (heldMealIndex >= 0) {
-            activityNotice.show("Already Holding Food",
-                "You already have a tray. Sit at a table and eat it before taking another meal.");
-            return;
-        }
-
-        const int slot = timeSystem.mealSlotId();
-        if (slot >= 0 && lastMealPickupSlot == slot) {
-            activityNotice.show("Already Served",
-                "You can only take food once during the current meal period.");
-            return;
-        }
-
-        const MealOption& meal = mealOptions[mealIndex];
-        if (player.getAttributes().gold < meal.cost) {
-            activityNotice.show("Not Enough Gold",
-                "You do not have enough Gold for " + meal.name + ".");
-            return;
-        }
-
-        player.modifyAttributes(Attributes(0, 0, 0, 0, -meal.cost));
-        heldMealIndex = mealIndex;
-        lastMealPickupSlot = slot;
-        activityNotice.show("Food Taken",
-            meal.name + " is on your tray. Find a cafeteria table and press Enter to eat.");
-    };
-
-    auto sleepFromDormitory = [&]() {
-        if (!timeSystem.canSleep()) {
-            activityNotice.show("Too Early",
-                "You can choose sleep after 22:30. Until then, the bed is only a short rest spot.");
-            return;
-        }
-
-        const int sleptMinutes = timeSystem.sleepToNextDay();
-        const int sleptHours = sleptMinutes / 60;
-        const int sanGain = std::min(45, sleptHours * 5);
-        const int energyGain = std::min(70, sleptHours * 8);
-        player.modifyAttributes(Attributes(sanGain, energyGain, 0, 0, 0));
-        player.setPosition(480.0f, 276.0f);
-        player.stopMovement();
-        currentPlace = CampusPlace::Dormitory;
-        currentMap = dormitoryMap.get();
-        heldMealIndex = -1;
-        gamePlayDay = timeSystem.getDay();
-        gamesPlayedToday = 0;
-
-        std::ostringstream body;
-        if (timeSystem.isFinished()) {
-            body << "The 14-day project period is complete. Sleep recovered SAN +"
-                 << sanGain << " and Energy +" << energyGain << ".";
-        } else {
-            body << "You slept " << sleptHours << " hours and woke at 08:00. SAN +"
-                 << sanGain << ", Energy +" << energyGain << ".";
-        }
-        timeSkipFlash.start("Sleeping...");
-        showTimedResult(timeSystem.isFinished() ? "Fourteen Days Complete" : "New Day", body.str());
-    };
-
-    auto handleInteraction = [&](const InteractionPoint& ip) {
-        const std::string& id = ip.actionId;
-
-        if (id.rfind("library_shelf_", 0) == 0) {
-            selectedLibraryBook = std::clamp(id.back() - '0', 0, 3);
-            std::ostringstream body;
-            body << ip.label << " selected " << libraryBooks[selectedLibraryBook].name
-                 << ". Reading progress: " << libraryBookProgress[selectedLibraryBook]
-                 << "%. Browse Shelf does not consume time.";
-            activityNotice.show("Shelf Browsed", body.str());
-            return;
-        }
-
-        if (id == "library_table") {
-            const int book = selectedLibraryBook;
-            libraryBookProgress[book] = std::min(100, libraryBookProgress[book] + 25);
-            const Attributes& delta = libraryBooks[book].delta;
-
-            std::ostringstream body;
-            body << "Read " << libraryBooks[book].name << " for 30 minutes. "
-                 << libraryBooks[book].skill << " progress is now "
-                 << libraryBookProgress[book] << "%.";
-            runTimedActivity(30, delta, "Reading Complete", body.str());
-            return;
-        }
-
-        if (id == "cafeteria_counter") {
-            if (!timeSystem.isMealTime()) {
-                activityNotice.show("Meal Time Closed",
-                    "Food is available from 12:00-14:00 and 17:00-19:00.");
-                return;
-            }
-            if (heldMealIndex >= 0) {
-                activityNotice.show("Already Holding Food",
-                    "You already have a tray. Sit at a table and eat it before taking another meal.");
-                return;
-            }
-            const int slot = timeSystem.mealSlotId();
-            if (slot >= 0 && lastMealPickupSlot == slot) {
-                activityNotice.show("Already Served",
-                    "You can only take food once during the current meal period.");
-                return;
-            }
-            mealChoicePrompt.show("Choose Meal",
-                "Take food from the counter, then sit at a table to eat.",
-                mealOptions[0].description,
-                mealOptions[1].description,
-                mealOptions[2].description);
-            return;
-        }
-
-        if (id.rfind("cafeteria_table_", 0) == 0) {
-            if (heldMealIndex < 0) {
-                activityNotice.show("No Food",
-                    "You need to take Meal A, B, or C from the counter before eating at a table.");
-                return;
-            }
-            const MealOption& meal = mealOptions[heldMealIndex];
-            heldMealIndex = -1;
-            runTimedActivity(20, meal.reward, "Meal Complete",
-                             meal.name + " eaten. " + meal.description + ".");
-            return;
-        }
-
-        if (id.rfind("gym_treadmill_", 0) == 0) {
-            runTimedActivity(40, Attributes(-4, -14, 0, 2, 0),
-                             "Training Complete",
-                             "Treadmill run: SAN -4, Energy -14, Social +2.");
-            return;
-        }
-
-        if (id.rfind("gym_barbell_", 0) == 0) {
-            runTimedActivity(40, Attributes(-5, -16, 0, 1, 0),
-                             "Training Complete",
-                             "Barbell training: SAN -5, Energy -16, Social +1.");
-            return;
-        }
-
-        if (id == "dormitory_bed") {
-            sleepFromDormitory();
-            return;
-        }
-
-        if (id == "dormitory_desk") {
-            runTimedActivity(45, Attributes(-6, -10, 7, 0, 0),
-                             "Study Complete",
-                             "Desk study: Academic +7, SAN -6, Energy -10.");
-            return;
-        }
-
-        if (id == "dormitory_games") {
-            if (gamePlayDay != timeSystem.getDay()) {
-                gamePlayDay = timeSystem.getDay();
-                gamesPlayedToday = 0;
-            }
-            ++gamesPlayedToday;
-            if (gamesPlayedToday <= 2) {
-                runTimedActivity(60, Attributes(12, 8, 0, 0, 0),
-                                 "Game Break Complete",
-                                 "Healthy game break: SAN +12, Energy +8. Daily plays: "
-                                     + std::to_string(gamesPlayedToday) + "/2.");
-            } else {
-                runTimedActivity(60, Attributes(4, -12, -2, 0, 0),
-                                 "Overplayed",
-                                 "Too much gaming today: SAN +4, Energy -12, Academic -2. Daily plays: "
-                                     + std::to_string(gamesPlayedToday) + ".");
-            }
-            return;
-        }
-
-        if (id == "dormitory_rug") {
-            activityNotice.show("Quiet Moment",
-                "You sit down and collect your thoughts. This currently does not consume time.");
-            return;
-        }
-
-        if (id == "classroom_board") {
-            activityNotice.show("Board Reviewed",
-                "The board shows today's notes. Review here is informational and does not consume time.");
-            return;
-        }
-
-        if (id.rfind("classroom_desk_", 0) == 0) {
-            activityNotice.show("Desk",
-                "Morning class is handled by the 08:50 forced class event.");
-            return;
-        }
-
-        activityNotice.show(ip.label, ip.description);
+    auto handleInteraction = [&ctx](const InteractionPoint& ip) {
+        if (LibraryInteraction::handle(ctx, ip)) return;
+        if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.label)) return;
+        if (GymInteraction::handle(ctx, ip)) return;
+        if (DormitoryInteraction::handle(ctx, ip)) return;
+        if (ClassroomInteraction::handle(ctx, ip)) return;
+        ctx.activityNotice.show(ip.label, ip.description);
     };
 
     // ── 主循环 ───────────────────────────────────────────────
