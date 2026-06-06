@@ -1,18 +1,12 @@
 /**
  * @file main.cpp
- * @brief 类演示程序 — 展示 Entity/Quest/State/Manager 各继承体系的所有类
+ * @brief 校园生活模拟器 — 主入口
  *
  * 操作说明:
  *   WASD/方向键 — 移动玩家
- *   1 — Entity 演示（探索 + SAN 阈值触发战斗）
- *   2 — SimpleQuest 演示（新生报到 3 段式任务）
- *   3 — MidtermExamQuest 演示（期中考试 d20 检定）
- *   4 — FinalExamQuest 演示（期末考试 d20 检定）
- *   5 — QuestManager 演示（JSON 加载 + 工厂创建 + 任务链）
- *   0/6 — Help 帮助/设置页面
+ *   Enter — 场景切换 / 交互点触发
  *   C — 降低 SAN / 清除 buff
  *   F — 与附近敌人战斗
- *   Enter — 场景切换 / 任务模式下操作
  */
 
 #include <SFML/Graphics.hpp>
@@ -30,18 +24,10 @@
 #include "entity/CombatHelper.h"
 #include "ui/ActivityNotice.h"
 #include "ui/ChoicePrompt.h"
-#include "ui/EntityDemoPage.h"
 #include "ui/ModalBox.h"
-#include "ui/QuestManagerDemoPage.h"
 #include "ui/TimePanel.h"
 #include "entity/Player.h"
 #include "entity/Enemy.h"
-#include "quest/MainQuest.h"
-#include "quest/SimpleQuest.h"
-#include "quest/ExamQuest.h"
-#include "quest/MidtermExamQuest.h"
-#include "quest/FinalExamQuest.h"
-#include "quest/QuestManager.h"
 #include "map/MapPortal.h"
 #include "map/BuildingInterior.h"
 #include "map/CampusMap.h"
@@ -51,8 +37,6 @@
 #include "map/ClassroomInterior.h"
 #include "map/CafeteriaInterior.h"
 #include "ui/HUD.h"
-#include "ui/HelpPanel.h"
-#include "ui/QuestPanel.h"
 #include "ui/TitleScreen.h"
 #include "ui/DifficultyPanel.h"
 #include "ui/SceneBackground.h"
@@ -64,26 +48,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-
-// ──────────────────────────────────────────────────────────────
-// 最小 Game 类 — MainQuestState 的依赖（当前未使用 Game* 成员）
-// ──────────────────────────────────────────────────────────────
-class Game {
-public:
-    sf::RenderWindow* window = nullptr;
-};
-
-// ──────────────────────────────────────────────────────────────
-// 演示模式
-// ──────────────────────────────────────────────────────────────
-enum class DemoPage {
-    ENTITY,          // Entity 继承体系演示
-    SIMPLE_QUEST,    // SimpleQuest 演示
-    MIDTERM_EXAM,    // MidtermExamQuest 演示
-    FINAL_EXAM,      // FinalExamQuest 演示
-    QUEST_MANAGER,   // QuestManager demo
-    HELP             // Help and settings page
-};
 
 enum class GameScreen {
     TITLE,
@@ -107,15 +71,9 @@ enum class GameScreen {
 // 渲染当前属性面板（所有模式下都在顶部显示）
 // ──────────────────────────────────────────────────────────────
 void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
-                      const Player& player, DemoPage page) {
-    const char* pageNames[] = {
-        "Entity", "SimpleQuest", "MidtermExam",
-        "FinalExam", "QuestManager", "Help / Settings"
-    };
-
+                      const Player& player) {
     HUD hud(font);
     hud.setPlayer(&player);
-    hud.setPageName(pageNames[static_cast<int>(page)]);
     hud.render(window);
 }
 
@@ -180,22 +138,7 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
     window.draw(hint);
 }
 
-// scene_transition 配置已移至 assets/config/scene_transitions.json (由 src/core/SceneConfig.h 加载)
-
-// runEntityDemo 已拆离至 src/ui/EntityDemoPage
-
-// ──────────────────────────────────────────────────────────────
-// 通用 Quest UI 渲染（用于 SimpleQuest / ExamQuest 演示）
-// ──────────────────────────────────────────────────────────────
-void renderQuestUI(sf::RenderWindow& window, sf::Font& font,
-                   MainQuest* quest, Player* /*player*/) {
-    if (!quest) return;
-
-    QuestPanel questPanel(font);
-    questPanel.setQuest(quest);
-    questPanel.render(window);
-}
-// renderQuestManagerDemo 已拆离至 src/ui/QuestManagerDemoPage
+// scene_transition 配置已移至 assets/config/scene_transitions.json
 
 // ──────────────────────────────────────────────────────────────
 // main
@@ -245,8 +188,6 @@ int main() {
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
-    EntityDemoPage entityDemoPage(font);
-    QuestManagerDemoPage questManagerDemoPage(font);
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
@@ -301,19 +242,7 @@ int main() {
     std::vector<std::unique_ptr<Enemy>> activeEnemies;
     CombatResult combatResult;
 
-    // ── Quest 对象 ───────────────────────────────────────────
-    QuestManager questManager;
-    questManager.loadQuestChain(cls::resolveAssetPath("assets/config/quests.json"));
-
-    // 独立 quest 对象用于 Simple/Midterm/Final 演示页面
-    MainQuest* currentQuest = nullptr;
-    std::unique_ptr<SimpleQuest> simpleQuest;
-    std::unique_ptr<MidtermExamQuest> midtermQuest;
-    std::unique_ptr<FinalExamQuest> finalExamQuest;
-    std::unique_ptr<MainQuest> questManagerQuest;
-
     // ── 状态 ─────────────────────────────────────────────────
-    DemoPage page = DemoPage::ENTITY;
     sf::Clock clock;
     bool keyWasPressed[static_cast<int>(sf::Keyboard::KeyCount)] = {};
 
@@ -421,33 +350,6 @@ int main() {
         // 战斗后敌人消失
         activeEnemies.erase(activeEnemies.begin() + nearestIdx);
         return true;
-    };
-
-    // Lambda: 重置演示 quest
-    auto resetSimpleDemo = [&]() {
-        simpleQuest = std::make_unique<SimpleQuest>(
-            "orientation_demo", "Freshman Orientation",
-            "You've just stepped onto the university campus. Everything is new. Take a deep breath and begin your college adventure!",
-            std::vector<std::pair<std::string, Attributes>>{
-                {"Explore the campus and get familiar with the surroundings",  Attributes(0, -5, 0, 10, 0)},
-                {"Check out what books the library has",    Attributes(0, -3, 8, 3, 0)},
-                {"Grab a good meal at the cafeteria to relax",  Attributes(5, 10, 0, 5, -20)},
-            },
-            Attributes(0, 0, 0, 5, 0)
-        );
-        currentQuest = simpleQuest.get();
-    };
-
-    auto resetMidtermDemo = [&]() {
-        midtermQuest = std::make_unique<MidtermExamQuest>();
-        midtermQuest->setPhase(QuestPhase::ANNOUNCEMENT);
-        currentQuest = midtermQuest.get();
-    };
-
-    auto resetFinalDemo = [&]() {
-        finalExamQuest = std::make_unique<FinalExamQuest>();
-        finalExamQuest->setPhase(QuestPhase::ANNOUNCEMENT);
-        currentQuest = finalExamQuest.get();
     };
 
     auto startMapTransition = [&](const MapPortal& portal) {
@@ -759,9 +661,6 @@ int main() {
         activityNotice.show(ip.label, ip.description);
     };
 
-    // 初始化
-    resetSimpleDemo();
-
     // ── 主循环 ───────────────────────────────────────────────
     while (window.isOpen()) {
         float dt = clock.restart().asSeconds();
@@ -797,10 +696,6 @@ int main() {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Enter) {
                         screen = GameScreen::DIFFICULTY;
-                    } else if (keyEv->code == sf::Keyboard::Key::H) {
-                        page = DemoPage::HELP;
-                        currentQuest = nullptr;
-                        screen = GameScreen::GAME;
                     }
                 } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
                     const auto action = titleScreen.handleClick({
@@ -809,10 +704,6 @@ int main() {
                     });
                     if (action == TitleAction::Start) {
                         screen = GameScreen::DIFFICULTY;
-                    } else if (action == TitleAction::Help) {
-                        page = DemoPage::HELP;
-                        currentQuest = nullptr;
-                        screen = GameScreen::GAME;
                     }
                 }
                 continue;
@@ -825,8 +716,6 @@ int main() {
                         applyDifficulty(player, selectedDifficulty);
                         difficultyApplied = true;
                     }
-                    page = DemoPage::ENTITY;
-                    currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
@@ -908,89 +797,6 @@ int main() {
                 continue;
             }
 
-            // 页面切换
-            if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                auto code = keyEv->code;
-                if (code == sf::Keyboard::Key::Num1) {
-                    page = DemoPage::ENTITY;
-                    currentQuest = nullptr;
-                    currentPlace = CampusPlace::Campus;
-                    player.setPosition(480.0f, 276.0f);
-                } else if (code == sf::Keyboard::Key::Num2) {
-                    page = DemoPage::SIMPLE_QUEST;
-                    resetSimpleDemo();
-                } else if (code == sf::Keyboard::Key::Num3) {
-                    page = DemoPage::MIDTERM_EXAM;
-                    resetMidtermDemo();
-                } else if (code == sf::Keyboard::Key::Num4) {
-                    page = DemoPage::FINAL_EXAM;
-                    resetFinalDemo();
-                } else if (code == sf::Keyboard::Key::Num5) {
-                    page = DemoPage::QUEST_MANAGER;
-                    currentQuest = nullptr;
-                } else if (code == sf::Keyboard::Key::Num0 || code == sf::Keyboard::Key::Num6) {
-                    page = DemoPage::HELP;
-                    currentQuest = nullptr;
-                }
-            }
-
-            // Quest 模式输入
-            if (currentQuest && !currentQuest->isCompleted()
-                && (page == DemoPage::SIMPLE_QUEST || page == DemoPage::MIDTERM_EXAM
-                    || page == DemoPage::FINAL_EXAM || page == DemoPage::QUEST_MANAGER)) {
-                int choiceMade = -1;
-                currentQuest->handleInput(event, player, choiceMade);
-
-                if (currentQuest->isCompleted()) {
-                    currentQuest->execute(player);
-                    if (page == DemoPage::QUEST_MANAGER) {
-                        questManager.onQuestCompleted();
-                        currentQuest = nullptr;
-                        questManagerQuest.reset();
-                        std::cout << "[QuestManager] Quest completed, chain advanced to #"
-                                  << questManager.getCurrentQuestIndex() << std::endl;
-                    }
-                }
-            }
-
-            // QuestManager 页面事件（仅在无活跃 quest 时触发）
-            if (page == DemoPage::QUEST_MANAGER && !currentQuest) {
-                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    auto code = keyEv->code;
-                    if (code == sf::Keyboard::Key::E) {
-                        questManager.onEventCompleted();
-                        std::cout << "[QuestManager] Event completed! Total: "
-                                  << questManager.getCompletedEventCount() << std::endl;
-                    } else if (code == sf::Keyboard::Key::S) {
-                        bool should = questManager.shouldTriggerQuest();
-                        std::cout << "[QuestManager] shouldTriggerQuest() = "
-                                  << (should ? "true" : "false")
-                                  << "  (Events: " << questManager.getCompletedEventCount()
-                                  << ", Threshold: " << questManager.getNextThreshold() << ")"
-                                  << std::endl;
-                    } else if (code == sf::Keyboard::Key::Enter) {
-                        if (!questManager.shouldTriggerQuest()) {
-                            std::cout << "[QuestManager] Conditions not met, cannot trigger next quest"
-                                      << std::endl;
-                        } else {
-                            auto q = questManager.createNextQuest();
-                            if (q) {
-                                std::cout << "[QuestManager] Factory created: "
-                                          << q->getQuestName() << " ("
-                                          << q->getQuestId() << ")" << std::endl;
-                                currentQuest = q.get();
-                                questManagerQuest = std::move(q);
-                            }
-                        }
-                    } else if (code == sf::Keyboard::Key::C) {
-                        questManager = QuestManager();
-                        questManager.loadQuestChain(cls::resolveAssetPath("assets/config/quests.json"));
-                        currentQuest = nullptr;
-                        questManagerQuest.reset();
-                        std::cout << "[QuestManager] Reset complete" << std::endl;
-                    }
-                }
-            }
         }
 
         // ── 持续性输入(移动) ─────────────────────────────────
@@ -1023,7 +829,7 @@ int main() {
             continue;
         }
 
-        if (page == DemoPage::ENTITY && !classChoicePrompt.active && !mealChoicePrompt.active && !activityNotice.active) {
+        if (!classChoicePrompt.active && !mealChoicePrompt.active && !activityNotice.active) {
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -1117,35 +923,12 @@ int main() {
         // ── 渲染 ──────────────────────────────────────────────
         window.clear(sf::Color(20, 20, 30));
 
-        switch (page) {
-            case DemoPage::ENTITY:
-                currentMap->render(window);
-                player.render(window);
-                break;
-            case DemoPage::SIMPLE_QUEST:
-            case DemoPage::MIDTERM_EXAM:
-            case DemoPage::FINAL_EXAM:
-                if (currentQuest) {
-                    renderQuestUI(window, font, currentQuest, &player);
-                }
-                break;
-            case DemoPage::QUEST_MANAGER:
-                questManagerDemoPage.setQuestManager(&questManager);
-                questManagerDemoPage.render(window);
-                if (currentQuest && !currentQuest->isCompleted()) {
-                    renderQuestUI(window, font, currentQuest, &player);
-                }
-                break;
-            case DemoPage::HELP: {
-                HelpPanel helpPanel(font);
-                helpPanel.render(window);
-                break;
-            }
-        }
+        currentMap->render(window);
+        player.render(window);
 
-        // 顶部属性面板（所有页面通用）
+        // 顶部属性面板
         if (fontOk) {
-            renderStatsPanel(window, font, player, page);
+            renderStatsPanel(window, font, player);
             timePanel.setTimeSystem(&timeSystem);
             timePanel.render(window);
         }
