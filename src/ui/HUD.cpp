@@ -1,5 +1,7 @@
 #include "ui/HUD.h"
 
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "entity/Player.h"
 
 #include <algorithm>
@@ -41,27 +43,27 @@ void HUD::render(sf::RenderWindow& window) {
     const auto& buffs = player->getCombatBuffs();
 
     std::ostringstream ss;
-    ss << "Gold:" << a.gold
-       << "  |  SAN Level:" << player->getSanLevel()
-       << "  |  Buff:"
-       << (buffs.nextEventPositive ? "[Win]" : "[-]")
+    ss << cls::text("hud.gold") << ':' << a.gold
+       << "  |  " << cls::text("hud.san_level") << ':' << player->getSanLevel()
+       << "  |  " << cls::text("hud.buff") << ':'
+       << (buffs.nextEventPositive ? cls::text("hud.win") : cls::text("hud.none"))
        << " d" << (buffs.nextRollModifier >= 0 ? "+" : "")
        << buffs.nextRollModifier;
 
-    sf::Text stats(font, ss.str(), 12);
+    sf::Text stats = cls::makeText(font, ss.str(), 12);
     stats.setFillColor(sf::Color(200, 220, 255));
     stats.setPosition({8.0f, 6.0f});
 
-    sf::Text page(font, pageName, 12);
+    sf::Text page = cls::makeText(font, pageName, 12);
     page.setFillColor(sf::Color(255, 200, 100));
-    page.setPosition({840.0f, 6.0f});
+    page.setPosition({820.0f, 6.0f});
 
     window.draw(stats);
     window.draw(page);
-    drawAttributeBar(window, "SAN", a.san, 100, {8.0f, 25.0f}, sf::Color(120, 210, 255));
-    drawAttributeBar(window, "EN", a.energy, 100, {190.0f, 25.0f}, sf::Color(100, 230, 150));
-    drawAttributeBar(window, "ACD", a.academic, 100, {372.0f, 25.0f}, sf::Color(245, 205, 95));
-    drawAttributeBar(window, "SOC", a.social, 100, {554.0f, 25.0f}, sf::Color(205, 140, 255));
+    drawAttributeBar(window, cls::text("hud.san"), a.san, 100, {8.0f, 25.0f}, sf::Color(120, 210, 255));
+    drawAttributeBar(window, cls::text("hud.energy"), a.energy, 100, {190.0f, 25.0f}, sf::Color(100, 230, 150));
+    drawAttributeBar(window, cls::text("hud.academic"), a.academic, 100, {372.0f, 25.0f}, sf::Color(245, 205, 95));
+    drawAttributeBar(window, cls::text("hud.social"), a.social, 100, {554.0f, 25.0f}, sf::Color(205, 140, 255));
 }
 
 void HUD::drawAttributeBar(sf::RenderWindow& window, const std::string& label,
@@ -71,7 +73,7 @@ void HUD::drawAttributeBar(sf::RenderWindow& window, const std::string& label,
     const float width = 96.0f;
     const float ratio = maxValue > 0 ? static_cast<float>(clamped) / static_cast<float>(maxValue) : 0.0f;
 
-    sf::Text labelText(font, label, 10);
+    sf::Text labelText = cls::makeText(font, label, 10);
     labelText.setFillColor(sf::Color(210, 215, 225));
     labelText.setPosition(position);
 
@@ -85,7 +87,7 @@ void HUD::drawAttributeBar(sf::RenderWindow& window, const std::string& label,
     fill.setPosition(back.getPosition());
     fill.setFillColor(fillColor);
 
-    sf::Text valueText(font, std::to_string(clamped), 10);
+    sf::Text valueText = cls::makeText(font, std::to_string(clamped), 10);
     valueText.setFillColor(sf::Color(230, 235, 245));
     valueText.setPosition({position.x + 136.0f, position.y});
 

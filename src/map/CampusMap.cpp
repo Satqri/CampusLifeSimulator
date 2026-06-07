@@ -1,5 +1,7 @@
 #include "map/CampusMap.h"
 #include "core/AssetPath.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "entity/Player.h"
 
@@ -190,14 +192,14 @@ void CampusMap::render(sf::RenderWindow& window) {
     drawPortalMarkers(window);
 
     // 地点标题 + 提示
-    sf::Text title(*font, placeName(getPlace()), 22);
+    sf::Text title = cls::makeText(*font, placeName(getPlace()), 22);
     title.setFillColor(sf::Color(245, 238, 205));
     title.setOutlineColor(sf::Color(20, 30, 30));
     title.setOutlineThickness(2.0f);
     title.setPosition({18.0f, 50.0f});
     window.draw(title);
 
-    sf::Text hint(*font, "WASD Move  |  Enter: enter highlighted area  |  0/6 Help", 13);
+    sf::Text hint = cls::makeText(*font, cls::text("campus.move_hint"), 13);
     hint.setFillColor(sf::Color(235, 235, 210));
     hint.setPosition({18.0f, 510.0f});
     window.draw(hint);

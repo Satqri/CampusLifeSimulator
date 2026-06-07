@@ -1,5 +1,7 @@
 #include "ui/QuestPanel.h"
 
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "core/Types.h"
 #include "quest/ExamQuest.h"
 #include "quest/MainQuest.h"
@@ -33,19 +35,19 @@ void QuestPanel::render(sf::RenderWindow& window) {
     window.draw(overlay);
     window.draw(panel);
 
-    sf::Text title(font, quest->getQuestName(), 28);
+    sf::Text title = cls::makeText(font, quest->getQuestName(), 28);
     title.setFillColor(sf::Color::White);
     title.setPosition({80.0f, 60.0f});
     window.draw(title);
 
-    sf::Text desc(font, quest->getDescription(), 17);
+    sf::Text desc = cls::makeText(font, quest->getDescription(), 17);
     desc.setFillColor(sf::Color(220, 220, 220));
     desc.setPosition({80.0f, 110.0f});
     window.draw(desc);
 
     const std::string examStatus = buildExamStatus();
     if (!examStatus.empty()) {
-        sf::Text stat(font, examStatus, 15);
+        sf::Text stat = cls::makeText(font, examStatus, 15);
         stat.setFillColor(sf::Color(180, 220, 255));
         stat.setPosition({80.0f, 170.0f});
         window.draw(stat);
@@ -64,14 +66,14 @@ void QuestPanel::render(sf::RenderWindow& window) {
                 color = sf::Color(255, 255, 100);
             }
 
-            sf::Text choice(font, buildChoiceLine(i), 16);
+            sf::Text choice = cls::makeText(font, buildChoiceLine(i), 16);
             choice.setFillColor(color);
             choice.setPosition({120.0f, 220.0f + i * 40.0f});
             window.draw(choice);
         }
     }
 
-    sf::Text prompt(font, buildPrompt(), 14);
+    sf::Text prompt = cls::makeText(font, buildPrompt(), 14);
     prompt.setFillColor(sf::Color(150, 150, 150));
     prompt.setPosition({80.0f, 460.0f});
     window.draw(prompt);
@@ -86,37 +88,45 @@ std::string QuestPanel::buildExamStatus() const {
 
     std::ostringstream ss;
     if (phase == QuestPhase::PREPARATION || phase == QuestPhase::ANNOUNCEMENT) {
-        ss << "Subject: " << exam->getExamSubject()
+        ss << cls::text("quest.subject") << ": " << exam->getExamSubject()
            << " | DC: " << exam->getSubjectDC()
-           << " | Total " << exam->getTotalRounds() << " rounds"
-           << " | Need " << exam->getRequiredPasses() << " passes";
+           << " | " << cls::format("quest.rounds_total", {{"count", std::to_string(exam->getTotalRounds())}})
+           << " | " << cls::format("quest.need_passes", {{"count", std::to_string(exam->getRequiredPasses())}});
         if (phase == QuestPhase::PREPARATION) {
-            ss << "\n\nReview before exam?";
+            ss << "\n\n" << cls::text("quest.review_prompt");
             if (exam->getHasReviewed()) {
-                ss << "  > [YES]    [NO]  (-" << exam->getReviewEnergyCost()
-                   << " Energy, +" << exam->getReviewBonus() << " bonus)";
+                ss << "  " << cls::text("quest.review_yes") << "    " << cls::text("quest.review_no")
+                   << "  " << cls::format("quest.review_cost", {
+                       {"cost", std::to_string(exam->getReviewEnergyCost())},
+                       {"bonus", std::to_string(exam->getReviewBonus())}
+                   });
             } else {
-                ss << "    [YES]  > [NO]  (skip review)";
+                ss << "    [YES]  > [NO]  " << cls::text("quest.review_skip");
             }
         }
     } else if (phase == QuestPhase::EXAM_ROUND || phase == QuestPhase::ROUND_RESULT) {
-        ss << "Round " << exam->getCurrentRound() << "/" << exam->getTotalRounds()
+        ss << cls::format("quest.round", {
+                {"current", std::to_string(exam->getCurrentRound())},
+                {"total", std::to_string(exam->getTotalRounds())}
+             })
            << " | DC: " << exam->getSubjectDC()
-           << " | Passed: " << exam->getScore() << " rounds";
+           << " | " << cls::format("quest.passed_rounds", {{"count", std::to_string(exam->getScore())}});
         if (phase == QuestPhase::ROUND_RESULT) {
             const auto& roll = exam->getLastRoll();
             ss << "\n\n  D20: " << roll.d20Roll
-               << " | Academic Bonus: " << (roll.academicBonus >= 0 ? "+" : "")
+               << " | " << cls::text("quest.academic_bonus") << ": " << (roll.academicBonus >= 0 ? "+" : "")
                << roll.academicBonus
-               << " | Review Bonus: " << (roll.reviewBonus >= 0 ? "+" : "")
+               << " | " << cls::text("quest.review_bonus") << ": " << (roll.reviewBonus >= 0 ? "+" : "")
                << roll.reviewBonus
-               << " | Total: " << roll.total
+               << " | " << cls::text("quest.total") << ": " << roll.total
                << " vs DC " << roll.dc
-               << "  ->  " << (roll.success ? "Pass!" : "Failed");
+               << "  ->  " << (roll.success ? cls::text("quest.pass") : cls::text("quest.fail"));
         }
     } else if (phase == QuestPhase::FINAL_RESULT) {
-        ss << "Final Result: " << (exam->getPassed() ? "Pass!" : "Failed")
-           << " | Passed Rounds: " << exam->getScore() << "/" << exam->getTotalRounds();
+        ss << cls::text("quest.final_result") << ": "
+           << (exam->getPassed() ? cls::text("quest.passed") : cls::text("quest.failed"))
+           << " | " << cls::text("quest.passed_rounds_short") << ": "
+           << exam->getScore() << "/" << exam->getTotalRounds();
     }
 
     return ss.str();
@@ -146,13 +156,13 @@ std::string QuestPanel::buildPrompt() const {
     if (!quest) return "";
 
     switch (quest->getCurrentPhase()) {
-        case QuestPhase::ANNOUNCEMENT: return "[Press Enter to continue]";
-        case QuestPhase::CHOICE:       return "[Up/Down: Select  |  Enter: Confirm]";
-        case QuestPhase::PREPARATION:  return "[Up/Down: Toggle Review/Skip  |  Enter: Confirm]";
-        case QuestPhase::EXAM_ROUND:   return "[Press Enter to roll!]";
-        case QuestPhase::ROUND_RESULT: return "[Press Enter to continue]";
-        case QuestPhase::FINAL_RESULT: return "[Press Enter to confirm result]";
-        case QuestPhase::COMPLETED:    return "[Quest completed -- press 2/3/4 to restart]";
+        case QuestPhase::ANNOUNCEMENT: return cls::text("quest.prompt.continue");
+        case QuestPhase::CHOICE:       return cls::text("quest.prompt.choice");
+        case QuestPhase::PREPARATION:  return cls::text("quest.prompt.prep");
+        case QuestPhase::EXAM_ROUND:   return cls::text("quest.prompt.roll");
+        case QuestPhase::ROUND_RESULT: return cls::text("quest.prompt.continue");
+        case QuestPhase::FINAL_RESULT: return cls::text("quest.prompt.final");
+        case QuestPhase::COMPLETED:    return cls::text("quest.prompt.completed");
         default:                       return "";
     }
 }
@@ -160,16 +170,16 @@ std::string QuestPanel::buildPrompt() const {
 std::string QuestPanel::formatDelta(const Attributes& delta) const {
     std::ostringstream ss;
     bool first = true;
-    auto add = [&](const char* name, int val) {
+    auto add = [&](const std::string& name, int val) {
         if (val == 0) return;
         if (!first) ss << " ";
         first = false;
         ss << name << (val > 0 ? "+" : "") << val;
     };
-    add("SAN", delta.san);
-    add("Energy", delta.energy);
-    add("Academic", delta.academic);
-    add("Social", delta.social);
-    add("Gold", delta.gold);
+    add(cls::text("hud.san"), delta.san);
+    add(cls::text("hud.energy"), delta.energy);
+    add(cls::text("hud.academic"), delta.academic);
+    add(cls::text("hud.social"), delta.social);
+    add(cls::text("hud.gold"), delta.gold);
     return ss.str();
 }

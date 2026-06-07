@@ -19,8 +19,12 @@
 #include <SFML/Window.hpp>
 
 #include "core/AssetPath.h"
+#include "core/GameSettings.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
+#include "core/WindowScaler.h"
 #include "entity/Player.h"
 #include "entity/Enemy.h"
 #include "quest/MainQuest.h"
@@ -40,6 +44,7 @@
 #include "ui/HUD.h"
 #include "ui/HelpPanel.h"
 #include "ui/QuestPanel.h"
+#include "ui/SettingsPanel.h"
 #include "ui/TitleScreen.h"
 #include "ui/DifficultyPanel.h"
 #include "ui/SceneBackground.h"
@@ -78,7 +83,18 @@ enum class DemoPage {
 enum class GameScreen {
     TITLE,
     DIFFICULTY,
+    SETTINGS,
     GAME
+};
+
+/**
+ * @enum OverlayType
+ * @brief 游戏内覆盖层类型
+ */
+enum class OverlayType {
+    None,
+    Help,
+    Settings
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -191,6 +207,12 @@ struct TimeSkipFlash {
     }
 };
 
+struct NearbyHint {
+    bool active = false;
+    std::string text;
+    sf::Vector2f position;
+};
+
 // ──────────────────────────────────────────────────────────────
 // 根据情绪类型获取对应玩家属性值（用于战斗检定）
 // ──────────────────────────────────────────────────────────────
@@ -222,10 +244,14 @@ static const char* actionNameForEmotion(EmotionType type) {
 // ──────────────────────────────────────────────────────────────
 void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
                       const Player& player, DemoPage page) {
-    const char* pageNames[] = {
-        "Entity", "SimpleQuest", "MidtermExam",
-        "FinalExam", "QuestManager", "Help / Settings"
-    };
+    const std::array<std::string, 6> pageNames = {{
+        cls::text("page.entity"),
+        cls::text("page.simple"),
+        cls::text("page.midterm"),
+        cls::text("page.final"),
+        cls::text("page.quest_manager"),
+        cls::text("page.help_settings")
+    }};
 
     HUD hud(font);
     hud.setPlayer(&player);
@@ -241,12 +267,12 @@ void renderTimePanel(sf::RenderWindow& window, sf::Font& font, const TimeSystem&
     panel.setOutlineThickness(1.0f);
     window.draw(panel);
 
-    sf::Text clock(font, time.clockText(), 12);
+    sf::Text clock = cls::makeText(font, time.clockText(), 12);
     clock.setFillColor(sf::Color(235, 238, 220));
     clock.setPosition({665.0f, 8.0f});
     window.draw(clock);
 
-    sf::Text label(font, time.dayLabel(), 10);
+    sf::Text label = cls::makeText(font, time.dayLabel(), 10);
     label.setFillColor(time.isMidtermDay() ? sf::Color(255, 210, 120) : sf::Color(155, 180, 205));
     label.setPosition({665.0f, 23.0f});
     window.draw(label);
@@ -266,17 +292,17 @@ void renderModalBox(sf::RenderWindow& window, sf::Font& font,
     box.setOutlineThickness(2.0f);
     window.draw(box);
 
-    sf::Text heading(font, title, 22);
+    sf::Text heading = cls::makeText(font, title, 22);
     heading.setFillColor(sf::Color(250, 238, 200));
     heading.setPosition({218.0f, 196.0f});
     window.draw(heading);
 
-    sf::Text message(font, body, 15);
+    sf::Text message = cls::makeText(font, body, 15);
     message.setFillColor(sf::Color(218, 230, 220));
     message.setPosition({218.0f, 238.0f});
     window.draw(message);
 
-    sf::Text hint(font, footer, 12);
+    sf::Text hint = cls::makeText(font, footer, 12);
     hint.setFillColor(sf::Color(172, 184, 178));
     hint.setPosition({218.0f, 320.0f});
     window.draw(hint);
@@ -284,7 +310,7 @@ void renderModalBox(sf::RenderWindow& window, sf::Font& font,
 
 void renderNotice(sf::RenderWindow& window, sf::Font& font, const ActivityNotice& notice) {
     if (!notice.active) return;
-    renderModalBox(window, font, notice.title, notice.body, "Press Enter to continue");
+    renderModalBox(window, font, notice.title, notice.body, cls::text("quest.prompt.continue"));
 }
 
 void renderChoicePrompt(sf::RenderWindow& window, sf::Font& font, const ChoicePrompt& prompt) {
@@ -296,7 +322,7 @@ void renderChoicePrompt(sf::RenderWindow& window, sf::Font& font, const ChoicePr
     if (!prompt.third.empty()) {
         body << "\n[3] " << prompt.third;
     }
-    renderModalBox(window, font, prompt.title, body.str(), prompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
+    renderModalBox(window, font, prompt.title, body.str(), prompt.third.empty() ? cls::text("prompt.choice12") : cls::text("prompt.choice123"));
 }
 
 void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSkipFlash& flash) {
@@ -305,9 +331,27 @@ void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSki
     blackout.setFillColor(sf::Color(0, 0, 0, 245));
     window.draw(blackout);
 
-    sf::Text text(font, flash.text, 20);
+    sf::Text text = cls::makeText(font, flash.text, 20);
     text.setFillColor(sf::Color(230, 230, 220));
     text.setPosition({360.0f, 252.0f});
+    window.draw(text);
+}
+
+void renderNearbyHint(sf::RenderWindow& window, sf::Font& font, const NearbyHint& hint) {
+    if (!hint.active) return;
+
+    sf::Text text = cls::makeText(font, hint.text, 12);
+    text.setFillColor(sf::Color(244, 241, 218));
+    const auto bounds = text.getLocalBounds();
+
+    sf::RectangleShape bubble({bounds.size.x + 18.0f, bounds.size.y + 14.0f});
+    bubble.setFillColor(sf::Color(14, 18, 28, 220));
+    bubble.setOutlineColor(sf::Color(255, 225, 150, 180));
+    bubble.setOutlineThickness(1.5f);
+    bubble.setPosition({hint.position.x - 6.0f, hint.position.y - 6.0f});
+
+    text.setPosition({hint.position.x + 3.0f, hint.position.y - 2.0f});
+    window.draw(bubble);
     window.draw(text);
 }
 
@@ -335,20 +379,20 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
     plate.setOutlineThickness(2.0f);
     window.draw(plate);
 
-    sf::Text title(font, transition.title, 34);
+    sf::Text title = cls::makeText(font, transition.title, 34);
     title.setFillColor(sf::Color(250, 240, 205));
     title.setOutlineColor(sf::Color(18, 42, 45));
     title.setOutlineThickness(2.0f);
     title.setPosition({190.0f, 352.0f});
     window.draw(title);
 
-    sf::Text subtitle(font, transition.subtitle, 18);
+    sf::Text subtitle = cls::makeText(font, transition.subtitle, 18);
     subtitle.setFillColor(sf::Color(224, 238, 220));
     subtitle.setPosition({190.0f, 407.0f});
     window.draw(subtitle);
 
     const bool ready = transition.canContinue();
-    sf::Text hint(font, ready ? "Press Enter to enter" : "Entering...", 13);
+    sf::Text hint = cls::makeText(font, ready ? cls::text("ui.enter_to_enter") : cls::text("ui.entering"), 13);
     hint.setFillColor(ready ? sf::Color(210, 210, 190, 180) : sf::Color(210, 210, 190, 110));
     hint.setPosition({190.0f, 444.0f});
     window.draw(hint);
@@ -369,19 +413,19 @@ SceneBackgroundType backgroundForPage(DemoPage page) {
 std::pair<std::string, std::string> transitionTextForPage(DemoPage page) {
     switch (page) {
         case DemoPage::ENTITY:
-            return {"Dormitory", "A quiet room gives you a moment to gather yourself before the day begins."};
+            return {cls::text("map.dormitory"), "A quiet room gives you a moment to gather yourself before the day begins."};
         case DemoPage::SIMPLE_QUEST:
-            return {"Cafeteria Break", "Warm lights, crowded tables, and one small choice after another."};
+            return {cls::text("map.cafeteria"), "Warm lights, crowded tables, and one small choice after another."};
         case DemoPage::MIDTERM_EXAM:
-            return {"Classroom Bell", "The midterm is close; every page reviewed now may matter later."};
+            return {cls::text("map.classroom"), "The midterm is close; every page reviewed now may matter later."};
         case DemoPage::FINAL_EXAM:
-            return {"Final Classroom", "The semester narrows to one room, one paper, and one last deep breath."};
+            return {cls::text("map.classroom"), "The semester narrows to one room, one paper, and one last deep breath."};
         case DemoPage::QUEST_MANAGER:
-            return {"Library Route", "Plans, deadlines, and future quests gather between the shelves."};
+            return {cls::text("map.library"), "Plans, deadlines, and future quests gather between the shelves."};
         case DemoPage::HELP:
-            return {"Campus Guide", "Before moving on, check the rules and controls of campus life."};
+            return {cls::text("page.help_settings"), "Before moving on, check the rules and controls of campus life."};
     }
-    return {"Campus", "The next part of the day is about to begin."};
+    return {cls::text("map.campus"), "The next part of the day is about to begin."};
 }
 
 // Entity 演示: 探索地图 + SAN 阈值触发敌人出现
@@ -414,7 +458,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
         marker.setOutlineThickness(1.0f);
         window.draw(marker);
     }
-    sf::Text markerLabel(font, "Event Points (step on to trigger events in full game)", 10);
+    sf::Text markerLabel = cls::makeText(font, "Event Points (step on to trigger events in full game)", 10);
     markerLabel.setFillColor(sf::Color(100, 100, 140));
     markerLabel.setPosition({8.0f, 70.0f});
     window.draw(markerLabel);
@@ -422,7 +466,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     // --- 渲染活跃敌人（SAN 低时出现）---
     for (auto& e : activeEnemies) {
         e->render(window);
-        sf::Text label(font, e->getName(), 11);
+        sf::Text label = cls::makeText(font, e->getName(), 11);
         label.setFillColor(sf::Color(255, 180, 80));
         auto pos = e->getPosition();
         label.setPosition({pos.x - 20.0f, pos.y - 18.0f});
@@ -431,7 +475,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
         // DC/ATK 信息
         std::ostringstream ss;
         ss << "DC:" << e->getDC() << " ATK:" << e->getAttackPower();
-        sf::Text info(font, ss.str(), 9);
+        sf::Text info = cls::makeText(font, ss.str(), 9);
         info.setFillColor(sf::Color(200, 160, 100));
         info.setPosition({pos.x - 20.0f, pos.y + 10.0f});
         window.draw(info);
@@ -439,7 +483,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
 
     // --- 渲染玩家 ---
     player.render(window);
-    sf::Text pLabel(font, "You", 11);
+    sf::Text pLabel = cls::makeText(font, cls::text("combat.you"), 11);
     pLabel.setFillColor(sf::Color(100, 200, 255));
     auto ppos = player.getPosition();
     pLabel.setPosition({ppos.x - 8.0f, ppos.y + 10.0f});
@@ -451,7 +495,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
     legendBg.setFillColor(sf::Color(0, 0, 0, 200));
     window.draw(legendBg);
 
-    sf::Text legend(font,
+    sf::Text legend = cls::makeText(font,
         "How it works (aligned with plan.md):\n"
         "  [C] Stress event -- lowers SAN\n"
         "  SAN < 30/20/10: enemies randomly appear!\n"
@@ -480,7 +524,7 @@ void runEntityDemo(sf::RenderWindow& window, sf::Font& font,
             << " = " << combatResult.total
             << " vs DC " << combatResult.dc << "\n\n"
             << (combatResult.victory ? "  SAN restored! Buff gained!" : "  SAN -15! Debuff applied!");
-        sf::Text resultText(font, css.str(), 14);
+        sf::Text resultText = cls::makeText(font, css.str(), 14);
         resultText.setFillColor(combatResult.victory ? sf::Color(100, 255, 100) : sf::Color(255, 100, 100));
         resultText.setPosition({300.0f, 215.0f});
         window.draw(resultText);
@@ -504,7 +548,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
     bg.setFillColor(sf::Color(15, 15, 25, 220));
     window.draw(bg);
 
-    sf::Text title(font, "QuestManager -- JSON Factory + Quest Chain", 26);
+    sf::Text title = cls::makeText(font, "QuestManager -- JSON Factory + Quest Chain", 26);
     title.setFillColor(sf::Color::White);
     title.setPosition({40.0f, 30.0f});
     window.draw(title);
@@ -517,7 +561,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
          << (qm.getSemesterProgress() * 100.0f) << "%"
          << "  |  Next Threshold: " << (qm.getNextThreshold() >= 0
                 ? std::to_string(qm.getNextThreshold()) : "None");
-    sf::Text infoText(font, info.str(), 14);
+    sf::Text infoText = cls::makeText(font, info.str(), 14);
     infoText.setFillColor(sf::Color(180, 200, 230));
     infoText.setPosition({40.0f, 75.0f});
     window.draw(infoText);
@@ -530,24 +574,24 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
         activeBg.setPosition({40.0f, 110.0f});
         window.draw(activeBg);
 
-        sf::Text activeLabel(font, "> Active Quest", 16);
+        sf::Text activeLabel = cls::makeText(font, "> Active Quest", 16);
         activeLabel.setFillColor(sf::Color(100, 255, 100));
         activeLabel.setPosition({50.0f, 115.0f});
         window.draw(activeLabel);
 
-        sf::Text activeName(font, curr->getQuestName(), 20);
+        sf::Text activeName = cls::makeText(font, curr->getQuestName(), 20);
         activeName.setFillColor(sf::Color::White);
         activeName.setPosition({50.0f, 140.0f});
         window.draw(activeName);
 
-        sf::Text activeDesc(font, curr->getDescription(), 14);
+        sf::Text activeDesc = cls::makeText(font, curr->getDescription(), 14);
         activeDesc.setFillColor(sf::Color(200, 200, 200));
         activeDesc.setPosition({50.0f, 170.0f});
         window.draw(activeDesc);
     }
 
     // 任务链列表
-    sf::Text chainTitle(font, "Quest Chain (triggered by threshold):", 16);
+    sf::Text chainTitle = cls::makeText(font, "Quest Chain (triggered by threshold):", 16);
     chainTitle.setFillColor(sf::Color(200, 200, 200));
     chainTitle.setPosition({40.0f, 230.0f});
     window.draw(chainTitle);
@@ -572,7 +616,7 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
                  << (typeStr == "midterm_exam" || typeStr == "final_exam"
                     ? "ExamQuest subclass" : "SimpleQuest")
                  << ")";
-            sf::Text row(font, line.str(), 13);
+            sf::Text row = cls::makeText(font, line.str(), 13);
             row.setFillColor(rowColor);
             row.setPosition({60.0f, y});
             window.draw(row);
@@ -581,8 +625,8 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
     }
 
     // 操作提示
-    sf::Text hint(font,
-        "[Enter] Create next quest (factory method)  |  [S] Simulate trigger check\n"
+    sf::Text hint = cls::makeText(font,
+        "[Enter] Create next quest (factory method)  |  [T] Simulate trigger check\n"
         "[E] Simulate completing a random event (+1 count)  |  [C] Reset demo",
         13);
     hint.setFillColor(sf::Color(130, 130, 150));
@@ -594,20 +638,29 @@ void renderQuestManagerDemo(sf::RenderWindow& window, sf::Font& font,
 // main
 // ──────────────────────────────────────────────────────────────
 int main() {
+    cls::GameSettings settings = cls::loadSettings("assets/config/settings.json");
+    cls::setLanguage(settings.language);
+
+    const auto& scalePreset = cls::windowScalePresets()[settings.windowScaleIndex];
+
     // ── 窗口 ────────────────────────────────────────────────
-    sf::RenderWindow window(sf::VideoMode({kWindowWidth, kWindowHeight}), "CampusLifeSimulator - Class Demo");
+    sf::RenderWindow window(sf::VideoMode({scalePreset.width, scalePreset.height}),
+                            "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
-    // 将 960×540 渲染坐标系映射到 1280×720 窗口
+    // 将 960×540 渲染坐标系映射到窗口
     sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
     window.setView(gameView);
 
-    // ── 字体（编译期检测平台，选择对应系统字体）─────────────
+    // ── 字体（优先项目内微软雅黑，避免中文乱码）─────────────
     sf::Font font;
     bool fontOk = false;
 #if defined(_WIN32)
     const std::vector<std::string> fontCandidates = {
+        cls::resolveAssetPath("msyh.ttc"),
+        cls::resolveAssetPath("msyhbd.ttc"),
+        cls::resolveAssetPath("msyhl.ttc"),
         "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/msyh.ttf",
         "C:/Windows/Fonts/simhei.ttf",
@@ -629,6 +682,9 @@ int main() {
     // ── 创建 Entity 对象 ─────────────────────────────────────
     TitleScreen titleScreen(font, "assets/ui/campus_title_bg.png");
     DifficultyPanel difficultyPanel(font);
+    HelpPanel helpPanel(font);
+    SettingsPanel settingsPanel(font);
+    settingsPanel.setSettings(&settings);
     SceneBackground sceneBackground;
     SceneTransition sceneTransition;
     TimeSystem timeSystem;
@@ -636,9 +692,15 @@ int main() {
     ChoicePrompt classChoicePrompt;
     ChoicePrompt mealChoicePrompt;
     TimeSkipFlash timeSkipFlash;
+    NearbyHint nearbyHint;
     GameScreen screen = GameScreen::TITLE;
+    OverlayType overlay = OverlayType::None;
+    GameScreen previousScreen = GameScreen::GAME;
+    DemoPage previousPage = DemoPage::ENTITY;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
+    bool hasMoveTarget = false;
+    sf::Vector2f moveTarget(480.0f, 276.0f);
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     const std::array<std::string, 4> libraryBookNames = {
@@ -720,6 +782,41 @@ int main() {
     DemoPage page = DemoPage::ENTITY;
     sf::Clock clock;
     bool keyWasPressed[static_cast<int>(sf::Keyboard::KeyCount)] = {};
+
+    auto saveAndApplySettings = [&]() {
+        cls::clampSettings(settings);
+        cls::setLanguage(settings.language);
+        settingsPanel.setSettings(&settings);
+        const auto& preset = cls::windowScalePresets()[settings.windowScaleIndex];
+        cls::applyWindowSize(window, gameView, preset.width, preset.height);
+        cls::saveSettings("assets/config/settings.json", settings);
+    };
+
+    auto openOverlay = [&](OverlayType type) {
+        if (overlay == type) {
+            overlay = OverlayType::None;
+            screen = previousScreen;
+            page = previousPage;
+            return;
+        }
+        previousScreen = screen;
+        previousPage = page;
+        overlay = type;
+        if (screen == GameScreen::TITLE) {
+            screen = GameScreen::GAME;
+        }
+        if (type == OverlayType::Settings) {
+            settingsPanel.setEditing(false);
+        }
+    };
+
+    auto closeOverlay = [&]() {
+        overlay = OverlayType::None;
+        screen = previousScreen;
+        page = previousPage;
+    };
+
+    saveAndApplySettings();
 
     // Lambda: 检测单次按键（防止连发）
     auto justPressed = [&](sf::Keyboard::Key k) -> bool {
@@ -867,6 +964,7 @@ int main() {
             currentMap = setCurrentMap(pendingPlace);
             player.setPosition(pendingSpawnPosition.x, pendingSpawnPosition.y);
             player.stopMovement();
+            hasMoveTarget = false;
             hasPendingMapTransition = false;
         }
         sceneTransition.skip();
@@ -880,7 +978,7 @@ int main() {
 
         std::vector<const InteractionPoint*> desks;
         for (const auto& ip : classroomMap->getInteractionPoints()) {
-            if (ip.label == "Sit at Desk") desks.push_back(&ip);
+            if (ip.actionId.rfind("classroom_desk_", 0) == 0) desks.push_back(&ip);
         }
         if (!desks.empty()) {
             const InteractionPoint* desk = desks[std::rand() % desks.size()];
@@ -910,7 +1008,7 @@ int main() {
 
     auto showTimedResult = [&](const std::string& title, const std::string& body) {
         std::ostringstream message;
-        message << body << "\nCurrent time: " << timeSystem.clockText();
+        message << body << "\n" << cls::text("time.current") << ": " << timeSystem.clockText();
         activityNotice.show(title, message.str());
     };
 
@@ -918,7 +1016,7 @@ int main() {
                                 const std::string& title, const std::string& body) {
         const int previousMinute = timeSystem.advanceMinutes(minutes);
         player.modifyAttributes(delta);
-        timeSkipFlash.start("Time passes...");
+        timeSkipFlash.start(cls::text("time.passes"));
         showTimedResult(title, body);
         checkClassSchedule(previousMinute);
     };
@@ -945,7 +1043,7 @@ int main() {
                 player.modifyAttributes(Attributes(-8, -12, 8, 0, 0));
                 body << "You focused through the morning lecture. Academic +8, SAN -8, Energy -12.";
             }
-            timeSkipFlash.start("Class time passes...");
+            timeSkipFlash.start(cls::text("time.class_passes"));
             showTimedResult(timeSystem.isMidtermDay() ? "Midterm Complete" : "Class Complete", body.str());
         } else {
             timeSystem.setTimeAbsolute(TimeSystem::kRollCallMinute);
@@ -960,7 +1058,7 @@ int main() {
                 player.modifyAttributes(Attributes(3, -2, -2, 0, 0));
                 body << "At 10:20 there is no roll call. You avoid the immediate penalty, but lose study momentum.";
             }
-            timeSkipFlash.start("Skipping class...");
+            timeSkipFlash.start(cls::text("time.skip_class"));
             showTimedResult("Roll Call Notice", body.str());
         }
     };
@@ -1014,6 +1112,7 @@ int main() {
         player.modifyAttributes(Attributes(sanGain, energyGain, 0, 0, 0));
         player.setPosition(480.0f, 276.0f);
         player.stopMovement();
+        hasMoveTarget = false;
         currentPlace = CampusPlace::Dormitory;
         currentMap = dormitoryMap.get();
         heldMealIndex = -1;
@@ -1028,7 +1127,7 @@ int main() {
             body << "You slept " << sleptHours << " hours and woke at 08:00. SAN +"
                  << sanGain << ", Energy +" << energyGain << ".";
         }
-        timeSkipFlash.start("Sleeping...");
+        timeSkipFlash.start(cls::text("time.sleeping"));
         showTimedResult(timeSystem.isFinished() ? "Fourteen Days Complete" : "New Day", body.str());
     };
 
@@ -1200,26 +1299,143 @@ int main() {
                 }
                 continue;
             }
-            if (screen == GameScreen::TITLE) {
+
+            if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                if (keyEv->code == sf::Keyboard::Key::H) {
+                    openOverlay(OverlayType::Help);
+                    continue;
+                }
+                if (keyEv->code == sf::Keyboard::Key::S) {
+                    openOverlay(OverlayType::Settings);
+                    continue;
+                }
+            }
+
+            if (overlay != OverlayType::None) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    if (keyEv->code == sf::Keyboard::Key::Enter) {
-                        screen = GameScreen::DIFFICULTY;
-                    } else if (keyEv->code == sf::Keyboard::Key::H) {
-                        page = DemoPage::HELP;
-                        currentQuest = nullptr;
-                        screen = GameScreen::GAME;
+                    if (keyEv->code == sf::Keyboard::Key::Escape
+                        || (overlay == OverlayType::Help && keyEv->code == sf::Keyboard::Key::H)
+                        || (overlay == OverlayType::Settings && keyEv->code == sf::Keyboard::Key::S)) {
+                        closeOverlay();
+                    } else if (overlay == OverlayType::Settings) {
+                        if (!settingsPanel.isEditing()) {
+                            if (keyEv->code == sf::Keyboard::Key::Up) {
+                                settingsPanel.moveSelection(-1);
+                            } else if (keyEv->code == sf::Keyboard::Key::Down) {
+                                settingsPanel.moveSelection(1);
+                            } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                                SettingsAction action = settingsPanel.confirmCurrent(settings);
+                                if (action == SettingsAction::Changed) {
+                                    saveAndApplySettings();
+                                } else if (action == SettingsAction::Close) {
+                                    closeOverlay();
+                                }
+                            }
+                        } else {
+                            if (keyEv->code == sf::Keyboard::Key::Left) {
+                                if (settingsPanel.adjustCurrent(settings, -1) == SettingsAction::Changed) {
+                                    saveAndApplySettings();
+                                }
+                            } else if (keyEv->code == sf::Keyboard::Key::Right) {
+                                if (settingsPanel.adjustCurrent(settings, 1) == SettingsAction::Changed) {
+                                    saveAndApplySettings();
+                                }
+                            } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                                if (settingsPanel.confirmCurrent(settings) == SettingsAction::Changed) {
+                                    saveAndApplySettings();
+                                }
+                            }
+                        }
                     }
                 } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = titleScreen.handleClick({
-                        static_cast<float>(mouseEv->position.x),
-                        static_cast<float>(mouseEv->position.y)
-                    });
+                    const sf::Vector2f mousePos = cls::mapPixelToGameCoords(window, mouseEv->position);
+                    if (overlay == OverlayType::Settings) {
+                        SettingsAction action = settingsPanel.handleClick(mousePos, settings);
+                        if (action == SettingsAction::Changed) {
+                            saveAndApplySettings();
+                        } else if (action == SettingsAction::Close) {
+                            closeOverlay();
+                        }
+                    } else {
+                        closeOverlay();
+                    }
+                }
+                continue;
+            }
+
+            if (screen == GameScreen::TITLE) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
+                        titleScreen.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Right || keyEv->code == sf::Keyboard::Key::D) {
+                        titleScreen.moveSelection(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                        const auto action = titleScreen.confirmSelection();
+                        if (action == TitleAction::Start) {
+                            screen = GameScreen::DIFFICULTY;
+                        } else if (action == TitleAction::Settings) {
+                            screen = GameScreen::SETTINGS;
+                        } else if (action == TitleAction::Help) {
+                            page = DemoPage::HELP;
+                            currentQuest = nullptr;
+                            openOverlay(OverlayType::Help);
+                        }
+                    }
+                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
+                    const sf::Vector2f mousePos = cls::mapPixelToGameCoords(window, mouseEv->position);
+                    const auto action = titleScreen.handleClick(mousePos);
                     if (action == TitleAction::Start) {
                         screen = GameScreen::DIFFICULTY;
+                    } else if (action == TitleAction::Settings) {
+                        screen = GameScreen::SETTINGS;
                     } else if (action == TitleAction::Help) {
                         page = DemoPage::HELP;
                         currentQuest = nullptr;
-                        screen = GameScreen::GAME;
+                        openOverlay(OverlayType::Help);
+                    }
+                }
+                continue;
+            }
+
+            if (screen == GameScreen::SETTINGS) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Escape) {
+                        screen = GameScreen::TITLE;
+                    } else if (!settingsPanel.isEditing()) {
+                        if (keyEv->code == sf::Keyboard::Key::Up) {
+                            settingsPanel.moveSelection(-1);
+                        } else if (keyEv->code == sf::Keyboard::Key::Down) {
+                            settingsPanel.moveSelection(1);
+                        } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                            SettingsAction action = settingsPanel.confirmCurrent(settings);
+                            if (action == SettingsAction::Changed) {
+                                saveAndApplySettings();
+                            } else if (action == SettingsAction::Close) {
+                                screen = GameScreen::TITLE;
+                            }
+                        }
+                    } else {
+                        if (keyEv->code == sf::Keyboard::Key::Left) {
+                            if (settingsPanel.adjustCurrent(settings, -1) == SettingsAction::Changed) {
+                                saveAndApplySettings();
+                            }
+                        } else if (keyEv->code == sf::Keyboard::Key::Right) {
+                            if (settingsPanel.adjustCurrent(settings, 1) == SettingsAction::Changed) {
+                                saveAndApplySettings();
+                            }
+                        } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                            if (settingsPanel.confirmCurrent(settings) == SettingsAction::Changed) {
+                                saveAndApplySettings();
+                            }
+                        }
+                    }
+                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
+                    const sf::Vector2f mousePos = cls::mapPixelToGameCoords(window, mouseEv->position);
+                    SettingsAction action = settingsPanel.handleClick(mousePos, settings);
+                    if (action == SettingsAction::Changed) {
+                        saveAndApplySettings();
+                    } else if (action == SettingsAction::Close) {
+                        screen = GameScreen::TITLE;
                     }
                 }
                 continue;
@@ -1237,6 +1453,8 @@ int main() {
                     currentPlace = CampusPlace::Campus;
                     currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
+                    player.stopMovement();
+                    hasMoveTarget = false;
                     timeSystem = TimeSystem();
                     activityNotice.clear();
                     classChoicePrompt.clear();
@@ -1251,18 +1469,30 @@ int main() {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Escape) {
                         screen = GameScreen::TITLE;
+                    } else if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
+                        difficultyPanel.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Right || keyEv->code == sf::Keyboard::Key::D) {
+                        difficultyPanel.moveSelection(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Up) {
+                        difficultyPanel.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Down) {
+                        difficultyPanel.moveSelection(1);
                     } else if (keyEv->code == sf::Keyboard::Key::Num1) {
                         startGameWithDifficulty(Difficulty::Easy);
-                    } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Enter) {
+                    } else if (keyEv->code == sf::Keyboard::Key::Num2) {
                         startGameWithDifficulty(Difficulty::Normal);
                     } else if (keyEv->code == sf::Keyboard::Key::Num3) {
                         startGameWithDifficulty(Difficulty::Hard);
+                    } else if (keyEv->code == sf::Keyboard::Key::Enter) {
+                        const auto action = difficultyPanel.confirmSelection();
+                        if (action.type == DifficultyActionType::Back) {
+                            screen = GameScreen::TITLE;
+                        } else if (action.type == DifficultyActionType::Select) {
+                            startGameWithDifficulty(action.difficulty);
+                        }
                     }
                 } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = difficultyPanel.handleClick({
-                        static_cast<float>(mouseEv->position.x),
-                        static_cast<float>(mouseEv->position.y)
-                    });
+                    const auto action = difficultyPanel.handleClick(cls::mapPixelToGameCoords(window, mouseEv->position));
                     if (action.type == DifficultyActionType::Back) {
                         screen = GameScreen::TITLE;
                     } else if (action.type == DifficultyActionType::Select) {
@@ -1315,6 +1545,15 @@ int main() {
                 continue;
             }
 
+            if (page == DemoPage::ENTITY) {
+                if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
+                    const sf::Vector2f mousePos = cls::mapPixelToGameCoords(window, mouseEv->position);
+                    hasMoveTarget = true;
+                    moveTarget = mousePos;
+                    continue;
+                }
+            }
+
             // 页面切换
             if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                 auto code = keyEv->code;
@@ -1323,6 +1562,8 @@ int main() {
                     currentQuest = nullptr;
                     currentPlace = CampusPlace::Campus;
                     player.setPosition(480.0f, 276.0f);
+                    player.stopMovement();
+                    hasMoveTarget = false;
                 } else if (code == sf::Keyboard::Key::Num2) {
                     page = DemoPage::SIMPLE_QUEST;
                     resetSimpleDemo();
@@ -1338,6 +1579,9 @@ int main() {
                 } else if (code == sf::Keyboard::Key::Num0 || code == sf::Keyboard::Key::Num6) {
                     page = DemoPage::HELP;
                     currentQuest = nullptr;
+                } else if (code == sf::Keyboard::Key::S) {
+                    openOverlay(OverlayType::Settings);
+                    continue;
                 }
             }
 
@@ -1368,7 +1612,7 @@ int main() {
                         questManager.onEventCompleted();
                         std::cout << "[QuestManager] Event completed! Total: "
                                   << questManager.getCompletedEventCount() << std::endl;
-                    } else if (code == sf::Keyboard::Key::S) {
+                    } else if (code == sf::Keyboard::Key::T) {
                         bool should = questManager.shouldTriggerQuest();
                         std::cout << "[QuestManager] shouldTriggerQuest() = "
                                   << (should ? "true" : "false")
@@ -1409,6 +1653,14 @@ int main() {
             continue;
         }
 
+        if (screen == GameScreen::SETTINGS) {
+            settingsPanel.setOverlayMode(false);
+            window.clear(sf::Color(12, 18, 24));
+            settingsPanel.render(window);
+            window.display();
+            continue;
+        }
+
         if (screen == GameScreen::DIFFICULTY) {
             window.clear(sf::Color(20, 20, 30));
             difficultyPanel.render(window);
@@ -1431,6 +1683,7 @@ int main() {
         }
 
         if (page == DemoPage::ENTITY && !classChoicePrompt.active && !mealChoicePrompt.active && !activityNotice.active) {
+            nearbyHint.active = false;
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -1441,10 +1694,29 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) dx = 1.0f;
 
+            const bool keyboardMoving = dx != 0.0f || dy != 0.0f;
+            if (keyboardMoving) {
+                hasMoveTarget = false;
+            }
+
             if (dx != 0.0f && dy != 0.0f) {
                 float inv = 1.0f / std::sqrt(2.0f);
                 dx *= inv;
                 dy *= inv;
+            }
+
+            if (!keyboardMoving && hasMoveTarget) {
+                const sf::Vector2f pos = player.getPosition();
+                const float targetDx = moveTarget.x - pos.x;
+                const float targetDy = moveTarget.y - pos.y;
+                const float distance = std::sqrt(targetDx * targetDx + targetDy * targetDy);
+                if (distance <= 8.0f) {
+                    hasMoveTarget = false;
+                    player.stopMovement();
+                } else {
+                    dx = targetDx / distance;
+                    dy = targetDy / distance;
+                }
             }
 
             player.move(dx, dy, dt);
@@ -1494,6 +1766,7 @@ int main() {
             }
 
             if (justPressed(sf::Keyboard::Key::Enter)) {
+                hasMoveTarget = false;
                 // 第一层：场景传送门（进出建筑）
                 bool portalFound = false;
                 for (const auto& portal : currentMap->getPortals()) {
@@ -1516,6 +1789,26 @@ int main() {
             }
 
             player.update(dt);
+
+            for (const auto& portal : currentMap->getPortals()) {
+                if (pointInRect(player.getPosition(), portal.area)) {
+                    nearbyHint.active = true;
+                    nearbyHint.text = cls::text("hint.interact") + placeName(portal.target);
+                    nearbyHint.position = {player.getPosition().x + 14.0f, player.getPosition().y - 34.0f};
+                    break;
+                }
+            }
+            if (!nearbyHint.active) {
+                if (const InteractionPoint* ip = currentMap->getInteractionAt(player.getPosition())) {
+                    nearbyHint.active = true;
+                    nearbyHint.text = cls::text("hint.interact") + ip->label;
+                    if (ip->actionId == "dormitory_desk") nearbyHint.text = cls::text("hint.interact") + "Study";
+                    if (ip->actionId == "dormitory_bed") nearbyHint.text = cls::text("hint.interact") + "Rest";
+                    if (ip->actionId == "library_table") nearbyHint.text = cls::text("hint.interact") + "Read";
+                    if (ip->actionId == "cafeteria_counter") nearbyHint.text = cls::text("hint.interact") + "Choose Meal";
+                    nearbyHint.position = {player.getPosition().x + 14.0f, player.getPosition().y - 34.0f};
+                }
+            }
 
             // 边界限制，防止走出地图
             currentMap->clampPlayer(player);
@@ -1542,11 +1835,18 @@ int main() {
                     renderQuestUI(window, font, currentQuest, &player);
                 }
                 break;
-            case DemoPage::HELP: {
-                HelpPanel helpPanel(font);
+            case DemoPage::HELP:
+                helpPanel.setOverlayMode(false);
                 helpPanel.render(window);
                 break;
-            }
+        }
+
+        if (overlay == OverlayType::Help) {
+            helpPanel.setOverlayMode(true);
+            helpPanel.render(window);
+        } else if (overlay == OverlayType::Settings) {
+            settingsPanel.setOverlayMode(true);
+            settingsPanel.render(window);
         }
 
         // 顶部属性面板（所有页面通用）
@@ -1557,6 +1857,7 @@ int main() {
         renderNotice(window, font, activityNotice);
         renderChoicePrompt(window, font, classChoicePrompt);
         renderChoicePrompt(window, font, mealChoicePrompt);
+        renderNearbyHint(window, font, nearbyHint);
 
         window.display();
     }

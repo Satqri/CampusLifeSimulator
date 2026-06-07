@@ -7,7 +7,7 @@
 
 /**
  * @class HelpPanel
- * @brief Help and settings page that explains controls and basic game rules.
+ * @brief 帮助界面组件，可作为独立页面或覆盖层显示。
  */
 class HelpPanel : public UIComponent {
 public:
@@ -15,6 +15,7 @@ public:
 
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
+    void setOverlayMode(bool overlayMode);
 
 private:
     void drawLine(sf::RenderWindow& window, const std::string& text,
@@ -24,6 +25,7 @@ private:
     sf::Font& font;
     sf::RectangleShape background;
     sf::RectangleShape panel;
+    bool overlayMode = false;
 };
 
 #endif // CLS_UI_HELPPANEL_H

@@ -1,14 +1,23 @@
 #include "ui/TitleScreen.h"
 #include "core/AssetPath.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 
 TitleScreen::TitleScreen(sf::Font& fontRef, const std::string& backgroundPath)
-    : font(fontRef),
-      startButton({360.0f, 378.0f}, {240.0f, 72.0f}),
-      helpButton({860.0f, 440.0f}, {68.0f, 68.0f}) {
+    : font(fontRef)
+    , buttons{{
+        Button{sf::FloatRect({330.0f, 360.0f}, {300.0f, 88.0f}), "title.start", TitleAction::Start,
+               sf::Color(20, 154, 115, 238), sf::Color(232, 219, 160)},
+        Button{sf::FloatRect({772.0f, 92.0f}, {132.0f, 52.0f}), "title.settings", TitleAction::Settings,
+               sf::Color(46, 126, 180, 238), sf::Color(214, 227, 255)},
+        Button{sf::FloatRect({804.0f, 446.0f}, {100.0f, 50.0f}), "title.help", TitleAction::Help,
+               sf::Color(188, 164, 105, 235), sf::Color(246, 232, 178)}
+      }}
+{
     const std::string resolvedPath = cls::resolveAssetPath(backgroundPath);
     if (backgroundTexture.loadFromFile(resolvedPath)) {
         backgroundSprite = std::make_unique<sf::Sprite>(backgroundTexture);
@@ -40,24 +49,28 @@ void TitleScreen::render(sf::RenderWindow& window) {
     window.draw(shade);
     drawAmbientEffects(window);
 
-    sf::Text title(font, "Campus Life", 58);
+    sf::Text title = cls::makeText(font, cls::text("title.name"), 58);
     title.setFillColor(sf::Color(246, 255, 235));
     title.setOutlineColor(sf::Color(18, 48, 48));
     title.setOutlineThickness(3.0f);
     title.setPosition({278.0f, 188.0f});
     window.draw(title);
 
-    sf::Text subtitle(font, "Semester begins here", 18);
+    sf::Text subtitle = cls::makeText(font, cls::text("title.subtitle"), 18);
     subtitle.setFillColor(sf::Color(225, 246, 215));
-    subtitle.setPosition({385.0f, 270.0f});
+    subtitle.setPosition({355.0f, 270.0f});
     window.draw(subtitle);
 
-    drawButton(window, startButton, "New Semester", sf::Color(20, 154, 115, 238),
-               sf::Color(232, 219, 160));
-    drawButton(window, helpButton, "?", sf::Color(188, 164, 105, 235),
-               sf::Color(246, 232, 178));
+    drawButton(window, buttons[0], selectedIndex == 0);
+    drawButton(window, buttons[1], selectedIndex == 1);
+    drawButton(window, buttons[2], selectedIndex == 2);
 
-    sf::Text version(font, "v0.2.0", 13);
+    sf::Text navHint = cls::makeText(font, cls::text("title.nav"), 15);
+    navHint.setFillColor(sf::Color(235, 244, 218, 220));
+    navHint.setPosition({244.0f, 468.0f});
+    window.draw(navHint);
+
+    sf::Text version = cls::makeText(font, "v0.2.0", 13);
     version.setFillColor(sf::Color(230, 244, 218, 210));
     version.setPosition({28.0f, 500.0f});
     window.draw(version);
@@ -98,51 +111,68 @@ void TitleScreen::drawAmbientEffects(sf::RenderWindow& window) const {
     window.draw(vignette);
 }
 
-TitleAction TitleScreen::handleClick(sf::Vector2f mousePosition) const {
-    if (contains(startButton, mousePosition)) {
-        return TitleAction::Start;
-    }
-    if (contains(helpButton, mousePosition)) {
-        return TitleAction::Help;
+TitleAction TitleScreen::handleClick(sf::Vector2f mousePosition) {
+    for (std::size_t i = 0; i < buttons.size(); ++i) {
+        if (contains(buttons[i].bounds, mousePosition)) {
+            selectedIndex = i;
+            return buttons[i].action;
+        }
     }
     return TitleAction::None;
 }
 
-void TitleScreen::drawButton(sf::RenderWindow& window, const sf::FloatRect& bounds,
-                             const std::string& label, const sf::Color& fill,
-                             const sf::Color& outline) const {
-    sf::RectangleShape button(bounds.size);
-    button.setPosition(bounds.position);
-    button.setFillColor(fill);
-    button.setOutlineColor(outline);
-    button.setOutlineThickness(2.0f);
+void TitleScreen::moveSelection(int delta) {
+    if (buttons.empty()) return;
+    const int total = static_cast<int>(buttons.size());
+    int next = static_cast<int>(selectedIndex) + delta;
+    while (next < 0) next += total;
+    next %= total;
+    selectedIndex = static_cast<std::size_t>(next);
+}
 
-    if (bounds.size.x > 100.0f) {
-        const float pulse = (std::sin(elapsedTime * 2.4f) + 1.0f) * 0.5f;
-        for (int i = 3; i >= 1; --i) {
-            const float expand = static_cast<float>(i) * (4.0f + pulse * 1.8f);
-            sf::RectangleShape glow({bounds.size.x + expand * 2.0f, bounds.size.y + expand * 2.0f});
-            glow.setPosition({bounds.position.x - expand, bounds.position.y - expand});
-            glow.setFillColor(sf::Color(102, 255, 204, static_cast<std::uint8_t>(18 + i * 8 + pulse * 14)));
+void TitleScreen::setSelection(std::size_t index) {
+    if (index < buttons.size()) {
+        selectedIndex = index;
+    }
+}
+
+TitleAction TitleScreen::confirmSelection() const {
+    return buttons[selectedIndex].action;
+}
+
+void TitleScreen::drawButton(sf::RenderWindow& window, const Button& button, bool selected) const {
+    sf::RectangleShape base(button.bounds.size);
+    base.setPosition(button.bounds.position);
+    base.setFillColor(button.fill);
+    base.setOutlineColor(button.outline);
+    base.setOutlineThickness(selected ? 4.0f : 2.0f);
+
+    const float pulse = (std::sin(elapsedTime * (selected ? 3.0f : 1.8f)) + 1.0f) * 0.5f;
+    if (selected) {
+        for (int i = 4; i >= 1; --i) {
+            const float expand = static_cast<float>(i) * (3.8f + pulse * 2.1f);
+            sf::RectangleShape glow({button.bounds.size.x + expand * 2.0f, button.bounds.size.y + expand * 2.0f});
+            glow.setPosition({button.bounds.position.x - expand, button.bounds.position.y - expand});
+            glow.setFillColor(sf::Color(255, 247, 160, static_cast<std::uint8_t>(16 + i * 10 + pulse * 30)));
             window.draw(glow);
         }
     }
 
-    window.draw(button);
+    window.draw(base);
 
-    sf::RectangleShape footer({bounds.size.x, std::min(18.0f, bounds.size.y * 0.28f)});
-    footer.setPosition({bounds.position.x, bounds.position.y + bounds.size.y - footer.getSize().y});
-    footer.setFillColor(sf::Color(182, 152, 98, 210));
+    sf::RectangleShape footer({button.bounds.size.x, std::min(18.0f, button.bounds.size.y * 0.28f)});
+    footer.setPosition({button.bounds.position.x, button.bounds.position.y + button.bounds.size.y - footer.getSize().y});
+    footer.setFillColor(selected ? sf::Color(255, 224, 130, 235) : sf::Color(182, 152, 98, 210));
     window.draw(footer);
 
-    const unsigned int size = bounds.size.x > 100.0f ? 21U : 30U;
-    sf::Text text(font, label, size);
-    text.setFillColor(sf::Color(248, 241, 214));
+    const unsigned int textSize = button.bounds.size.x >= 280.0f ? 28U : 18U;
+    sf::Text text = cls::makeText(font, cls::text(button.labelKey), textSize);
+    text.setFillColor(selected ? sf::Color(255, 252, 225) : sf::Color(248, 241, 214));
     const auto textBounds = text.getLocalBounds();
     text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
                     textBounds.position.y + textBounds.size.y / 2.0f});
-    text.setPosition({bounds.position.x + bounds.size.x / 2.0f,
-                      bounds.position.y + bounds.size.y / 2.0f - 3.0f});
+    text.setPosition({button.bounds.position.x + button.bounds.size.x / 2.0f,
+                      button.bounds.position.y + button.bounds.size.y / 2.0f - 3.0f});
     window.draw(text);
 }
 
