@@ -6,6 +6,7 @@
 #include <memory>
 
 class Player;
+class TimeSystem;
 
 /**
  * @class CampusMap
@@ -18,6 +19,7 @@ public:
     void render(sf::RenderWindow& window) override;
     std::vector<MapPortal> getPortals() const override;
     CampusPlace getPlace() const override { return CampusPlace::Campus; }
+    void setTimeSystem(const TimeSystem* time) { timeSystem = time; }
 
     /** @brief 渲染玩家（校园地图自行管理玩家渲染） */
     void renderPlayer(sf::RenderWindow& window, Player& player);
@@ -28,9 +30,12 @@ private:
 
     sf::Texture outdoorTiles;
     bool outdoorTilesLoaded;
+    const TimeSystem* timeSystem = nullptr;
 
     void drawPixlabSprite(sf::RenderWindow& window, const sf::IntRect& textureRect,
                           sf::Vector2f position, float scale = 1.0f);
+    void drawLamp(sf::RenderWindow& window, sf::Vector2f position, bool glow) const;
+    void drawTimeLighting(sf::RenderWindow& window) const;
 };
 
 #endif // CLS_MAP_CAMPUSMAP_H

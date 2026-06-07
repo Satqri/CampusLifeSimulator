@@ -6,6 +6,8 @@ DormitoryInterior::DormitoryInterior() {
          "A soft bed. A short rest might restore some energy before the next challenge."},
         {sf::FloatRect({636.0f, 112.0f}, {210.0f, 66.0f}),   "dormitory_desk", "Study at Desk",
          "Your desk is covered with notes and textbooks. A few hours of study could sharpen your academics."},
+        {sf::FloatRect({660.0f, 190.0f}, {168.0f, 62.0f}),   "dormitory_games", "Play Games",
+         "A small console and monitor. A little play can restore your mood, but too much drains energy."},
         {sf::FloatRect({365.0f, 285.0f}, {230.0f, 110.0f}),  "dormitory_rug",  "Sit on Rug",
          "A green rug in the middle of the room. A quiet place to sit and gather your thoughts."},
     };
@@ -28,6 +30,18 @@ void DormitoryInterior::render(sf::RenderWindow& window) {
     desk.setPosition({636.0f, 112.0f});
     desk.setFillColor(sf::Color(120, 78, 44));
     window.draw(desk);
+
+    sf::RectangleShape monitor({86.0f, 42.0f});
+    monitor.setPosition({686.0f, 190.0f});
+    monitor.setFillColor(sf::Color(32, 48, 62));
+    monitor.setOutlineColor(sf::Color(86, 118, 142));
+    monitor.setOutlineThickness(3.0f);
+    window.draw(monitor);
+
+    sf::RectangleShape console({54.0f, 18.0f});
+    console.setPosition({786.0f, 222.0f});
+    console.setFillColor(sf::Color(48, 48, 58));
+    window.draw(console);
 
     sf::RectangleShape rug({230.0f, 110.0f});
     rug.setPosition({365.0f, 285.0f});

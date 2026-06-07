@@ -1,5 +1,6 @@
 #include "map/CampusMap.h"
 #include "core/AssetPath.h"
+#include "core/TimeSystem.h"
 #include "entity/Player.h"
 
 static bool loadTextureFromCandidates(sf::Texture& texture, const std::string& relativePath) {
@@ -46,6 +47,61 @@ void CampusMap::drawBuilding(sf::RenderWindow& window, const MapPortal& portal,
     window.draw(door);
 
     drawLabel(window, label, {portal.area.position.x + 14.0f, portal.area.position.y + 14.0f});
+}
+
+void CampusMap::drawLamp(sf::RenderWindow& window, sf::Vector2f position, bool glow) const {
+    if (glow) {
+        sf::CircleShape outer(42.0f);
+        outer.setOrigin({42.0f, 42.0f});
+        outer.setPosition(position);
+        outer.setFillColor(sf::Color(255, 214, 118, 42));
+        window.draw(outer);
+
+        sf::CircleShape inner(22.0f);
+        inner.setOrigin({22.0f, 22.0f});
+        inner.setPosition(position);
+        inner.setFillColor(sf::Color(255, 228, 148, 74));
+        window.draw(inner);
+    }
+
+    sf::RectangleShape pole({5.0f, 30.0f});
+    pole.setOrigin({2.5f, 30.0f});
+    pole.setPosition({position.x, position.y + 22.0f});
+    pole.setFillColor(sf::Color(54, 58, 54));
+    window.draw(pole);
+
+    sf::CircleShape bulb(6.0f);
+    bulb.setOrigin({6.0f, 6.0f});
+    bulb.setPosition(position);
+    bulb.setFillColor(glow ? sf::Color(255, 226, 142) : sf::Color(178, 170, 128));
+    window.draw(bulb);
+}
+
+void CampusMap::drawTimeLighting(sf::RenderWindow& window) const {
+    if (!timeSystem) return;
+
+    sf::Color overlay(0, 0, 0, 0);
+    switch (timeSystem->currentPhase()) {
+        case TimePhase::EarlyMorning:
+        case TimePhase::Afternoon:
+            overlay = sf::Color(0, 0, 0, 0);
+            break;
+        case TimePhase::Noon:
+            overlay = sf::Color(255, 244, 196, 26);
+            break;
+        case TimePhase::Evening:
+            overlay = sf::Color(48, 32, 70, 82);
+            break;
+        case TimePhase::Night:
+            overlay = sf::Color(0, 8, 24, 168);
+            break;
+    }
+
+    if (overlay.a > 0) {
+        sf::RectangleShape shade({960.0f, 540.0f});
+        shade.setFillColor(overlay);
+        window.draw(shade);
+    }
 }
 
 void CampusMap::render(sf::RenderWindow& window) {
@@ -97,9 +153,22 @@ void CampusMap::render(sf::RenderWindow& window) {
     // 建筑
     const auto portals = getPortals();
     drawBuilding(window, portals[0], "Dorm", sf::Color(176, 112, 72), sf::Color(146, 74, 60));
-    drawBuilding(window, portals[1], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
-    drawBuilding(window, portals[2], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
-    drawBuilding(window, portals[3], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
+    drawBuilding(window, portals[1], "Gym", sf::Color(90, 134, 112), sf::Color(48, 92, 78));
+    drawBuilding(window, portals[2], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
+    drawBuilding(window, portals[3], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
+    drawBuilding(window, portals[4], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
+    drawTimeLighting(window);
+
+    const bool lampGlow = timeSystem
+        && (timeSystem->currentPhase() == TimePhase::Evening || timeSystem->currentPhase() == TimePhase::Night);
+    for (const sf::Vector2f lampPos : {
+             sf::Vector2f{404.0f, 92.0f}, sf::Vector2f{556.0f, 92.0f},
+             sf::Vector2f{394.0f, 220.0f}, sf::Vector2f{566.0f, 220.0f},
+             sf::Vector2f{392.0f, 332.0f}, sf::Vector2f{568.0f, 332.0f},
+             sf::Vector2f{246.0f, 182.0f}, sf::Vector2f{680.0f, 182.0f},
+             sf::Vector2f{282.0f, 438.0f}, sf::Vector2f{676.0f, 438.0f}}) {
+        drawLamp(window, lampPos, lampGlow);
+    }
 
     // 喷泉
     sf::CircleShape fountain(24.0f);
@@ -142,6 +211,8 @@ std::vector<MapPortal> CampusMap::getPortals() const {
     return {
         MapPortal{sf::FloatRect({80.0f, 86.0f}, {150.0f, 92.0f}), CampusPlace::Dormitory, SceneBackgroundType::Dormitory,
             {480.0f, 448.0f}, "Dormitory", "Backpacks drop by the bed; the next plan starts from a quiet room."},
+        MapPortal{sf::FloatRect({260.0f, 100.0f}, {110.0f, 76.0f}), CampusPlace::Gym, SceneBackgroundType::Gym,
+            {480.0f, 448.0f}, "Gym", "Rubber mats, bright lights, and steady breathing make room for training."},
         MapPortal{sf::FloatRect({702.0f, 82.0f}, {168.0f, 96.0f}), CampusPlace::Library, SceneBackgroundType::Library,
             {480.0f, 448.0f}, "Library", "Between shelves and desk lamps, tomorrow's answers begin to take shape."},
         MapPortal{sf::FloatRect({92.0f, 352.0f}, {176.0f, 104.0f}), CampusPlace::Classroom, SceneBackgroundType::Classroom,
