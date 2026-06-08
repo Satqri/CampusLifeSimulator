@@ -14,10 +14,12 @@
 
 #include "core/AssetPath.h"
 #include "core/CombatResult.h"
+#include "core/Localization.h"
 #include "core/LibraryConfig.h"
 #include "core/MealConfig.h"
 #include "core/SceneConfig.h"
 #include "core/SceneTransition.h"
+#include "core/TextUtils.h"
 #include "core/TimeSkipFlash.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
@@ -96,7 +98,7 @@ void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSki
     blackout.setFillColor(sf::Color(0, 0, 0, 245));
     window.draw(blackout);
 
-    sf::Text text(font, flash.text, 20);
+    sf::Text text = cls::makeText(font, flash.text, 20);
     text.setFillColor(sf::Color(230, 230, 220));
     text.setPosition({360.0f, 252.0f});
     window.draw(text);
@@ -126,20 +128,20 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
     plate.setOutlineThickness(2.0f);
     window.draw(plate);
 
-    sf::Text title(font, transition.title, 34);
+    sf::Text title = cls::makeText(font, transition.title, 34);
     title.setFillColor(sf::Color(250, 240, 205));
     title.setOutlineColor(sf::Color(18, 42, 45));
     title.setOutlineThickness(2.0f);
     title.setPosition({190.0f, 352.0f});
     window.draw(title);
 
-    sf::Text subtitle(font, transition.subtitle, 18);
+    sf::Text subtitle = cls::makeText(font, transition.subtitle, 18);
     subtitle.setFillColor(sf::Color(224, 238, 220));
     subtitle.setPosition({190.0f, 407.0f});
     window.draw(subtitle);
 
     const bool ready = transition.canContinue();
-    sf::Text hint(font, ready ? "Press Enter to enter" : "Entering...", 13);
+    sf::Text hint = cls::makeText(font, ready ? "Press Enter to enter" : "Entering...", 13);
     hint.setFillColor(ready ? sf::Color(210, 210, 190, 180) : sf::Color(210, 210, 190, 110));
     hint.setPosition({190.0f, 444.0f});
     window.draw(hint);
@@ -151,6 +153,10 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
 // main
 // ──────────────────────────────────────────────────────────────
 int main() {
+#ifdef CLS_LANG_CHINESE
+    cls::setLanguage(cls::Language::Chinese);
+#endif
+
     // ── 窗口 ────────────────────────────────────────────────
     sf::RenderWindow window(sf::VideoMode({kWindowWidth, kWindowHeight}), "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
@@ -171,7 +177,12 @@ int main() {
         "C:/Windows/Fonts/arial.ttf",
     };
     for (const auto& path : fontCandidates) {
-        if (font.openFromFile(path)) { fontOk = true; break; }
+        if (font.openFromFile(path)) {
+            std::cout << "[Font] Loaded: " << path << std::endl;
+            fontOk = true; break;
+        } else {
+            std::cout << "[Font] Failed: " << path << std::endl;
+        }
     }
 #elif defined(__APPLE__)
     fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf")

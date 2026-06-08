@@ -22,11 +22,18 @@ find_package(nlohmann_json REQUIRED)
 # ── libcurl ──────────────────────────────────────────────
 find_package(CURL REQUIRED)
 
+# ── 语言选项（cmake -DCLS_LANG_CHINESE=ON 启用中文）────
+option(CLS_LANG_CHINESE "Build with Chinese UI (default: English)" OFF)
+
 # ── Source files ─────────────────────────────────────────
 file(GLOB_RECURSE CLS_HEADERS "src/*.h")
 file(GLOB_RECURSE CLS_SOURCES "src/*.cpp")
 
 add_executable(CampusLifeSimulator ${CLS_SOURCES} ${CLS_HEADERS})
+
+if(CLS_LANG_CHINESE)
+    target_compile_definitions(CampusLifeSimulator PRIVATE CLS_LANG_CHINESE)
+endif()
 
 target_include_directories(CampusLifeSimulator PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
@@ -38,4 +45,4 @@ target_link_libraries(CampusLifeSimulator PRIVATE
     CURL::libcurl
 )
 
-target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4,-Wall -Wextra>)
+target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4 /utf-8,-Wall -Wextra>)

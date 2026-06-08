@@ -1,4 +1,5 @@
 #include "ui/TimePanel.h"
+#include "core/TextUtils.h"
 #include "core/TimeSystem.h"
 
 TimePanel::TimePanel(sf::Font& font) : mFont(font) {}
@@ -19,12 +20,12 @@ void TimePanel::render(sf::RenderWindow& window) {
     panel.setOutlineThickness(1.0f);
     window.draw(panel);
 
-    sf::Text clock(mFont, mTimeSystem->clockText(), 12);
+    sf::Text clock = cls::makeText(mFont, mTimeSystem->clockText(), 12);
     clock.setFillColor(sf::Color(235, 238, 220));
     clock.setPosition({665.0f, 8.0f});
     window.draw(clock);
 
-    sf::Text label(mFont, mTimeSystem->dayLabel(), 10);
+    sf::Text label = cls::makeText(mFont, mTimeSystem->dayLabel(), 10);
     label.setFillColor(mTimeSystem->isMidtermDay() ? sf::Color(255, 210, 120) : sf::Color(155, 180, 205));
     label.setPosition({665.0f, 23.0f});
     window.draw(label);
