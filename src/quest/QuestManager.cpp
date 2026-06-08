@@ -17,6 +17,28 @@ QuestManager::QuestManager()
 {
 }
 
+QuestManager::~QuestManager() = default;
+
+QuestManager::QuestManager(QuestManager&& other) noexcept
+    : questChain(std::move(other.questChain))
+    , completedEventCount(other.completedEventCount)
+    , currentQuestIndex(other.currentQuestIndex)
+    , currentQuest(std::move(other.currentQuest))
+    , allCompleted(other.allCompleted)
+    , questActive(other.questActive) {
+}
+
+QuestManager& QuestManager::operator=(QuestManager&& other) noexcept {
+    if (this == &other) return *this;
+    questChain = std::move(other.questChain);
+    completedEventCount = other.completedEventCount;
+    currentQuestIndex = other.currentQuestIndex;
+    currentQuest = std::move(other.currentQuest);
+    allCompleted = other.allCompleted;
+    questActive = other.questActive;
+    return *this;
+}
+
 bool QuestManager::loadQuestChain(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) return false;

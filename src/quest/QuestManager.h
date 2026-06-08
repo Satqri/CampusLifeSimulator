@@ -19,6 +19,11 @@ class MainQuest;
 class QuestManager {
 public:
     QuestManager();
+    ~QuestManager();
+    QuestManager(const QuestManager&) = delete;
+    QuestManager& operator=(const QuestManager&) = delete;
+    QuestManager(QuestManager&& other) noexcept;
+    QuestManager& operator=(QuestManager&& other) noexcept;
 
     /**
      * @brief 从 JSON 文件加载任务链配置

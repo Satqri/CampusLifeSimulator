@@ -1,15 +1,20 @@
 #include "state/MainQuestState.h"
-#include "quest/QuestManager.h"
-#include "quest/MainQuest.h"
-#include "quest/ExamQuest.h"
+
 #include "entity/Player.h"
+#include "game/Game.h"
+#include "quest/ExamQuest.h"
+#include "quest/MainQuest.h"
+#include "quest/QuestManager.h"
+#include "map/BuildingInterior.h"
+
 #include <sstream>
 
 MainQuestState::MainQuestState(Game* game, QuestManager* qm, Player* p)
     : GameState(game)
     , questManager(qm)
     , player(p)
-    , font()
+    , currentQuest()
+    , font(game->getFont())
     , titleText(font, "", 28)
     , descriptionText(font, "", 18)
     , choiceText0(font, "", 16)
@@ -22,16 +27,10 @@ MainQuestState::MainQuestState(Game* game, QuestManager* qm, Player* p)
     , selectedChoice(-1)
     , hoveredChoice(0)
 {
-#if defined(__APPLE__)
-    static_cast<void>(font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf"));
-#elif defined(_WIN32)
-    static_cast<void>(font.openFromFile("C:/Windows/Fonts/arial.ttf"));
-#elif defined(__linux__)
-    static_cast<void>(font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"));
-#endif
-
     background.setFillColor(sf::Color(0, 0, 0, 180));
 }
+
+MainQuestState::~MainQuestState() = default;
 
 sf::Text* MainQuestState::choiceTextPtr(int index) {
     switch (index) {
@@ -44,7 +43,9 @@ sf::Text* MainQuestState::choiceTextPtr(int index) {
 }
 
 void MainQuestState::onEnter() {
-    currentQuest = questManager->createNextQuest();
+    if (!currentQuest) {
+        currentQuest = questManager->createNextQuest();
+    }
     selectedChoice = -1;
     hoveredChoice = 0;
     updateTextDisplay();
@@ -59,10 +60,13 @@ void MainQuestState::onExit() {
 }
 
 void MainQuestState::handleInput(const sf::Event& event) {
-    if (!currentQuest) return;
+    if (!currentQuest) {
+        game->requestStateChange(StateType::EXPLORATION);
+        return;
+    }
 
     int choiceMade = -1;
-    bool advanced = currentQuest->handleInput(event, *player, choiceMade);
+    const bool advanced = currentQuest->handleInput(event, *player, choiceMade);
 
     if (choiceMade >= 0) {
         selectedChoice = choiceMade;
@@ -71,6 +75,9 @@ void MainQuestState::handleInput(const sf::Event& event) {
     if (advanced) {
         if (currentQuest->isCompleted()) {
             onExit();
+            game->setStatusMessage(cls::text("status.quest_completed"));
+            game->requestStateChange(StateType::EXPLORATION);
+            return;
         }
         updateTextDisplay();
     }
@@ -83,19 +90,22 @@ void MainQuestState::update(float deltaTime) {
 void MainQuestState::render(sf::RenderWindow& window) {
     if (!currentQuest) return;
 
+    BuildingInterior* currentMap = game->getCurrentMap();
+    if (currentMap) currentMap->render(window);
+    game->getPlayer().render(window);
+
     window.draw(background);
     window.draw(titleText);
     window.draw(descriptionText);
 
-    QuestPhase phase = currentQuest->getCurrentPhase();
-    MainQuestType qtype = currentQuest->getQuestType();
-    bool isExam = (qtype == MainQuestType::MIDTERM_EXAM || qtype == MainQuestType::FINAL_EXAM);
+    const QuestPhase phase = currentQuest->getCurrentPhase();
+    const MainQuestType qtype = currentQuest->getQuestType();
+    const bool isExam = (qtype == MainQuestType::MIDTERM_EXAM || qtype == MainQuestType::FINAL_EXAM);
 
     if (isExam && phase != QuestPhase::COMPLETED) {
         window.draw(statText);
     }
 
-    // 渲染选项文本
     if (phase == QuestPhase::CHOICE || phase == QuestPhase::PREPARATION) {
         for (int i = 0; i < static_cast<int>(currentQuest->getChoiceTexts().size()); ++i) {
             if (auto* t = choiceTextPtr(i)) window.draw(*t);
@@ -108,9 +118,9 @@ void MainQuestState::render(sf::RenderWindow& window) {
 void MainQuestState::updateTextDisplay() {
     if (!currentQuest) return;
 
-    QuestPhase phase = currentQuest->getCurrentPhase();
-    MainQuestType qtype = currentQuest->getQuestType();
-    bool isExam = (qtype == MainQuestType::MIDTERM_EXAM || qtype == MainQuestType::FINAL_EXAM);
+    const QuestPhase phase = currentQuest->getCurrentPhase();
+    const MainQuestType qtype = currentQuest->getQuestType();
+    const bool isExam = (qtype == MainQuestType::MIDTERM_EXAM || qtype == MainQuestType::FINAL_EXAM);
 
     titleText.setString(currentQuest->getQuestName());
     titleText.setFillColor(sf::Color::White);
@@ -120,7 +130,6 @@ void MainQuestState::updateTextDisplay() {
     descriptionText.setFillColor(sf::Color(220, 220, 220));
     descriptionText.setPosition({80.0f, 110.0f});
 
-    // 清空所有选项文本
     for (int i = 0; i < 4; ++i) {
         if (auto* t = choiceTextPtr(i)) {
             t->setString("");
@@ -129,32 +138,24 @@ void MainQuestState::updateTextDisplay() {
         }
     }
 
-    // 填充选项文本
     const auto& choices = currentQuest->getChoiceTexts();
     if ((phase == QuestPhase::CHOICE || phase == QuestPhase::PREPARATION) && !choices.empty()) {
+        hoveredChoice = currentQuest->getHoveredChoiceIndex();
         for (int i = 0; i < static_cast<int>(choices.size()); ++i) {
             auto* t = choiceTextPtr(i);
             if (!t) continue;
 
-            std::string prefix;
-            if (phase == QuestPhase::PREPARATION) {
-                prefix = (i == hoveredChoice) ? "> " : "  ";
-            } else {
-                prefix = (i == hoveredChoice) ? "> " : "  ";
-            }
-
+            const std::string prefix = (i == hoveredChoice) ? "> " : "  ";
             const auto& outcomes = currentQuest->getChoiceOutcomes();
             std::string line = prefix + choices[i];
             if (i < static_cast<int>(outcomes.size()) && phase != QuestPhase::PREPARATION) {
                 line += "  [" + formatDelta(outcomes[i]) + "]";
             }
             t->setString(line);
-            t->setFillColor(
-                i == hoveredChoice ? sf::Color(255, 255, 100) : sf::Color(200, 200, 200));
+            t->setFillColor(i == hoveredChoice ? sf::Color(255, 255, 100) : sf::Color(200, 200, 200));
         }
     }
 
-    // 考试特殊 UI
     if (isExam && phase != QuestPhase::COMPLETED) {
         auto* exam = dynamic_cast<ExamQuest*>(currentQuest.get());
         if (exam) {
@@ -166,13 +167,15 @@ void MainQuestState::updateTextDisplay() {
                    << " | Need " << exam->getRequiredPasses() << " passes";
                 if (phase == QuestPhase::PREPARATION) {
                     ss << "\n\nReview before exam?";
-                    if (exam->getHasReviewed())
-                        ss << "  > [YES]    [NO]  (-" << exam->getReviewEnergyCost() << " Energy, +" << exam->getReviewBonus() << " bonus)";
-                    else
+                    if (exam->getHasReviewed()) {
+                        ss << "  > [YES]    [NO]  (-" << exam->getReviewEnergyCost()
+                           << " Energy, +" << exam->getReviewBonus() << " bonus)";
+                    } else {
                         ss << "    [YES]  > [NO]  (skip review)";
+                    }
                 }
             } else if (phase == QuestPhase::EXAM_ROUND || phase == QuestPhase::ROUND_RESULT) {
-                ss << "Round " << exam->getCurrentRound() << "/" << exam->getTotalRounds()
+                ss << "Round " << exam->getCurrentRound() << '/' << exam->getTotalRounds()
                    << " | Subject: " << exam->getExamSubject()
                    << " | DC: " << exam->getSubjectDC()
                    << " | Passed: " << exam->getScore() << " rounds";
@@ -186,9 +189,9 @@ void MainQuestState::updateTextDisplay() {
                        << " -> " << (roll.success ? "Pass!" : "Failed");
                 }
             } else if (phase == QuestPhase::FINAL_RESULT) {
-                bool passed = exam->getPassed();
+                const bool passed = exam->getPassed();
                 ss << "Result: " << (passed ? "Pass!" : "Failed")
-                   << " | Score: " << exam->getScore() << "/" << exam->getTotalRounds();
+                   << " | Score: " << exam->getScore() << '/' << exam->getTotalRounds();
             }
             statText.setString(ss.str());
             statText.setFillColor(sf::Color(180, 220, 255));
@@ -196,7 +199,6 @@ void MainQuestState::updateTextDisplay() {
         }
     }
 
-    // 提示文本
     promptText.setFillColor(sf::Color(150, 150, 150));
     promptText.setPosition({80.0f, 460.0f});
 
@@ -230,7 +232,7 @@ std::string MainQuestState::formatDelta(const Attributes& delta) const {
     bool first = true;
     auto add = [&](const char* name, int val) {
         if (val == 0) return;
-        if (!first) ss << " ";
+        if (!first) ss << ' ';
         first = false;
         ss << name << (val > 0 ? "+" : "") << val;
     };
