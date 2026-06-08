@@ -516,11 +516,8 @@ int main() {
             }
 
             if (activityNotice.active) {
-                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    if (keyEv->code == sf::Keyboard::Key::Enter || keyEv->code == sf::Keyboard::Key::Escape) {
-                        activityNotice.clear();
-                    }
-                } else if (event.is<sf::Event::MouseButtonPressed>()) {
+                if (justPressed(sf::Keyboard::Key::Enter)
+                    || justPressed(sf::Keyboard::Key::Escape)) {
                     activityNotice.clear();
                 }
                 continue;
@@ -621,7 +618,7 @@ int main() {
                 std::cout << "[Buff] Victory buff set: +2 to rolls" << std::endl;
             }
 
-            if (justPressed(sf::Keyboard::Key::Enter)) {
+            if (justPressed(sf::Keyboard::Key::Enter) && !activityNotice.active) {
                 // 第一层：场景传送门（进出建筑）
                 bool portalFound = false;
                 for (const auto& portal : currentMap->getPortals()) {
@@ -636,8 +633,7 @@ int main() {
                     const InteractionPoint* ip = currentMap->getInteractionAt(player.getPosition());
                     if (ip) {
                         std::cout << "[Interact] " << ip->label
-                                  << " (" << ip->actionId << ")"
-                                  << " — " << ip->description << std::endl;
+                                  << " (" << ip->actionId << ")" << std::endl;
                         handleInteraction(*ip);
                     }
                 }

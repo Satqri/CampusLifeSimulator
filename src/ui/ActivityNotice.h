@@ -5,7 +5,7 @@
 
 /**
  * @struct ActivityNotice
- * @brief 活动通知弹窗状态 — 标题 + 正文 + Enter 继续
+ * @brief 活动通知弹窗状态 — 按 Enter 弹出，再按 Enter 关闭（需先释放）
  */
 struct ActivityNotice {
     bool active = false;
