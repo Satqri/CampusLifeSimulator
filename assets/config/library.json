@@ -1,0 +1,24 @@
+{
+  "books": [
+    {
+      "name": "Reference Methods",
+      "skill": "Research",
+      "delta": { "san": -3, "energy": -6, "academic": 4, "social": 0, "gold": 0 }
+    },
+    {
+      "name": "Literature Notes",
+      "skill": "Reflection",
+      "delta": { "san": 2, "energy": -5, "academic": 0, "social": 3, "gold": 0 }
+    },
+    {
+      "name": "Science Primer",
+      "skill": "Logic",
+      "delta": { "san": -4, "energy": -7, "academic": 6, "social": 0, "gold": 0 }
+    },
+    {
+      "name": "Campus History",
+      "skill": "Context",
+      "delta": { "san": -2, "energy": -5, "academic": 2, "social": 4, "gold": 0 }
+    }
+  ]
+}

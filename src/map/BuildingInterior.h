@@ -4,6 +4,7 @@
 #include "map/MapPortal.h"
 #include "ui/UIComponent.h"
 #include <SFML/Graphics.hpp>
+#include <string>
 #include <vector>
 
 class Player;
@@ -56,6 +57,13 @@ public:
      * 超出边界时停止玩家移动。
      */
     void clampPlayer(Player& player) const;
+
+    /**
+     * @brief 从 JSON 文件加载交互点列表
+     * @param path JSON 文件路径
+     * @return 交互点列表
+     */
+    static std::vector<InteractionPoint> loadInteractionsFromJson(const std::string& path);
 
 protected:
     const sf::Font* font = nullptr;

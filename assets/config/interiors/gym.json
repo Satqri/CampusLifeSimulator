@@ -1,0 +1,40 @@
+{
+  "interactions": [
+    {
+      "area": { "x": 128.0, "y": 118.0, "w": 190.0, "h": 76.0 },
+      "actionId": "gym_treadmill_0",
+      "label": "Run on Treadmill",
+      "description": "A treadmill by the wall. A focused run could improve energy and clear your head."
+    },
+    {
+      "area": { "x": 610.0, "y": 118.0, "w": 190.0, "h": 76.0 },
+      "actionId": "gym_treadmill_1",
+      "label": "Run on Treadmill",
+      "description": "A treadmill facing the room. Keep pace and turn stress into motion."
+    },
+    {
+      "area": { "x": 168.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "actionId": "gym_barbell_0",
+      "label": "Lift Barbell",
+      "description": "A barbell station. Good timing and control could turn effort into strength."
+    },
+    {
+      "area": { "x": 338.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "actionId": "gym_barbell_1",
+      "label": "Lift Barbell",
+      "description": "A barbell station. Good timing and control could turn effort into strength."
+    },
+    {
+      "area": { "x": 508.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "actionId": "gym_barbell_2",
+      "label": "Lift Barbell",
+      "description": "A barbell station. Good timing and control could turn effort into strength."
+    },
+    {
+      "area": { "x": 678.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "actionId": "gym_barbell_3",
+      "label": "Lift Barbell",
+      "description": "A barbell station. Good timing and control could turn effort into strength."
+    }
+  ]
+}

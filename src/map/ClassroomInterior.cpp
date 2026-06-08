@@ -1,23 +1,9 @@
 #include "map/ClassroomInterior.h"
-#include <string>
+#include "core/AssetPath.h"
 
 ClassroomInterior::ClassroomInterior() {
-    // 黑板
-    interactions.push_back(InteractionPoint{
-        sf::FloatRect({220.0f, 82.0f}, {520.0f, 58.0f}), "classroom_board", "Look at Board",
-        "The blackboard is covered with today's lecture notes. Reviewing them might give you an edge."});
-
-    // 课桌 3 行 × 5 列
-    for (int row = 0; row < 3; ++row) {
-        for (int col = 0; col < 5; ++col) {
-            interactions.push_back(InteractionPoint{
-                sf::FloatRect({180.0f + col * 122.0f, 202.0f + row * 72.0f}, {72.0f, 34.0f}),
-                "classroom_desk_" + std::to_string(row) + "_" + std::to_string(col),
-                "Sit at Desk",
-                "A wooden desk. Sitting here and focusing on the lesson could sharpen your academic skills."
-            });
-        }
-    }
+    interactions = loadInteractionsFromJson(
+        cls::resolveAssetPath("assets/config/interiors/classroom.json"));
 }
 
 void ClassroomInterior::render(sf::RenderWindow& window) {

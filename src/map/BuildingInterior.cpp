@@ -1,5 +1,7 @@
 #include "map/BuildingInterior.h"
 #include "entity/Player.h"
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 void BuildingInterior::clampPlayer(Player& player) const {
     float minX = kPlayerHalfSize;
@@ -64,6 +66,27 @@ void BuildingInterior::drawPortalMarkers(sf::RenderWindow& window) const {
         marker.setOutlineThickness(2.0f);
         window.draw(marker);
     }
+}
+
+std::vector<InteractionPoint> BuildingInterior::loadInteractionsFromJson(const std::string& path) {
+    std::vector<InteractionPoint> result;
+    std::ifstream file(path);
+    if (!file.is_open()) return result;
+    nlohmann::json data;
+    file >> data;
+    for (const auto& ip : data["interactions"]) {
+        InteractionPoint point;
+        const auto& a = ip["area"];
+        point.area = sf::FloatRect(
+            sf::Vector2f(a.value("x", 0.0f), a.value("y", 0.0f)),
+            sf::Vector2f(a.value("w", 0.0f), a.value("h", 0.0f))
+        );
+        point.actionId = ip.value("actionId", "");
+        point.label = ip.value("label", "");
+        point.description = ip.value("description", "");
+        result.push_back(point);
+    }
+    return result;
 }
 
 void BuildingInterior::drawLabel(sf::RenderWindow& window, const std::string& text,
