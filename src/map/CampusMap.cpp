@@ -12,6 +12,11 @@ static bool loadTextureFromCandidates(sf::Texture& texture, const std::string& r
 CampusMap::CampusMap() {
     outdoorTilesLoaded = loadTextureFromCandidates(
         outdoorTiles, "assets/tilesets/pixlab24_topdown_tileset.png");
+
+    // 添加建筑碰撞体（与 MapPortal area 一致）
+    for (const auto& portal : getPortals()) {
+        obstacles.push_back(portal.area);
+    }
 }
 
 void CampusMap::drawPixlabSprite(sf::RenderWindow& window, const sf::IntRect& textureRect,

@@ -36,16 +36,26 @@ public:
     }
 
     /**
-     * @brief 根据位置查找交互点
-     * @param position 玩家位置
-     * @return 匹配的交互点指针，无匹配返回 nullptr
+     * @brief 根据位置查找交互点（检测范围向外扩展 10px，允许从家具边缘交互）
      */
     const InteractionPoint* getInteractionAt(sf::Vector2f position) const {
+        static constexpr float kMargin = 16.0f;
         for (const auto& ip : interactions) {
-            if (pointInRect(position, ip.area))
+            const sf::FloatRect expanded(
+                ip.area.position - sf::Vector2f(kMargin, kMargin),
+                ip.area.size + sf::Vector2f(kMargin * 2, kMargin * 2));
+            if (pointInRect(position, expanded))
                 return &ip;
         }
         return nullptr;
+    }
+
+    /** @brief 把交互点区域复制为障碍物 */
+    void initObstaclesFromInteractions() {
+        obstacles.clear();
+        for (const auto& ip : interactions) {
+            obstacles.push_back(ip.area);
+        }
     }
 
     void setFont(const sf::Font* f) { font = f; }
@@ -65,9 +75,23 @@ public:
      */
     static std::vector<InteractionPoint> loadInteractionsFromJson(const std::string& path);
 
+    // ── 碰撞 ──────────────────────────────────────────────────
+
+    /**
+     * @brief 将玩家推离所有障碍物
+     * @param player 玩家对象
+     */
+    void resolveCollisions(Player& player) const;
+
+    /**
+     * @brief 获取当前地图的障碍物列表（子类可追加）
+     */
+    std::vector<sf::FloatRect>& getObstacles() { return obstacles; }
+
 protected:
     const sf::Font* font = nullptr;
     std::vector<InteractionPoint> interactions;
+    std::vector<sf::FloatRect> obstacles;
 
     // ── 室内共享渲染辅助 ──────────────────────────────────────
 

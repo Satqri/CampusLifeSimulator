@@ -4,6 +4,7 @@
 ClassroomInterior::ClassroomInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/classroom.json"));
+    initObstaclesFromInteractions();
 }
 
 void ClassroomInterior::render(sf::RenderWindow& window) {

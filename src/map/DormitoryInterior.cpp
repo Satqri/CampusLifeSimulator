@@ -4,6 +4,7 @@
 DormitoryInterior::DormitoryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/dormitory.json"));
+    initObstaclesFromInteractions();
 }
 
 void DormitoryInterior::render(sf::RenderWindow& window) {

@@ -4,6 +4,7 @@
 LibraryInterior::LibraryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/library.json"));
+    initObstaclesFromInteractions();
 }
 
 void LibraryInterior::render(sf::RenderWindow& window) {

@@ -7,6 +7,7 @@
 GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/gym.json"));
+    initObstaclesFromInteractions();
 }
 
 void GymInterior::render(sf::RenderWindow& window) {

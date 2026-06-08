@@ -2,6 +2,7 @@
 #include "core/Localization.h"
 #include "core/TextUtils.h"
 #include "entity/Player.h"
+#include <algorithm>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -89,6 +90,47 @@ std::vector<InteractionPoint> BuildingInterior::loadInteractionsFromJson(const s
         result.push_back(point);
     }
     return result;
+}
+
+void BuildingInterior::resolveCollisions(Player& player) const {
+    if (obstacles.empty()) return;
+
+    static constexpr float kHalf = kPlayerHalfSize;
+    const sf::Vector2f pos = player.getPosition();
+
+    for (const auto& ob : obstacles) {
+        const float playerLeft   = pos.x - kHalf;
+        const float playerRight  = pos.x + kHalf;
+        const float playerTop    = pos.y - kHalf;
+        const float playerBottom = pos.y + kHalf;
+
+        const float obLeft   = ob.position.x;
+        const float obRight  = ob.position.x + ob.size.x;
+        const float obTop    = ob.position.y;
+        const float obBottom = ob.position.y + ob.size.y;
+
+        const bool collides = playerRight > obLeft && playerLeft < obRight
+                           && playerBottom > obTop && playerTop < obBottom;
+        if (!collides) continue;
+
+        const float overlapLeft  = playerRight - obLeft;
+        const float overlapRight = obRight - playerLeft;
+        const float overlapTop   = playerBottom - obTop;
+        const float overlapBot   = obBottom - playerTop;
+
+        const float minOverlap = std::min({overlapLeft, overlapRight, overlapTop, overlapBot});
+
+        float newX = pos.x;
+        float newY = pos.y;
+
+        if (minOverlap == overlapLeft)       newX = obLeft - kHalf;
+        else if (minOverlap == overlapRight) newX = obRight + kHalf;
+        else if (minOverlap == overlapTop)   newY = obTop - kHalf;
+        else                                 newY = obBottom + kHalf;
+
+        player.setPosition(newX, newY);
+        player.stopMovement();
+    }
 }
 
 void BuildingInterior::drawLabel(sf::RenderWindow& window, const std::string& text,

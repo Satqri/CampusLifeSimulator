@@ -622,7 +622,11 @@ int main() {
                 // 第一层：场景传送门（进出建筑）
                 bool portalFound = false;
                 for (const auto& portal : currentMap->getPortals()) {
-                    if (pointInRect(player.getPosition(), portal.area)) {
+                    static constexpr float kPortalMargin = 16.0f;
+                    const sf::FloatRect expanded(
+                        portal.area.position - sf::Vector2f(kPortalMargin, kPortalMargin),
+                        portal.area.size + sf::Vector2f(kPortalMargin * 2, kPortalMargin * 2));
+                    if (pointInRect(player.getPosition(), expanded)) {
                         startMapTransition(portal);
                         portalFound = true;
                         break;
@@ -643,6 +647,7 @@ int main() {
 
             // 边界限制，防止走出地图
             currentMap->clampPlayer(player);
+            currentMap->resolveCollisions(player);
         }
 
         // ── 渲染 ──────────────────────────────────────────────

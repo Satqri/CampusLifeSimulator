@@ -4,6 +4,7 @@
 CafeteriaInterior::CafeteriaInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/cafeteria.json"));
+    initObstaclesFromInteractions();
 }
 
 void CafeteriaInterior::render(sf::RenderWindow& window) {
