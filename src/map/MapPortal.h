@@ -2,6 +2,7 @@
 #define CLS_MAP_MAPPORTAL_H
 
 #include "ui/SceneBackground.h"
+#include "core/Localization.h"
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
@@ -68,14 +69,14 @@ inline bool pointInRect(sf::Vector2f point, const sf::FloatRect& rect) {
  */
 inline std::string placeName(CampusPlace place) {
     switch (place) {
-        case CampusPlace::Campus:    return "Campus Map";
-        case CampusPlace::Dormitory: return "Dormitory";
-        case CampusPlace::Gym:       return "Gym";
-        case CampusPlace::Library:   return "Library";
-        case CampusPlace::Classroom: return "Classroom";
-        case CampusPlace::Cafeteria: return "Cafeteria";
+        case CampusPlace::Campus:    return cls::text("map.campus");
+        case CampusPlace::Dormitory: return cls::text("map.dormitory");
+        case CampusPlace::Gym:       return cls::text("map.gym");
+        case CampusPlace::Library:   return cls::text("map.library");
+        case CampusPlace::Classroom: return cls::text("map.classroom");
+        case CampusPlace::Cafeteria: return cls::text("map.cafeteria");
     }
-    return "Campus";
+    return cls::text("map.campus");
 }
 
 #endif // CLS_MAP_MAPPORTAL_H

@@ -1,4 +1,6 @@
 #include "map/BuildingInterior.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "entity/Player.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -53,7 +55,7 @@ void BuildingInterior::drawExitPortal(sf::RenderWindow& window) const {
     exit.setFillColor(sf::Color(38, 130, 100, 210));
     window.draw(exit);
     if (font) {
-        drawLabel(window, "Exit to Campus", {428.0f, 494.0f});
+        drawLabel(window, cls::text("map.exit_campus"), {428.0f, 494.0f});
     }
 }
 
@@ -92,7 +94,7 @@ std::vector<InteractionPoint> BuildingInterior::loadInteractionsFromJson(const s
 void BuildingInterior::drawLabel(sf::RenderWindow& window, const std::string& text,
                                   sf::Vector2f position, unsigned int size) const {
     if (!font) return;
-    sf::Text label(*font, text, size);
+    sf::Text label = cls::makeText(*font, text, size);
     label.setFillColor(sf::Color(244, 238, 206));
     label.setOutlineColor(sf::Color(30, 34, 30));
     label.setOutlineThickness(1.0f);

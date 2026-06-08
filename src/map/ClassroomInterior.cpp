@@ -31,6 +31,6 @@ std::vector<MapPortal> ClassroomInterior::getPortals() const {
     return {
         MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
                   SceneBackgroundType::Classroom, {480.0f, 448.0f},
-                  "Campus Square", "The main paths open again; choose where the day goes next."}
+                  cls::text("notice.campus_square"), cls::text("notice.campus_square.subtitle")}
     };
 }

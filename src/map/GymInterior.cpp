@@ -1,5 +1,8 @@
 #include "map/GymInterior.h"
 #include "core/AssetPath.h"
+#include "core/Localization.h"
+
+#include <string>
 
 GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
@@ -63,9 +66,9 @@ void GymInterior::render(sf::RenderWindow& window) {
     }
 
     if (font) {
-        drawLabel(window, "Treadmill", {146.0f, 204.0f});
-        drawLabel(window, "Treadmill", {628.0f, 204.0f});
-        drawLabel(window, "Barbells", {168.0f, 386.0f});
+        drawLabel(window, cls::text("gym.treadmill"), {146.0f, 204.0f});
+        drawLabel(window, cls::text("gym.treadmill"), {628.0f, 204.0f});
+        drawLabel(window, cls::text("gym.barbells"), {168.0f, 386.0f});
     }
 
     drawExitPortal(window);
@@ -76,6 +79,6 @@ std::vector<MapPortal> GymInterior::getPortals() const {
     return {
         MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
                   SceneBackgroundType::Gym, {480.0f, 448.0f},
-                  "Campus Square", "Fresh air returns after the echo of treadmills and weights."}
+                  cls::text("notice.campus_square"), cls::text("scene.gym.exit")}
     };
 }

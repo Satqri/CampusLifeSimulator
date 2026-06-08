@@ -22,24 +22,25 @@ class Player;
 class MainQuestState : public GameState {
 public:
     MainQuestState(Game* game, QuestManager* questManager, Player* player);
+    ~MainQuestState();
 
     void handleInput(const sf::Event& event) override;
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
 
     /** @brief 进入状态时调用，创建当前任务 */
-    void onEnter();
+    void onEnter() override;
 
     /** @brief 退出状态时调用，结算任务效果 */
-    void onExit();
+    void onExit() override;
 
 private:
     QuestManager* questManager;
     Player* player;
     std::unique_ptr<MainQuest> currentQuest;
 
-    // font 必须在 sf::Text 之前声明（Text 构造时需引用 font）
-    sf::Font font;
+    // 共享字体由 Game 持有，此处仅保存引用
+    sf::Font& font;
     sf::Text titleText;
     sf::Text descriptionText;
     sf::Text choiceText0;

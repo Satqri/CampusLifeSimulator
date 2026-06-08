@@ -1,17 +1,21 @@
 #include "ui/DifficultyPanel.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
+
+#include <algorithm>
 
 DifficultyPanel::DifficultyPanel(sf::Font& fontRef)
     : font(fontRef),
       backButton({34.0f, 34.0f}, {54.0f, 54.0f}),
       cards{{
-          Card{sf::FloatRect({118.0f, 144.0f}, {170.0f, 218.0f}), "Easy",
-              "More SAN and energy.\nExplore systems\nwith less pressure.", Difficulty::Easy,
+          Card{sf::FloatRect({118.0f, 144.0f}, {170.0f, 218.0f}), "difficulty.easy.title",
+              "difficulty.easy.desc", Difficulty::Easy,
               sf::Color(34, 170, 128)},
-          Card{sf::FloatRect({395.0f, 144.0f}, {170.0f, 218.0f}), "Normal",
-              "Balanced campus life.\nRecommended\nfirst run.", Difficulty::Normal,
+          Card{sf::FloatRect({395.0f, 144.0f}, {170.0f, 218.0f}), "difficulty.normal.title",
+              "difficulty.normal.desc", Difficulty::Normal,
               sf::Color(24, 154, 115)},
-          Card{sf::FloatRect({672.0f, 144.0f}, {170.0f, 218.0f}), "Hard",
-              "Lower SAN buffer.\nStress appears\nearlier.", Difficulty::Hard,
+          Card{sf::FloatRect({672.0f, 144.0f}, {170.0f, 218.0f}), "difficulty.hard.title",
+              "difficulty.hard.desc", Difficulty::Hard,
               sf::Color(206, 120, 80)}
       }} {
 }
@@ -37,21 +41,23 @@ void DifficultyPanel::render(sf::RenderWindow& window) {
     sf::RectangleShape back(backButton.size);
     back.setPosition(backButton.position);
     back.setFillColor(sf::Color(21, 158, 119));
+    back.setOutlineColor(selectedIndex == -1 ? sf::Color(255, 236, 150) : sf::Color(244, 239, 208));
+    back.setOutlineThickness(selectedIndex == -1 ? 3.0f : 1.0f);
     window.draw(back);
 
-    sf::Text backArrow(font, "<", 28);
+    sf::Text backArrow = cls::makeText(font, "<", 28);
     backArrow.setFillColor(sf::Color(244, 239, 208));
     backArrow.setPosition({52.0f, 42.0f});
     window.draw(backArrow);
 
-    sf::Text title(font, "Choose Difficulty", 28);
+    sf::Text title = cls::makeText(font, cls::text("difficulty.title"), 28);
     title.setFillColor(sf::Color(245, 235, 205));
-    title.setPosition({354.0f, 42.0f});
+    title.setPosition({320.0f, 42.0f});
     window.draw(title);
 
-    sf::Text subtitle(font, "(you can tune it later)", 18);
+    sf::Text subtitle = cls::makeText(font, cls::text("difficulty.subtitle"), 18);
     subtitle.setFillColor(sf::Color(224, 213, 188));
-    subtitle.setPosition({374.0f, 78.0f});
+    subtitle.setPosition({320.0f, 78.0f});
     window.draw(subtitle);
 
     sf::RectangleShape leftRule({270.0f, 2.0f});
@@ -64,29 +70,58 @@ void DifficultyPanel::render(sf::RenderWindow& window) {
     rightRule.setFillColor(sf::Color(160, 151, 124));
     window.draw(rightRule);
 
-    for (const auto& card : cards) {
-        drawCard(window, card);
+    for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
+        drawCard(window, cards[i], i == selectedIndex);
     }
 
-    sf::Text note(font, "Keyboard: 1 Easy   2 Normal   3 Hard   Esc Back", 16);
+    sf::Text note = cls::makeText(font, cls::text("difficulty.note"), 16);
     note.setFillColor(sf::Color(225, 217, 198));
-    note.setPosition({300.0f, 470.0f});
+    note.setPosition({258.0f, 470.0f});
     window.draw(note);
 }
 
-DifficultyAction DifficultyPanel::handleClick(sf::Vector2f mousePosition) const {
+DifficultyAction DifficultyPanel::handleClick(sf::Vector2f mousePosition) {
     if (contains(backButton, mousePosition)) {
+        selectedIndex = -1;
         return {DifficultyActionType::Back, Difficulty::Normal};
     }
-    for (const auto& card : cards) {
-        if (contains(card.bounds, mousePosition)) {
-            return {DifficultyActionType::Select, card.difficulty};
+    for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
+        if (contains(cards[i].bounds, mousePosition)) {
+            selectedIndex = i;
+            return {DifficultyActionType::Select, cards[i].difficulty};
         }
     }
     return {};
 }
 
-void DifficultyPanel::drawCard(sf::RenderWindow& window, const Card& card) const {
+void DifficultyPanel::moveSelection(int delta) {
+    if (selectedIndex == -1) {
+        selectedIndex = delta > 0 ? 0 : static_cast<int>(cards.size()) - 1;
+        return;
+    }
+    selectedIndex += delta;
+    if (selectedIndex < 0) selectedIndex = -1;
+    else if (selectedIndex >= static_cast<int>(cards.size())) selectedIndex = 0;
+}
+
+DifficultyAction DifficultyPanel::confirmSelection() const {
+    if (selectedIndex == -1) {
+        return {DifficultyActionType::Back, Difficulty::Normal};
+    }
+    return {DifficultyActionType::Select, cards[selectedIndex].difficulty};
+}
+
+void DifficultyPanel::drawCard(sf::RenderWindow& window, const Card& card, bool selected) const {
+    if (selected) {
+        for (int i = 3; i >= 1; --i) {
+            const float expand = static_cast<float>(i) * 4.0f;
+            sf::RectangleShape glow({card.bounds.size.x + expand * 2.0f, card.bounds.size.y + expand * 2.0f});
+            glow.setPosition({card.bounds.position.x - expand, card.bounds.position.y - expand});
+            glow.setFillColor(sf::Color(255, 238, 138, static_cast<std::uint8_t>(18 + i * 14)));
+            window.draw(glow);
+        }
+    }
+
     sf::RectangleShape art({card.bounds.size.x, 104.0f});
     art.setPosition(card.bounds.position);
     art.setFillColor(card.accent);
@@ -94,14 +129,14 @@ void DifficultyPanel::drawCard(sf::RenderWindow& window, const Card& card) const
 
     sf::RectangleShape nameStrip({card.bounds.size.x, 32.0f});
     nameStrip.setPosition({card.bounds.position.x, card.bounds.position.y + 104.0f});
-    nameStrip.setFillColor(sf::Color(188, 164, 105));
+    nameStrip.setFillColor(selected ? sf::Color(220, 188, 112) : sf::Color(188, 164, 105));
     window.draw(nameStrip);
 
     sf::RectangleShape outline(card.bounds.size);
     outline.setPosition(card.bounds.position);
     outline.setFillColor(sf::Color::Transparent);
-    outline.setOutlineColor(sf::Color(224, 209, 160));
-    outline.setOutlineThickness(2.0f);
+    outline.setOutlineColor(selected ? sf::Color(255, 241, 170) : sf::Color(224, 209, 160));
+    outline.setOutlineThickness(selected ? 4.0f : 2.0f);
     window.draw(outline);
 
     sf::CircleShape head(22.0f);
@@ -114,7 +149,7 @@ void DifficultyPanel::drawCard(sf::RenderWindow& window, const Card& card) const
     body.setFillColor(sf::Color(89, 72, 48));
     window.draw(body);
 
-    sf::Text title(font, card.title, 18);
+    sf::Text title = cls::makeText(font, cls::text(card.title), 18);
     title.setFillColor(sf::Color(245, 237, 208));
     const auto titleBounds = title.getLocalBounds();
     title.setOrigin({titleBounds.position.x + titleBounds.size.x / 2.0f,
@@ -123,7 +158,7 @@ void DifficultyPanel::drawCard(sf::RenderWindow& window, const Card& card) const
                        card.bounds.position.y + 120.0f});
     window.draw(title);
 
-    sf::Text desc(font, card.description, 13);
+    sf::Text desc = cls::makeText(font, cls::text(card.description), 13);
     desc.setFillColor(sf::Color(241, 233, 210));
     desc.setPosition({card.bounds.position.x + 14.0f, card.bounds.position.y + 150.0f});
     window.draw(desc);

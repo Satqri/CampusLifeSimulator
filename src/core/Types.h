@@ -88,6 +88,7 @@ enum class StateType {
     EXPLORATION,   ///< 探索状态：地图移动
     EVENT_DIALOG,  ///< 事件对话状态
     COMBAT,        ///< 战斗状态
+    MINI_GAME,     ///< 小游戏状态
     MAIN_QUEST,    ///< 主线任务状态
     MENU,          ///< 菜单状态
     GAME_OVER      ///< 游戏结束状态
