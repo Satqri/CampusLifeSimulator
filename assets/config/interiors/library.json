@@ -1,0 +1,34 @@
+{
+  "interactions": [
+    {
+      "area": { "x": 72.0, "y": 92.0, "w": 92.0, "h": 330.0 },
+      "actionId": "library_shelf_0",
+      "label": "Browse Shelf A",
+      "description": "Row upon row of reference books. Somewhere in these pages might be the answer you need."
+    },
+    {
+      "area": { "x": 292.0, "y": 92.0, "w": 92.0, "h": 330.0 },
+      "actionId": "library_shelf_1",
+      "label": "Browse Shelf B",
+      "description": "Literature and philosophy. A different kind of wisdom waits between these covers."
+    },
+    {
+      "area": { "x": 512.0, "y": 92.0, "w": 92.0, "h": 330.0 },
+      "actionId": "library_shelf_2",
+      "label": "Browse Shelf C",
+      "description": "Science and mathematics. Formulas and theories that could boost your exam performance."
+    },
+    {
+      "area": { "x": 732.0, "y": 92.0, "w": 92.0, "h": 330.0 },
+      "actionId": "library_shelf_3",
+      "label": "Browse Shelf D",
+      "description": "History and social studies. Understanding the past might help navigate the present."
+    },
+    {
+      "area": { "x": 390.0, "y": 260.0, "w": 180.0, "h": 64.0 },
+      "actionId": "library_table",
+      "label": "Read at Table",
+      "description": "A large reading table. A perfect spot to spread out your materials and focus."
+    }
+  ]
+}

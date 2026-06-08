@@ -1,18 +1,9 @@
 #include "map/LibraryInterior.h"
+#include "core/AssetPath.h"
 
 LibraryInterior::LibraryInterior() {
-    interactions = {
-        {sf::FloatRect({72.0f, 92.0f}, {92.0f, 330.0f}),          "library_shelf_0", "Browse Shelf A",
-         "Row upon row of reference books. Somewhere in these pages might be the answer you need."},
-        {sf::FloatRect({72.0f + 220.0f, 92.0f}, {92.0f, 330.0f}), "library_shelf_1", "Browse Shelf B",
-         "Literature and philosophy. A different kind of wisdom waits between these covers."},
-        {sf::FloatRect({72.0f + 440.0f, 92.0f}, {92.0f, 330.0f}), "library_shelf_2", "Browse Shelf C",
-         "Science and mathematics. Formulas and theories that could boost your exam performance."},
-        {sf::FloatRect({72.0f + 660.0f, 92.0f}, {92.0f, 330.0f}), "library_shelf_3", "Browse Shelf D",
-         "History and social studies. Understanding the past might help navigate the present."},
-        {sf::FloatRect({390.0f, 260.0f}, {180.0f, 64.0f}),         "library_table",   "Read at Table",
-         "A large reading table. A perfect spot to spread out your materials and focus."},
-    };
+    interactions = loadInteractionsFromJson(
+        cls::resolveAssetPath("assets/config/interiors/library.json"));
 }
 
 void LibraryInterior::render(sf::RenderWindow& window) {
@@ -45,6 +36,6 @@ std::vector<MapPortal> LibraryInterior::getPortals() const {
     return {
         MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
                   SceneBackgroundType::Library, {480.0f, 448.0f},
-                  "Campus Square", "The main paths open again; choose where the day goes next."}
+                  cls::text("notice.campus_square"), cls::text("notice.campus_square.subtitle")}
     };
 }

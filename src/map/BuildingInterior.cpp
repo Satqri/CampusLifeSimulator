@@ -1,5 +1,9 @@
 #include "map/BuildingInterior.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "entity/Player.h"
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 void BuildingInterior::clampPlayer(Player& player) const {
     float minX = kPlayerHalfSize;
@@ -51,7 +55,7 @@ void BuildingInterior::drawExitPortal(sf::RenderWindow& window) const {
     exit.setFillColor(sf::Color(38, 130, 100, 210));
     window.draw(exit);
     if (font) {
-        drawLabel(window, "Exit to Campus", {428.0f, 494.0f});
+        drawLabel(window, cls::text("map.exit_campus"), {428.0f, 494.0f});
     }
 }
 
@@ -66,10 +70,31 @@ void BuildingInterior::drawPortalMarkers(sf::RenderWindow& window) const {
     }
 }
 
+std::vector<InteractionPoint> BuildingInterior::loadInteractionsFromJson(const std::string& path) {
+    std::vector<InteractionPoint> result;
+    std::ifstream file(path);
+    if (!file.is_open()) return result;
+    nlohmann::json data;
+    file >> data;
+    for (const auto& ip : data["interactions"]) {
+        InteractionPoint point;
+        const auto& a = ip["area"];
+        point.area = sf::FloatRect(
+            sf::Vector2f(a.value("x", 0.0f), a.value("y", 0.0f)),
+            sf::Vector2f(a.value("w", 0.0f), a.value("h", 0.0f))
+        );
+        point.actionId = ip.value("actionId", "");
+        point.label = ip.value("label", "");
+        point.description = ip.value("description", "");
+        result.push_back(point);
+    }
+    return result;
+}
+
 void BuildingInterior::drawLabel(sf::RenderWindow& window, const std::string& text,
                                   sf::Vector2f position, unsigned int size) const {
     if (!font) return;
-    sf::Text label(*font, text, size);
+    sf::Text label = cls::makeText(*font, text, size);
     label.setFillColor(sf::Color(244, 238, 206));
     label.setOutlineColor(sf::Color(30, 34, 30));
     label.setOutlineThickness(1.0f);

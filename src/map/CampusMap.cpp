@@ -1,5 +1,7 @@
 #include "map/CampusMap.h"
 #include "core/AssetPath.h"
+#include "core/Localization.h"
+#include "core/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "entity/Player.h"
 
@@ -152,11 +154,11 @@ void CampusMap::render(sf::RenderWindow& window) {
 
     // 建筑
     const auto portals = getPortals();
-    drawBuilding(window, portals[0], "Dorm", sf::Color(176, 112, 72), sf::Color(146, 74, 60));
-    drawBuilding(window, portals[1], "Gym", sf::Color(90, 134, 112), sf::Color(48, 92, 78));
-    drawBuilding(window, portals[2], "Library", sf::Color(126, 136, 154), sf::Color(72, 88, 112));
-    drawBuilding(window, portals[3], "Classroom", sf::Color(190, 164, 98), sf::Color(134, 86, 54));
-    drawBuilding(window, portals[4], "Cafeteria", sf::Color(190, 132, 78), sf::Color(154, 78, 48));
+    drawBuilding(window, portals[0], cls::text("map.dorm.short"), sf::Color(176, 112, 72), sf::Color(146, 74, 60));
+    drawBuilding(window, portals[1], cls::text("map.gym"), sf::Color(90, 134, 112), sf::Color(48, 92, 78));
+    drawBuilding(window, portals[2], cls::text("map.library"), sf::Color(126, 136, 154), sf::Color(72, 88, 112));
+    drawBuilding(window, portals[3], cls::text("map.classroom"), sf::Color(190, 164, 98), sf::Color(134, 86, 54));
+    drawBuilding(window, portals[4], cls::text("map.cafeteria"), sf::Color(190, 132, 78), sf::Color(154, 78, 48));
     drawTimeLighting(window);
 
     const bool lampGlow = timeSystem
@@ -190,14 +192,14 @@ void CampusMap::render(sf::RenderWindow& window) {
     drawPortalMarkers(window);
 
     // 地点标题 + 提示
-    sf::Text title(*font, placeName(getPlace()), 22);
+    sf::Text title = cls::makeText(*font, placeName(getPlace()), 22);
     title.setFillColor(sf::Color(245, 238, 205));
     title.setOutlineColor(sf::Color(20, 30, 30));
     title.setOutlineThickness(2.0f);
     title.setPosition({18.0f, 50.0f});
     window.draw(title);
 
-    sf::Text hint(*font, "WASD Move  |  Enter: enter highlighted area  |  0/6 Help", 13);
+    sf::Text hint = cls::makeText(*font, cls::text("campus.move_hint"), 13);
     hint.setFillColor(sf::Color(235, 235, 210));
     hint.setPosition({18.0f, 510.0f});
     window.draw(hint);
@@ -210,14 +212,14 @@ void CampusMap::renderPlayer(sf::RenderWindow& window, Player& player) {
 std::vector<MapPortal> CampusMap::getPortals() const {
     return {
         MapPortal{sf::FloatRect({80.0f, 86.0f}, {150.0f, 92.0f}), CampusPlace::Dormitory, SceneBackgroundType::Dormitory,
-            {480.0f, 448.0f}, "Dormitory", "Backpacks drop by the bed; the next plan starts from a quiet room."},
+            {480.0f, 448.0f}, cls::text("map.dormitory"), cls::text("scene.dormitory.subtitle")},
         MapPortal{sf::FloatRect({260.0f, 100.0f}, {110.0f, 76.0f}), CampusPlace::Gym, SceneBackgroundType::Gym,
-            {480.0f, 448.0f}, "Gym", "Rubber mats, bright lights, and steady breathing make room for training."},
+            {480.0f, 448.0f}, cls::text("map.gym"), cls::text("scene.gym.subtitle")},
         MapPortal{sf::FloatRect({702.0f, 82.0f}, {168.0f, 96.0f}), CampusPlace::Library, SceneBackgroundType::Library,
-            {480.0f, 448.0f}, "Library", "Between shelves and desk lamps, tomorrow's answers begin to take shape."},
+            {480.0f, 448.0f}, cls::text("map.library"), cls::text("scene.library.subtitle")},
         MapPortal{sf::FloatRect({92.0f, 352.0f}, {176.0f, 104.0f}), CampusPlace::Classroom, SceneBackgroundType::Classroom,
-            {480.0f, 448.0f}, "Classroom", "The bell rings softly; notes, questions, and pressure wait inside."},
+            {480.0f, 448.0f}, cls::text("map.classroom"), cls::text("scene.classroom.subtitle")},
         MapPortal{sf::FloatRect({690.0f, 350.0f}, {182.0f, 106.0f}), CampusPlace::Cafeteria, SceneBackgroundType::Cafeteria,
-            {480.0f, 448.0f}, "Cafeteria", "Warm food and noisy tables make the campus feel briefly lighter."}
+            {480.0f, 448.0f}, cls::text("map.cafeteria"), cls::text("scene.cafeteria.subtitle")}
     };
 }

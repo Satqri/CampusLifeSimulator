@@ -1,16 +1,9 @@
 #include "map/DormitoryInterior.h"
+#include "core/AssetPath.h"
 
 DormitoryInterior::DormitoryInterior() {
-    interactions = {
-        {sf::FloatRect({90.0f, 108.0f}, {180.0f, 70.0f}),   "dormitory_bed",  "Rest on Bed",
-         "A soft bed. A short rest might restore some energy before the next challenge."},
-        {sf::FloatRect({636.0f, 112.0f}, {210.0f, 66.0f}),   "dormitory_desk", "Study at Desk",
-         "Your desk is covered with notes and textbooks. A few hours of study could sharpen your academics."},
-        {sf::FloatRect({660.0f, 190.0f}, {168.0f, 62.0f}),   "dormitory_games", "Play Games",
-         "A small console and monitor. A little play can restore your mood, but too much drains energy."},
-        {sf::FloatRect({365.0f, 285.0f}, {230.0f, 110.0f}),  "dormitory_rug",  "Sit on Rug",
-         "A green rug in the middle of the room. A quiet place to sit and gather your thoughts."},
-    };
+    interactions = loadInteractionsFromJson(
+        cls::resolveAssetPath("assets/config/interiors/dormitory.json"));
 }
 
 void DormitoryInterior::render(sf::RenderWindow& window) {
@@ -56,6 +49,6 @@ std::vector<MapPortal> DormitoryInterior::getPortals() const {
     return {
         MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
                   SceneBackgroundType::Dormitory, {480.0f, 448.0f},
-                  "Campus Square", "The main paths open again; choose where the day goes next."}
+                  cls::text("notice.campus_square"), cls::text("notice.campus_square.subtitle")}
     };
 }

@@ -1,4 +1,5 @@
 #include "core/TimeSystem.h"
+#include "core/Localization.h"
 
 #include <iomanip>
 #include <sstream>
@@ -83,16 +84,24 @@ std::string TimeSystem::clockText() const {
     const int minutePart = minute % 60;
 
     std::ostringstream ss;
-    ss << "Day " << std::setw(2) << std::setfill('0') << day
+    ss << cls::format("time.day", {{"day", std::to_string(day)}})
        << "/" << kMaxDay << "  "
-       << std::setw(2) << hour << ":" << std::setw(2) << minutePart;
+       << std::setw(2) << std::setfill('0') << hour << ":" << std::setw(2) << minutePart;
     return ss.str();
 }
 
 std::string TimeSystem::dayLabel() const {
-    if (finished) return "Project days finished";
-    if (isMidtermDay()) return "Midterm Day";
-    return "Campus Day";
+    if (finished) return cls::text("time.finished");
+    if (isMidtermDay()) return cls::text("page.midterm");
+
+    switch (currentPhase()) {
+        case TimePhase::EarlyMorning: return cls::text("time.early_morning");
+        case TimePhase::Noon:         return cls::text("time.noon");
+        case TimePhase::Afternoon:    return cls::text("time.afternoon");
+        case TimePhase::Evening:      return cls::text("time.evening");
+        case TimePhase::Night:        return cls::text("time.night");
+    }
+    return cls::text("time.afternoon");
 }
 
 int TimeSystem::displayMinute() const {

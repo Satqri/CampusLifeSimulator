@@ -1,4 +1,5 @@
 #include "ui/DialogBox.h"
+#include "core/TextUtils.h"
 
 DialogBox::DialogBox(sf::Font& font)
     : font(font)
@@ -61,18 +62,18 @@ void DialogBox::render(sf::RenderWindow& window) {
 
     const sf::Vector2f origin = panel.getPosition();
 
-    sf::Text titleText(font, title, 28);
+    sf::Text titleText = cls::makeText(font, title, 28);
     titleText.setFillColor(sf::Color::White);
     titleText.setPosition({origin.x + 20.0f, origin.y + 15.0f});
     window.draw(titleText);
 
-    sf::Text bodyText(font, body, 17);
+    sf::Text bodyText = cls::makeText(font, body, 17);
     bodyText.setFillColor(sf::Color(220, 220, 220));
     bodyText.setPosition({origin.x + 20.0f, origin.y + 65.0f});
     window.draw(bodyText);
 
     for (const auto& line : lines) {
-        sf::Text text(font, line.text, line.size);
+        sf::Text text = cls::makeText(font, line.text, line.size);
         text.setFillColor(line.color);
         text.setPosition({origin.x + line.offset.x, origin.y + line.offset.y});
         window.draw(text);

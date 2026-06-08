@@ -11,13 +11,23 @@ class Game;
  *
  * 继承关系: 根类，被 ExplorationState/EventDialogState/CombatState/MainQuestState 继承
  * 属性: game (指向主 Game 对象的指针)
- * 行为: handleInput()/update()/render() 纯虚接口
+ * 行为: handleInput()/update()/render() 纯虚接口，onEnter()/onExit() 生命周期钩子
  * 派生关系: 派生 4 种具体状态类
  */
 class GameState {
 public:
     explicit GameState(Game* game) : game(game) {}
     virtual ~GameState() = default;
+
+    /**
+     * @brief 进入状态时调用
+     */
+    virtual void onEnter() {}
+
+    /**
+     * @brief 退出状态时调用
+     */
+    virtual void onExit() {}
 
     /**
      * @brief 处理输入事件
