@@ -16,6 +16,7 @@
 #include "state/EventDialogState.h"
 #include "state/ExplorationState.h"
 #include "state/MainQuestState.h"
+#include "state/MiniGameState.h"
 
 #include <SFML/Window/Keyboard.hpp>
 
@@ -117,6 +118,7 @@ Game::Game()
     , screen(Screen::Title)
     , previousScreen(Screen::Title)
     , helpOverlayOpen(false)
+    , settingsModalOpen(false)
     , selectedDifficulty(Difficulty::Normal)
     , difficultyApplied(false)
     , settingsPanel(font)
@@ -143,6 +145,7 @@ Game::Game()
     , explorationState()
     , eventDialogState()
     , combatState()
+    , miniGameState()
     , currentState(nullptr)
     , currentStateType(std::nullopt)
     , pendingState(std::nullopt)
@@ -157,6 +160,8 @@ Game::Game()
     , randomEventCounter(0)
     , spawnCounter(0)
     , randomEventPending(false)
+    , hasMoveTarget(false)
+    , moveTarget(480.0f, 276.0f)
     , selectedLibraryBook(0)
     , libraryBookProgress{0, 0, 0, 0}
     , libraryBookNames{"Reference Methods", "Literature Notes", "Science Primer", "Campus History"}
@@ -190,6 +195,7 @@ Game::Game()
     explorationState = std::make_unique<ExplorationState>(this);
     eventDialogState = std::make_unique<EventDialogState>(this);
     combatState = std::make_unique<CombatState>(this);
+    miniGameState = std::make_unique<MiniGameState>(this);
 
     currentMap = campusMap.get();
 }
@@ -213,6 +219,38 @@ Game::~Game() = default;
 
 sf::RenderWindow& Game::getWindow() {
     return window;
+}
+
+void Game::requestExitConfirmation() {
+    showChoice(cls::text("notice.exit_confirm_title"),
+               cls::text("notice.exit_confirm_body"),
+               {cls::text("notice.exit_continue"), cls::text("notice.exit_now")},
+               [this](int choice) {
+                   if (choice == 1) {
+                       window.close();
+                   }
+               });
+}
+
+bool Game::isExplorationState() const {
+    return currentStateType.has_value() && *currentStateType == StateType::EXPLORATION;
+}
+
+void Game::setMoveTarget(sf::Vector2f target) {
+    moveTarget = target;
+    hasMoveTarget = true;
+}
+
+void Game::clearMoveTarget() {
+    hasMoveTarget = false;
+}
+
+bool Game::hasMoveDestination() const {
+    return hasMoveTarget;
+}
+
+sf::Vector2f Game::getMoveTarget() const {
+    return moveTarget;
 }
 
 sf::Font& Game::getFont() {
@@ -289,6 +327,9 @@ void Game::changeState(StateType nextState) {
         case StateType::COMBAT:
             currentState = combatState.get();
             break;
+        case StateType::MINI_GAME:
+            currentState = miniGameState.get();
+            break;
         case StateType::MAIN_QUEST:
             currentState = mainQuestState.get();
             break;
@@ -319,6 +360,7 @@ void Game::resetNewGame(Difficulty difficulty) {
     timeSkipFlash.clear();
     sceneTransition.clear();
     randomEventPending = false;
+    hasMoveTarget = false;
     selectedLibraryBook = 0;
     libraryBookProgress = {0, 0, 0, 0};
     heldMealIndex = -1;
@@ -426,6 +468,7 @@ bool Game::loadGame() {
     combatResult.clear();
     clearDialog();
     randomEventPending = false;
+    hasMoveTarget = false;
     setCurrentPlace(data.world.currentPlace, player.getPosition(), false);
     player.stopMovement();
 
@@ -625,15 +668,7 @@ void Game::handleInteraction(const InteractionPoint& point) {
             gamesPlayedToday = 0;
         }
         ++gamesPlayedToday;
-        if (gamesPlayedToday <= 2) {
-            runTimedActivity(60, Attributes(12, 8, 0, 0, 0), cls::text("notice.game_break_complete"),
-                             "Healthy game break: SAN +12, Energy +8. Daily plays: "
-                                 + std::to_string(gamesPlayedToday) + "/2.");
-        } else {
-            runTimedActivity(60, Attributes(4, -12, -2, 0, 0), cls::text("notice.overplayed"),
-                             "Too much gaming today: SAN +4, Energy -12, Academic -2. Daily plays: "
-                                 + std::to_string(gamesPlayedToday) + '.');
-        }
+        requestStateChange(StateType::MINI_GAME);
         return;
     }
 
@@ -755,17 +790,18 @@ void Game::applyAndSaveSettings() {
 
 void Game::openSettingsScreen() {
     settingsPanel.setEditing(false);
-    settingsPanel.setOverlayMode(false);
+    settingsPanel.setOverlayMode(true);
     previousScreen = screen;
-    screen = Screen::Settings;
+    settingsModalOpen = true;
 }
 
 void Game::closeSettingsScreen() {
+    settingsModalOpen = false;
     screen = previousScreen == Screen::Settings ? Screen::Title : previousScreen;
 }
 
 bool Game::isSettingsScreen() const {
-    return screen == Screen::Settings;
+    return settingsModalOpen;
 }
 
 const std::string& Game::getStatusMessage() const {
@@ -793,7 +829,7 @@ void Game::update(float deltaTime) {
             helpPanel.update(deltaTime);
             break;
         case Screen::Gameplay:
-            if (!sceneTransition.active && !timeSkipFlash.active && currentState && !helpOverlayOpen) {
+            if (!settingsModalOpen && !sceneTransition.active && !timeSkipFlash.active && currentState && !helpOverlayOpen) {
                 currentState->update(deltaTime);
             }
             break;
@@ -827,6 +863,7 @@ void Game::render() {
             } else if (currentState) {
                 currentState->render(window);
                 renderGlobalOverlays();
+                if (settingsModalOpen) settingsPanel.render(window);
             }
             break;
     }
@@ -836,7 +873,12 @@ void Game::render() {
 
 void Game::handleEvent(const sf::Event& event) {
     if (event.is<sf::Event::Closed>()) {
-        window.close();
+        requestExitConfirmation();
+        return;
+    }
+
+    if (settingsModalOpen && screen == Screen::Gameplay) {
+        handleHelpEvent(event);
         return;
     }
 
@@ -861,11 +903,13 @@ void Game::handleEvent(const sf::Event& event) {
 
 void Game::handleTitleEvent(const sf::Event& event) {
     if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+        const bool ctrl = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl)
+            || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
         if (keyEv->code == sf::Keyboard::Key::Enter) {
             screen = Screen::Difficulty;
-        } else if (keyEv->code == sf::Keyboard::Key::S) {
+        } else if (ctrl && keyEv->code == sf::Keyboard::Key::S) {
             openSettingsScreen();
-        } else if (keyEv->code == sf::Keyboard::Key::H) {
+        } else if (ctrl && keyEv->code == sf::Keyboard::Key::H) {
             screen = Screen::Help;
         }
     } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
@@ -922,8 +966,10 @@ void Game::handleDifficultyEvent(const sf::Event& event) {
 
 void Game::handleHelpEvent(const sf::Event& event) {
     if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-        if (screen == Screen::Settings) {
-            if (keyEv->code == sf::Keyboard::Key::Escape || keyEv->code == sf::Keyboard::Key::S) {
+        const bool ctrl = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl)
+            || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
+        if (screen == Screen::Settings || settingsModalOpen) {
+            if (keyEv->code == sf::Keyboard::Key::Escape || (ctrl && keyEv->code == sf::Keyboard::Key::S)) {
                 closeSettingsScreen();
             } else if (!settingsPanel.isEditing()) {
                 if (keyEv->code == sf::Keyboard::Key::Up) {
@@ -956,7 +1002,7 @@ void Game::handleHelpEvent(const sf::Event& event) {
             return;
         }
 
-        if (keyEv->code == sf::Keyboard::Key::Escape || keyEv->code == sf::Keyboard::Key::Enter || keyEv->code == sf::Keyboard::Key::H) {
+        if (keyEv->code == sf::Keyboard::Key::Escape || keyEv->code == sf::Keyboard::Key::Enter || (ctrl && keyEv->code == sf::Keyboard::Key::H)) {
             screen = Screen::Title;
         }
     } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
@@ -990,11 +1036,13 @@ void Game::handleGameplayEvent(const sf::Event& event) {
     if (timeSkipFlash.active) return;
 
     if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-        if (keyEv->code == sf::Keyboard::Key::H) {
+        const bool ctrl = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl)
+            || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
+        if (ctrl && keyEv->code == sf::Keyboard::Key::H) {
             toggleHelpOverlay();
             return;
         }
-        if (keyEv->code == sf::Keyboard::Key::S) {
+        if (ctrl && keyEv->code == sf::Keyboard::Key::S) {
             openSettingsScreen();
             return;
         }
@@ -1008,6 +1056,10 @@ void Game::handleGameplayEvent(const sf::Event& event) {
         }
         if (keyEv->code == sf::Keyboard::Key::Escape && helpOverlayOpen) {
             closeHelpOverlay();
+            return;
+        }
+        if (keyEv->code == sf::Keyboard::Key::Escape && !helpOverlayOpen && !hasActiveDialog()) {
+            requestExitConfirmation();
             return;
         }
     }

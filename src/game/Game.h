@@ -23,6 +23,7 @@
 #include "state/ExplorationState.h"
 #include "state/GameState.h"
 #include "state/MainQuestState.h"
+#include "state/MiniGameState.h"
 #include "ui/DifficultyPanel.h"
 #include "ui/HelpPanel.h"
 #include "ui/HUD.h"
@@ -82,6 +83,24 @@ public:
 
     /** @brief 获取当前是否位于设置界面 */
     bool isSettingsScreen() const;
+
+    /** @brief 设置鼠标移动目标 */
+    void setMoveTarget(sf::Vector2f target);
+
+    /** @brief 清除鼠标移动目标 */
+    void clearMoveTarget();
+
+    /** @brief 获取是否存在鼠标移动目标 */
+    bool hasMoveDestination() const;
+
+    /** @brief 获取鼠标移动目标 */
+    sf::Vector2f getMoveTarget() const;
+
+    /** @brief 显示退出确认 */
+    void requestExitConfirmation();
+
+    /** @brief 当前是否处于探索状态 */
+    bool isExplorationState() const;
 
     /** @brief 获取共享字体 */
     sf::Font& getFont();
@@ -315,6 +334,7 @@ private:
     Screen screen;
     Screen previousScreen;
     bool helpOverlayOpen;
+    bool settingsModalOpen;
     Difficulty selectedDifficulty;
     bool difficultyApplied;
 
@@ -345,6 +365,7 @@ private:
     std::unique_ptr<ExplorationState> explorationState;
     std::unique_ptr<EventDialogState> eventDialogState;
     std::unique_ptr<CombatState> combatState;
+    std::unique_ptr<MiniGameState> miniGameState;
     GameState* currentState;
     std::optional<StateType> currentStateType;
     std::optional<StateType> pendingState;
@@ -361,6 +382,9 @@ private:
     int randomEventCounter;
     int spawnCounter;
     bool randomEventPending;
+
+    bool hasMoveTarget;
+    sf::Vector2f moveTarget;
 
     int selectedLibraryBook;
     std::array<int, 4> libraryBookProgress;

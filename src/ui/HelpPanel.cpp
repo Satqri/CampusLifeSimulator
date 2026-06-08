@@ -42,6 +42,8 @@ void HelpPanel::render(sf::RenderWindow& window) {
     drawLine(window, cls::text("help.quest_ud"), {125.0f, 435.0f}, 15, sf::Color(215, 220, 235));
     drawLine(window, cls::text("help.quest_chain"), {125.0f, 460.0f}, 15, sf::Color(215, 220, 235));
     drawLine(window, cls::text("help.global"), {125.0f, 485.0f}, 15, sf::Color(255, 238, 188));
+    drawLine(window, cls::text("notice.standard_route_title"), {520.0f, 150.0f}, 18, sf::Color(255, 210, 120));
+    drawLine(window, cls::text("notice.standard_route_body"), {520.0f, 180.0f}, 14, sf::Color(215, 220, 235));
     drawLine(window, cls::text("help.close"), {125.0f, 508.0f}, 14, sf::Color(215, 220, 235));
 }
 

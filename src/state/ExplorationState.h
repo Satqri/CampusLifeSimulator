@@ -14,6 +14,9 @@ public:
     void handleInput(const sf::Event& event) override;
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
+
+private:
+    bool tryHandleInteractionAt(sf::Vector2f position);
 };
 
 #endif // CLS_STATE_EXPLORATIONSTATE_H

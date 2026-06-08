@@ -91,6 +91,6 @@ std::vector<MapPortal> GymInterior::getPortals() const {
     return {
         MapPortal{sf::FloatRect({410.0f, 482.0f}, {140.0f, 42.0f}), CampusPlace::Campus,
                   SceneBackgroundType::Gym, {480.0f, 448.0f},
-                  "Campus Square", "Fresh air returns after the echo of treadmills and weights."}
+                  cls::text("notice.campus_square"), cls::text("scene.gym.exit")}
     };
 }
