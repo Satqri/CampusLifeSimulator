@@ -1,5 +1,5 @@
 #include "interaction/CafeteriaInteraction.h"
-#include "engine/GameContext.h"
+#include "core/GameContext.h"
 #include "core/MealConfig.h"
 #include <sstream>
 

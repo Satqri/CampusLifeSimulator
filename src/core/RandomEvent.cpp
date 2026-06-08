@@ -1,4 +1,4 @@
-#include "event/RandomEvent.h"
+#include "core/RandomEvent.h"
 
 RandomEventLibrary::RandomEventLibrary()
     : localEvents{

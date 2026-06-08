@@ -1,6 +1,6 @@
 #include "interaction/LibraryInteraction.h"
 #include "core/LibraryConfig.h"
-#include "engine/GameContext.h"
+#include "core/GameContext.h"
 #include <sstream>
 
 namespace LibraryInteraction {

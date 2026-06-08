@@ -1,5 +1,5 @@
 #include "interaction/DormitoryInteraction.h"
-#include "engine/GameContext.h"
+#include "core/GameContext.h"
 #include <sstream>
 
 namespace DormitoryInteraction {

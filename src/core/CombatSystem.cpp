@@ -1,5 +1,5 @@
-#include "combat/CombatSystem.h"
-#include "engine/GameContext.h"
+#include "core/CombatSystem.h"
+#include "core/GameContext.h"
 #include "entity/CombatHelper.h"
 #include <cmath>
 #include <iostream>

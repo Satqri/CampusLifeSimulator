@@ -1,5 +1,5 @@
 #include "interaction/GymInteraction.h"
-#include "engine/GameContext.h"
+#include "core/GameContext.h"
 #include <sstream>
 
 namespace GymInteraction {

@@ -1,5 +1,5 @@
 #include "interaction/ClassroomInteraction.h"
-#include "engine/GameContext.h"
+#include "core/GameContext.h"
 #include "map/MapPortal.h"
 #include <cstdlib>
 #include <sstream>
