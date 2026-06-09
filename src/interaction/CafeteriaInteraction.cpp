@@ -76,7 +76,7 @@ void resolveMealChoice(GameContext& ctx, int mealIndex) {
         return;
     }
 
-    ctx.player.modifyAttributes(Attributes(0, 0, 0, 0, -meal.cost));
+    ctx.player.modifyAttributes(Attributes{.gold = -meal.cost});
     ctx.heldMealIndex = mealIndex;
     ctx.lastMealPickupSlot = slotId;
 

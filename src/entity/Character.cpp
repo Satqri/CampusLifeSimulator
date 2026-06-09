@@ -51,9 +51,10 @@ void Character::setName(const std::string& name) {
 }
 
 void Character::clampAttributes() {
-    attributes.san      = std::clamp(attributes.san,      0, 100);
     attributes.energy   = std::clamp(attributes.energy,   0, 100);
+    attributes.health   = std::clamp(attributes.health,   0, 100);
+    attributes.gold     = std::clamp(attributes.gold,     0, 9999);
+    attributes.san      = std::clamp(attributes.san,      0, 100);
     attributes.academic = std::clamp(attributes.academic, 0, 100);
     attributes.social   = std::clamp(attributes.social,   0, 100);
-    attributes.gold     = std::clamp(attributes.gold,     0, 9999);
 }

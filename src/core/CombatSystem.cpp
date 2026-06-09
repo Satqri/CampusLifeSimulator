@@ -73,11 +73,11 @@ bool fightNearestEnemy(GameContext& ctx) {
     ctx.combatResult.show(win, enemy->getName(), d20, mod, total, dc);
 
     if (win) {
-        ctx.player.modifyAttributes(Attributes(10, 0, 0, 0, 0));
+        ctx.player.modifyAttributes(Attributes{.san = 10});
         ctx.player.getCombatBuffs().nextEventPositive = true;
         ctx.player.getCombatBuffs().nextRollModifier = 2;
     } else {
-        ctx.player.modifyAttributes(Attributes(-15, 0, 0, 0, 0));
+        ctx.player.modifyAttributes(Attributes{.san = -15});
         ctx.player.getCombatBuffs().nextEventPositive = false;
         ctx.player.getCombatBuffs().nextRollModifier = 0;
     }

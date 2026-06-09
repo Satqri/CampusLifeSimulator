@@ -66,6 +66,15 @@ public:
     void modifyAttributes(const Attributes& delta);
 
     /**
+     * @brief 每日属性结算
+     *
+     * 每天结束时调用，检测长期低属性状态并施加跨属性惩罚：
+     * - 体力 < 30 连续 >= 2 天 → 扣健康
+     * - 健康 < 30 连续 >= 2 天 → 扣压力 / 知识 / 社交
+     */
+    void dailyAttributeCheck();
+
+    /**
      * @brief 检测 SAN 值是否处于危险水平
      * @return true 当 SAN < 30
      */
@@ -94,6 +103,11 @@ public:
      */
     void stopMovement();
 
+    /** @brief 获取低体力持续天数（用于 UI 提示） */
+    int getLowEnergyDays() const { return lowEnergyDays; }
+    /** @brief 获取低健康持续天数（用于 UI 提示） */
+    int getLowHealthDays() const { return lowHealthDays; }
+
 private:
     sf::Vector2f velocity;      ///< 当前移动速度
     float acceleration;         ///< 按住方向键时的加速度
@@ -101,6 +115,8 @@ private:
     float stopSpeedThreshold;   ///< 低于该速度时直接停止，避免抖动
     CombatBuffs combatBuffs;    ///< 战斗增益/减益效果
     sf::RectangleShape sprite;  ///< 简易像素精灵方块
+    int lowEnergyDays = 0;      ///< 连续低体力天数（>=2 触发扣健康）
+    int lowHealthDays = 0;      ///< 连续低健康天数（>=2 触发扣压力/知识/社交）
 };
 
 #endif // CLS_ENTITY_PLAYER_H

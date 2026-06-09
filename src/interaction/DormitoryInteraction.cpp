@@ -15,7 +15,7 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
     if (id == "dormitory_desk") {
         std::ostringstream body;
         body << ip.label << ". A focused study session sharpens the mind.";
-        ctx.runTimedActivity(45, Attributes(-6, -10, 7, 0, 0),
+        ctx.runTimedActivity(45, Attributes{.energy = -10, .san = -6, .academic = 7},
                              "Study Complete", body.str());
         return true;
     }
@@ -31,12 +31,12 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
         if (ctx.gamesPlayedToday <= 2) {
             std::ostringstream body;
             body << ip.label << " for 60 minutes. A good break clears the mind.";
-            ctx.runTimedActivity(60, Attributes(12, 8, 0, 0, 0),
+            ctx.runTimedActivity(60, Attributes{.energy = 8, .san = 12},
                                  "Game Break Complete", body.str());
         } else {
             std::ostringstream body;
             body << ip.label << " again for 60 minutes. Fun but draining — maybe stop here.";
-            ctx.runTimedActivity(60, Attributes(4, -12, -2, 0, 0),
+            ctx.runTimedActivity(60, Attributes{.energy = -12, .san = 4, .academic = -2},
                                  "Overplayed", body.str());
         }
         return true;

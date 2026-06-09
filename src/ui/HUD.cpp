@@ -43,8 +43,7 @@ void HUD::render(sf::RenderWindow& window) {
     const auto& buffs = player->getCombatBuffs();
 
     std::ostringstream ss;
-    ss << cls::text("hud.gold") << ':' << a.gold
-       << "  |  " << cls::text("hud.san_level") << ':' << player->getSanLevel()
+    ss << cls::text("hud.san_level") << ':' << player->getSanLevel()
        << "  |  " << cls::text("hud.buff") << ':'
        << (buffs.nextEventPositive ? cls::text("hud.win") : cls::text("hud.none"))
        << " d" << (buffs.nextRollModifier >= 0 ? "+" : "")
@@ -60,10 +59,18 @@ void HUD::render(sf::RenderWindow& window) {
 
     window.draw(stats);
     window.draw(page);
-    drawAttributeBar(window, cls::text("hud.san"), a.san, 100, {8.0f, 25.0f}, sf::Color(120, 210, 255));
-    drawAttributeBar(window, cls::text("hud.energy"), a.energy, 100, {190.0f, 25.0f}, sf::Color(100, 230, 150));
-    drawAttributeBar(window, cls::text("hud.academic"), a.academic, 100, {372.0f, 25.0f}, sf::Color(245, 205, 95));
-    drawAttributeBar(window, cls::text("hud.social"), a.social, 100, {554.0f, 25.0f}, sf::Color(205, 140, 255));
+
+    // 6 属性条：体力、健康、金钱、压力、知识、社交，均匀分布
+    constexpr float kSpacing = 152.0f;
+    constexpr float kStartX = 8.0f;
+    constexpr float kBarY = 25.0f;
+
+    drawAttributeBar(window, cls::text("hud.energy"),   a.energy,   100, {kStartX,              kBarY}, sf::Color(100, 230, 150));
+    drawAttributeBar(window, cls::text("hud.health"),   a.health,   100, {kStartX + kSpacing,   kBarY}, sf::Color(255, 120, 120));
+    drawAttributeBar(window, cls::text("hud.gold"),     a.gold,     100, {kStartX + kSpacing*2, kBarY}, sf::Color(255, 215, 60));
+    drawAttributeBar(window, cls::text("hud.san"),      a.san,      100, {kStartX + kSpacing*3, kBarY}, sf::Color(120, 210, 255));
+    drawAttributeBar(window, cls::text("hud.academic"), a.academic, 100, {kStartX + kSpacing*4, kBarY}, sf::Color(245, 205, 95));
+    drawAttributeBar(window, cls::text("hud.social"),   a.social,   100, {kStartX + kSpacing*5, kBarY}, sf::Color(205, 140, 255));
 }
 
 void HUD::drawAttributeBar(sf::RenderWindow& window, const std::string& label,

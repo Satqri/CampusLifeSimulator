@@ -3,20 +3,18 @@
 
 /**
  * @struct Attributes
- * @brief 角色属性数据，值域 0-100（金钱 0-9999）
+ * @brief 角色属性数据
  *
- * 用于 Character 及其派生类，存储角色的核心属性值
+ * 体力/健康/压力/知识/社交 值域 0-100，金钱 0-9999。
+ * 类内初始值即游戏起始属性，难度调整在 applyDifficulty() 中叠加。
  */
 struct Attributes {
-    int san;      ///< 理智 (Sanity) — 核心属性，过低触发战斗
-    int energy;   ///< 体力
-    int academic; ///< 学业
-    int social;   ///< 社交
-    int gold;     ///< 金钱
-
-    Attributes() : san(80), energy(80), academic(60), social(60), gold(100) {}
-    Attributes(int s, int e, int a, int so, int g)
-        : san(s), energy(e), academic(a), social(so), gold(g) {}
+    int energy   = 80;  ///< 体力
+    int health   = 80;  ///< 健康
+    int gold     = 100; ///< 金钱
+    int san      = 80;  ///< 压力 / SAN 值 — 过低触发战斗
+    int academic = 60;  ///< 知识
+    int social   = 60;  ///< 社交
 };
 
 /**

@@ -9,7 +9,7 @@ MidtermExamQuest::MidtermExamQuest()
         14,     // DC
         5,      // totalRounds
         3,      // requiredPasses
-        Attributes(0, -5, 10, 0, 0),  // reward: energy -5, academic +10
+        Attributes{.energy = -5, .academic = 10},  // reward: energy -5, academic +10
         20,     // reviewEnergyCost
         3       // reviewBonusAmount
     )

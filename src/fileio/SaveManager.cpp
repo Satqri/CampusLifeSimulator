@@ -13,11 +13,12 @@ bool SaveManager::saveGame(const SaveGameData& data) {
         {"x", data.player.position.x},
         {"y", data.player.position.y},
         {"attributes", {
-            {"san", data.player.attributes.san},
             {"energy", data.player.attributes.energy},
+            {"health", data.player.attributes.health},
+            {"gold", data.player.attributes.gold},
+            {"san", data.player.attributes.san},
             {"academic", data.player.attributes.academic},
-            {"social", data.player.attributes.social},
-            {"gold", data.player.attributes.gold}
+            {"social", data.player.attributes.social}
         }},
         {"combatBuffs", {
             {"nextEventPositive", data.player.nextEventPositive},
@@ -67,11 +68,12 @@ bool SaveManager::loadGame(SaveGameData& data) {
     data.player.name = playerJson.value("name", std::string("Protagonist"));
     data.player.position = {playerJson.value("x", 480.0f), playerJson.value("y", 276.0f)};
     const auto& attrJson = playerJson["attributes"];
-    data.player.attributes.san = attrJson.value("san", 80);
     data.player.attributes.energy = attrJson.value("energy", 80);
+    data.player.attributes.health = attrJson.value("health", 80);
+    data.player.attributes.gold = attrJson.value("gold", 100);
+    data.player.attributes.san = attrJson.value("san", 80);
     data.player.attributes.academic = attrJson.value("academic", 60);
     data.player.attributes.social = attrJson.value("social", 60);
-    data.player.attributes.gold = attrJson.value("gold", 100);
     const auto& buffJson = playerJson["combatBuffs"];
     data.player.nextEventPositive = buffJson.value("nextEventPositive", false);
     data.player.nextRollModifier = buffJson.value("nextRollModifier", 0);

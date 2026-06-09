@@ -10,7 +10,7 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
     if (id.rfind("gym_treadmill_", 0) == 0) {
         std::ostringstream body;
         body << ip.label << " for 40 minutes. Energy spent, muscles warmed.";
-        ctx.runTimedActivity(40, Attributes(-4, -14, 0, 2, 0),
+        ctx.runTimedActivity(40, Attributes{.energy = -14, .san = -4, .social = 2},
                              "Training Complete", body.str());
         return true;
     }
@@ -18,7 +18,7 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
     if (id.rfind("gym_barbell_", 0) == 0) {
         std::ostringstream body;
         body << ip.label << " for 40 minutes. Strength training complete.";
-        ctx.runTimedActivity(40, Attributes(-5, -16, 0, 1, 0),
+        ctx.runTimedActivity(40, Attributes{.energy = -16, .san = -5, .social = 1},
                              "Training Complete", body.str());
         return true;
     }

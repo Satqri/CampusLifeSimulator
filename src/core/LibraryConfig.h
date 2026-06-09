@@ -32,9 +32,13 @@ inline std::vector<LibraryBook> loadLibraryConfig(const std::string& path) {
         book.name = b.value("name", "");
         book.skill = b.value("skill", "");
         const auto& d = b["delta"];
-        book.delta = Attributes(d.value("san", 0), d.value("energy", 0),
-                                d.value("academic", 0), d.value("social", 0),
-                                d.value("gold", 0));
+        book.delta = Attributes{
+            .energy = d.value("energy", 0),
+            .gold = d.value("gold", 0),
+            .san = d.value("san", 0),
+            .academic = d.value("academic", 0),
+            .social = d.value("social", 0)
+        };
         books.push_back(book);
     }
     return books;

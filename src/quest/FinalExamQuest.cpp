@@ -9,7 +9,7 @@ FinalExamQuest::FinalExamQuest()
         16,     // DC
         7,      // totalRounds
         4,      // requiredPasses
-        Attributes(0, -10, 20, 5, 0),  // reward: energy -10, academic +20, social +5
+        Attributes{.energy = -10, .academic = 20, .social = 5},  // reward: energy -10, academic +20, social +5
         30,     // reviewEnergyCost
         4       // reviewBonusAmount
     )

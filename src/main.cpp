@@ -107,12 +107,12 @@ void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSki
 void applyDifficulty(Player& player, Difficulty difficulty) {
     switch (difficulty) {
         case Difficulty::Easy:
-            player.modifyAttributes(Attributes(20, 15, 5, 5, 0));
+            player.modifyAttributes(Attributes{.energy = 15, .health = 10, .san = 20, .academic = 5, .social = 5});
             break;
         case Difficulty::Normal:
             break;
         case Difficulty::Hard:
-            player.modifyAttributes(Attributes(-20, -10, 0, -5, 0));
+            player.modifyAttributes(Attributes{.energy = -10, .health = -5, .san = -20, .social = -5});
             break;
     }
 }
@@ -310,7 +310,8 @@ int main() {
         const int sleptHours = sleptMinutes / 60;
         const int sanGain = std::min(45, sleptHours * 5);
         const int energyGain = std::min(70, sleptHours * 8);
-        ctx.player.modifyAttributes(Attributes(sanGain, energyGain, 0, 0, 0));
+        ctx.player.modifyAttributes(Attributes{.energy = energyGain, .san = sanGain});
+        ctx.player.dailyAttributeCheck();
         ctx.player.setPosition(480.0f, 276.0f);
         ctx.player.stopMovement();
         ctx.currentPlace = CampusPlace::Dormitory;
@@ -576,7 +577,7 @@ int main() {
 
             // 按键 C = 压力事件（降低 SAN，触发敌人出现）
             if (justPressed(sf::Keyboard::Key::C)) {
-                player.modifyAttributes(Attributes(-15, 0, 0, 0, 0));
+                player.modifyAttributes(Attributes{.san = -15});
                 int lvl = player.getSanLevel();
                 std::cout << "[Stress] SAN dropped to " << player.getAttributes().san
                           << " Level=" << lvl << std::endl;
@@ -593,7 +594,7 @@ int main() {
 
             // 按键 V = 恢复 SAN（模拟休息/自我关怀）
             if (justPressed(sf::Keyboard::Key::V)) {
-                player.modifyAttributes(Attributes(15, 0, 0, 0, 0));
+                player.modifyAttributes(Attributes{.san = 15});
                 int lvl = player.getSanLevel();
                 // 恢复后重新缩放已生成的敌人
                 for (auto& e : activeEnemies) {

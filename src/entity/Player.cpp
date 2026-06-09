@@ -98,11 +98,45 @@ void Player::move(float directionX, float directionY, float deltaTime) {
 }
 
 void Player::modifyAttributes(const Attributes& delta) {
-    attributes.san      += delta.san;
     attributes.energy   += delta.energy;
+    attributes.health   += delta.health;
+    attributes.gold     += delta.gold;
+    attributes.san      += delta.san;
     attributes.academic += delta.academic;
     attributes.social   += delta.social;
-    attributes.gold     += delta.gold;
+    clampAttributes();
+}
+
+void Player::dailyAttributeCheck() {
+    constexpr int kLowThreshold = 30;
+    constexpr int kConsecutiveDays = 2;
+    constexpr int kHealthPenalty = 8;
+    constexpr int kSanPenalty = 8;
+    constexpr int kAcademicPenalty = 5;
+    constexpr int kSocialPenalty = 5;
+
+    // 长期低体力 → 扣健康
+    if (attributes.energy < kLowThreshold) {
+        lowEnergyDays++;
+        if (lowEnergyDays >= kConsecutiveDays) {
+            attributes.health -= kHealthPenalty;
+        }
+    } else {
+        lowEnergyDays = 0;
+    }
+
+    // 长期低健康 → 扣压力/知识/社交
+    if (attributes.health < kLowThreshold) {
+        lowHealthDays++;
+        if (lowHealthDays >= kConsecutiveDays) {
+            attributes.san      -= kSanPenalty;
+            attributes.academic -= kAcademicPenalty;
+            attributes.social   -= kSocialPenalty;
+        }
+    } else {
+        lowHealthDays = 0;
+    }
+
     clampAttributes();
 }
 

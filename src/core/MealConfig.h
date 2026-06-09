@@ -34,9 +34,13 @@ inline std::vector<MealOption> loadMealConfig(const std::string& path) {
         opt.name = m.value("name", "");
         opt.cost = m.value("cost", 0);
         const auto& r = m["reward"];
-        opt.reward = Attributes(r.value("san", 0), r.value("energy", 0),
-                                r.value("academic", 0), r.value("social", 0),
-                                r.value("gold", 0));
+        opt.reward = Attributes{
+            .energy = r.value("energy", 0),
+            .gold = r.value("gold", 0),
+            .san = r.value("san", 0),
+            .academic = r.value("academic", 0),
+            .social = r.value("social", 0)
+        };
         opt.description = m.value("description", "");
         meals.push_back(opt);
     }

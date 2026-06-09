@@ -16,7 +16,7 @@ Enemy::Enemy()
 }
 
 Enemy::Enemy(float x, float y, EmotionType type, int baseDC, int baseAttack)
-    : Character(x, y, Attributes(50, 50, 50, 50, 0), 0.0f)
+    : Character(x, y, Attributes{.energy = 50, .san = 50, .academic = 50, .social = 50}, 0.0f)
     , emotionType(type)
     , baseDC(baseDC)
     , baseAttack(baseAttack)

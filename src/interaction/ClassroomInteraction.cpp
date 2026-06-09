@@ -55,13 +55,13 @@ void resolveClassChoice(GameContext& ctx, bool attend) {
             const int total = roll + academicBonus;
             const bool passed = total >= 12;
             ctx.player.modifyAttributes(passed
-                ? Attributes(-10, -16, 12, 0, 0)
-                : Attributes(-16, -18, 4, 0, 0));
+                ? Attributes{.energy = -16, .san = -10, .academic = 12}
+                : Attributes{.energy = -18, .san = -16, .academic = 4});
             body << "Midterm finished. Roll " << roll
                  << " + Academic Bonus " << academicBonus
                  << " = " << total << (passed ? " (pass)." : " (struggle).");
         } else {
-            ctx.player.modifyAttributes(Attributes(-8, -12, 8, 0, 0));
+            ctx.player.modifyAttributes(Attributes{.energy = -12, .san = -8, .academic = 8});
             body << "You focused through the morning lecture. Academic +8, SAN -8, Energy -12.";
         }
         ctx.timeSkipFlash.start("Class time passes...");
@@ -72,11 +72,11 @@ void resolveClassChoice(GameContext& ctx, bool attend) {
         std::ostringstream body;
         if (called) {
             ctx.player.modifyAttributes(ctx.timeSystem.isMidtermDay()
-                ? Attributes(-18, -4, -18, -12, 0)
-                : Attributes(-10, -2, -10, -8, 0));
+                ? Attributes{.energy = -4, .san = -18, .academic = -18, .social = -12}
+                : Attributes{.energy = -2, .san = -10, .academic = -10, .social = -8});
             body << "At 10:20 the teacher calls attendance. You are absent and take a penalty.";
         } else {
-            ctx.player.modifyAttributes(Attributes(3, -2, -2, 0, 0));
+            ctx.player.modifyAttributes(Attributes{.energy = -2, .san = 3, .academic = -2});
             body << "At 10:20 there is no roll call. You avoid the immediate penalty, but lose study momentum.";
         }
         ctx.timeSkipFlash.start("Skipping class...");

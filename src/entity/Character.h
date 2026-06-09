@@ -62,9 +62,7 @@ public:
     /**
      * @brief 限制属性在合法范围内
      *
-     * 算法步骤:
-     * 1. 将 san/energy/academic/social clamp 到 [0, 100]
-     * 2. 将 gold clamp 到 [0, 9999]
+     * 将 energy/health/san/academic/social clamp 到 [0, 100]，gold clamp 到 [0, 9999]
      */
     void clampAttributes();
 
