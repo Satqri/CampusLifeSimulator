@@ -72,6 +72,7 @@ struct GameContext {
                        const std::string& title, const std::string& body)> runTimedActivity;
     std::function<void(const std::string& title, const std::string& body)> showTimedResult;
     std::function<void(int previousMinute)> checkClassSchedule;
+    std::function<void(int previousMinute)> checkEventTriggers;
     std::function<void()> sleepFromDormitory;
 };
 

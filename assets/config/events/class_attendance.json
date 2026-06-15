@@ -1,0 +1,67 @@
+{
+  "events": [
+    {
+      "id": "class_attendance",
+      "trigger": { "type": "time_schedule", "method": "crossed_class_time" },
+      "root": "check_location",
+      "steps": {
+        "check_location": {
+          "type": "check",
+          "conditions": [
+            { "kind": "location", "place": "classroom" }
+          ],
+          "require": "all",
+          "then": "attend_outcome",
+          "else": "skip_roll_check"
+        },
+        "attend_outcome": {
+          "type": "outcome",
+          "title": "课堂结束",
+          "body": "你已经在教室里了，专注地听完了上午的课程。知识 +8，压力 -8，体力 -12。",
+          "time_advance": 205,
+          "delta": { "energy": -12, "san": -8, "academic": 8 },
+          "flash": "上课中..."
+        },
+        "skip_roll_check": {
+          "type": "random_check",
+          "probability": 45,
+          "title": "时间流逝",
+          "body": "你不在教室。10:20，老师开始点名...",
+          "success": "roll_caught",
+          "failure": "roll_safe",
+          "time_advance": 90,
+          "flash": "逃课中..."
+        },
+        "roll_caught": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+          ],
+          "require": "all",
+          "title": "点名被抓！",
+          "body": "老师叫了你的名字。有同学能帮你代答道吗？\n(社交检定: 需要 >= 50)",
+          "then": "covered_outcome",
+          "else": "penalty_outcome"
+        },
+        "roll_safe": {
+          "type": "outcome",
+          "title": "侥幸逃脱",
+          "body": "老师今天没点名，你躲过一劫，但错过了课堂内容。",
+          "delta": { "energy": -2, "san": 3, "academic": -2 }
+        },
+        "covered_outcome": {
+          "type": "outcome",
+          "title": "同学代答",
+          "body": "一位朋友帮你答了到。有惊无险。",
+          "delta": { "energy": -2, "san": -3, "academic": -3, "social": 2 }
+        },
+        "penalty_outcome": {
+          "type": "outcome",
+          "title": "逃课被抓",
+          "body": "没人帮你。老师记了旷课 — 压力暴增，名声受损。",
+          "delta": { "energy": -2, "san": -10, "academic": -10, "social": -8 }
+        }
+      }
+    }
+  ]
+}

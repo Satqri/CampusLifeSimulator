@@ -25,6 +25,7 @@
 #include "core/Types.h"
 #include "core/CombatSystem.h"
 #include "core/GameContext.h"
+#include "event/EventRunner.h"
 #include "entity/CombatHelper.h"
 #include "interaction/CafeteriaInteraction.h"
 #include "interaction/ClassroomInteraction.h"
@@ -203,6 +204,7 @@ int main() {
     ActivityNotice activityNotice;
     ChoicePrompt classChoicePrompt;
     ChoicePrompt mealChoicePrompt;
+    EventRunner eventRunner;
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
@@ -213,6 +215,7 @@ int main() {
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
     auto mealOptions = loadMealConfig(cls::resolveAssetPath("assets/config/meals.json"));
+    eventRunner.loadEvents(cls::resolveAssetPath("assets/config/events/class_attendance.json"));
     int heldMealIndex = -1;
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
@@ -300,6 +303,10 @@ int main() {
         ClassroomInteraction::checkClassSchedule(ctx, prev);
     };
 
+    auto checkEventTriggers = [&eventRunner, &ctx](int prev) {
+        eventRunner.checkTriggers(ctx, prev);
+    };
+
     auto sleepFromDormitory = [&ctx, &showTimedResult]() {
         if (!ctx.timeSystem.canSleep()) {
             ctx.activityNotice.show("Too Early",
@@ -332,7 +339,7 @@ int main() {
             ? "Fourteen Days Complete" : "New Day", body.str());
     };
 
-    auto runTimedActivity = [&ctx, &checkClassSchedule, &showTimedResult](
+    auto runTimedActivity = [&ctx, &checkClassSchedule, &checkEventTriggers, &showTimedResult](
             int minutes, const Attributes& delta,
             const std::string& title, const std::string& body) {
         const int prev = ctx.timeSystem.advanceMinutes(minutes);
@@ -340,11 +347,13 @@ int main() {
         ctx.timeSkipFlash.start("Time passes...");
         showTimedResult(title, body);
         checkClassSchedule(prev);
+        checkEventTriggers(prev);
     };
 
     ctx.runTimedActivity = runTimedActivity;
     ctx.showTimedResult = showTimedResult;
     ctx.checkClassSchedule = checkClassSchedule;
+    ctx.checkEventTriggers = checkEventTriggers;
     ctx.sleepFromDormitory = sleepFromDormitory;
 
     // ── 薄封装 lambda ──────────────────────────────────────────
@@ -485,6 +494,12 @@ int main() {
             }
 
             if (timeSkipFlash.active) {
+                continue;
+            }
+
+            if (eventRunner.isActive()) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>())
+                    eventRunner.handleInput(keyEv->code, ctx);
                 continue;
             }
 
@@ -662,6 +677,9 @@ int main() {
             renderStatsPanel(window, font, player);
             timePanel.setTimeSystem(&timeSystem);
             timePanel.render(window);
+        }
+        if (eventRunner.isActive()) {
+            eventRunner.render(window, modalBox);
         }
         if (activityNotice.active) {
             modalBox.setContent(activityNotice.title, activityNotice.body,
