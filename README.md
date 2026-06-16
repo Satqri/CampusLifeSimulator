@@ -43,6 +43,19 @@ cmake --build build-msys2
 ./build-msys2/CampusLifeSimulator.exe
 ```
 
+### 日常启动（Windows / MSYS2 UCRT64）
+
+如果你是在本机 Windows 下开发，推荐直接使用 **MSYS2 UCRT64** 终端，日常启动这三条命令即可：
+
+```bash
+cd /c/Users/ASUS/Desktop/demo2
+cmake -S . -B build-msys2 -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-msys2
+./build-msys2/CampusLifeSimulator.exe
+```
+
+如果只是改了 `.cpp` / `.h`，通常重新执行上面三条命令即可。
+
 ### macOS（Homebrew）
 
 ```bash
