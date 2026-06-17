@@ -32,7 +32,7 @@ cmake --build build-msys2
 
 ## Architecture
 
-C++17 + SFML 3.0 像素风校园生活模拟器，d20 TRPG 战斗。渲染到 320×180 纹理后 3× 放大到 960×540。
+C++20 + SFML 3.0 像素风校园生活模拟器。渲染到 320×180 纹理后 3× 放大到 960×540。
 
 ### 顶层流程
 
@@ -42,21 +42,49 @@ C++17 + SFML 3.0 像素风校园生活模拟器，d20 TRPG 战斗。渲染到 32
 
 | 目录 | 职责 |
 |------|------|
-| `src/core/` | 类型定义、时间系统、本地化、战斗系统、游戏设置、窗口缩放、GameContext |
-| `src/entity/` | Entity → Character → Player/Enemy，CombatHelper（情绪→属性映射） |
-| `src/interaction/` | 5 个房间交互模块（Cafeteria/Classroom/Dormitory/Gym/Library），全部接收 `GameContext&` |
-| `src/map/` | BuildingInterior 基类 + 5 个室内地图 + CampusMap + MapPortal，交互点配置从 `assets/config/interiors/*.json` 加载 |
-| `src/quest/` | MainQuest → SimpleQuest/ExamQuest → MidtermExamQuest/FinalExamQuest，QuestManager（JSON 工厂 + 事件阈值链） |
-| `src/ui/` | UIComponent 基类 + HUD/TitleScreen/DifficultyPanel/HelpPanel/SettingsPanel/ModalBox/TimePanel 等 |
-| `src/fileio/` | SaveManager/ConfigManager/FileManager/JsonFileManager，JSON 持久化 |
+| `src/core/` | 属性系统（CharacterState.h）、时间系统、战斗系统、GameContext、本地化 |
+| `src/entity/` | Entity → Character → Player/Enemy；Character 持有 `Attributes attributes` + `HiddenMap mHidden` 两套变量 |
+| `src/event/` | JSON 事件框架：EventRunner 加载 `assets/config/events/*.json` 并驱动分支节点图 |
+| `src/interaction/` | **仅剩** CafeteriaInteraction（三餐选餐）+ DormitoryInteraction（睡觉），其余已被 JSON 事件取代 |
+| `src/map/` | BuildingInterior 基类 + 室内地图，交互点配置从 `assets/config/interiors/*.json` 加载 |
+| `src/ui/` | ModalBox、HUD、TitleScreen、DifficultyPanel、ChoicePrompt、ActivityNotice 等 |
+| `src/fileio/` | SaveManager、JSON 持久化 |
 
 ### 数据流
 
-用户输入 → `handleGameplayEvent()` → 分发到交互模块 / CombatSystem / 地图传送 → 修改 GameContext 中的 Player/TimeSystem/map → HUD/TimePanel 读取最新状态渲染。
+```
+键盘 Enter → handleInteraction(ip)
+  → EventRunner::triggerByAction(actionId)  // JSON 事件优先
+  → CafeteriaInteraction (三餐) / DormitoryInteraction (睡觉)
+  → activityNotice 兜底
+
+时间推进 → runTimedActivity → checkEventTriggers → EventRunner::checkTriggers
+  → time_schedule 触发（如 crossed_class_time → class_attendance 事件）
+```
+
+### 属性与隐藏变量
+
+`src/core/CharacterState.h` 统一定义：
+- `Attributes` — 六个可见属性（energy/health/gold/san/academic/social），值域 0-100/gold 0-9999
+- `HiddenMap`（`nlohmann::json`）— 隐藏变量（teacherTrust、friendBond、innovationProgress 等），int 累加、bool/string 覆盖。详见 `docs/数据说明.md`
+
+Character 基类同时持有两者：`attributes` + `mHidden`。JSON 事件通过 `delta`（可见）+ `hidden_delta`（隐藏）修改。
+
+### JSON 事件系统
+
+`EventRunner` (`src/event/`) 加载 `assets/config/events/` 下全部 `.json` 文件，24 个事件。
+
+节点类型：`display` → `choice` → `check`（location/stat/flag 组合 AND/OR）→ `random_check` → `outcome`
+
+触发类型：
+- `time_schedule` — 时间跨越触发，由 `runTimedActivity` 驱动
+- `interaction` — 交互点触发，由 `handleInteraction` 驱动
+
+格式文档见 `docs/events_schema.md`。
 
 ### 时间与日程
 
-TimeSystem 管理 14 天周期，时间不自动流逝，随玩家交互推进。每天 08:00 起始，08:50 触发晨课事件（强制传送 Classroom），12:00-14:00 和 17:00-19:00 为饭点。第 7 天为期中考日。
+TimeSystem 管理 14 天周期，时间不自动流逝，随玩家交互推进。每天 08:00 起始，08:50 由 JSON 事件 `class_attendance` 检测位置决定上课/逃课分支。12:00-14:00、17:00-19:00 为饭点。第 7 天为期中考日。
 
 ### 战斗系统
 
