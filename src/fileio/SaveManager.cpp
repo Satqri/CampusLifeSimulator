@@ -36,7 +36,6 @@ bool SaveManager::saveGame(const SaveGameData& data) {
         {"currentPlace", static_cast<int>(data.world.currentPlace)},
         {"selectedLibraryBook", data.world.selectedLibraryBook},
         {"libraryBookProgress", data.world.libraryBookProgress},
-        {"heldMealIndex", data.world.heldMealIndex},
         {"lastMealPickupSlot", data.world.lastMealPickupSlot},
         {"gamePlayDay", data.world.gamePlayDay},
         {"gamesPlayedToday", data.world.gamesPlayedToday}
@@ -94,7 +93,6 @@ bool SaveManager::loadGame(SaveGameData& data) {
     for (std::size_t i = 0; i < data.world.libraryBookProgress.size() && i < progressJson.size(); ++i) {
         data.world.libraryBookProgress[i] = progressJson[i].get<int>();
     }
-    data.world.heldMealIndex = worldJson.value("heldMealIndex", -1);
     data.world.lastMealPickupSlot = worldJson.value("lastMealPickupSlot", -1);
     data.world.gamePlayDay = worldJson.value("gamePlayDay", 1);
     data.world.gamesPlayedToday = worldJson.value("gamesPlayedToday", 0);

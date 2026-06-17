@@ -412,6 +412,21 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
     return false;
 }
 
+// ─── 交互触发 ───────────────────────────────────────────────────────────────
+
+bool EventRunner::triggerByAction(const std::string& actionId, GameContext& ctx) {
+    for (auto& [id, def] : mEvents) {
+        if (def.trigger.type == EventTrigger::INTERACTION
+            && def.trigger.actionId == actionId) {
+            std::cout << "[Event] Triggered by interaction: " << id
+                      << " (action=" << actionId << ")" << std::endl;
+            startEvent(id, ctx);
+            return true;
+        }
+    }
+    return false;
+}
+
 // ─── 条件求值 ───────────────────────────────────────────────────────────────
 
 bool EventRunner::evaluateConditions(const std::vector<Condition>& conditions,

@@ -47,7 +47,6 @@ struct GameContext {
     CombatResult& combatResult;
     TimeSkipFlash& timeSkipFlash;
     ActivityNotice& activityNotice;
-    ChoicePrompt& classChoicePrompt;
     ChoicePrompt& mealChoicePrompt;
 
     // ── 地图过渡 ─────────────────────────────────────────────
@@ -61,7 +60,6 @@ struct GameContext {
     std::vector<LibraryBook>& libraryBooks;
     std::array<int, 4>& libraryBookProgress;
     int& selectedLibraryBook;
-    int& heldMealIndex;
     int& lastMealPickupSlot;
     int& gamePlayDay;
     int& gamesPlayedToday;
@@ -71,7 +69,6 @@ struct GameContext {
     std::function<void(int minutes, const Attributes& delta,
                        const std::string& title, const std::string& body)> runTimedActivity;
     std::function<void(const std::string& title, const std::string& body)> showTimedResult;
-    std::function<void(int previousMinute)> checkClassSchedule;
     std::function<void(int previousMinute)> checkEventTriggers;
     std::function<void()> sleepFromDormitory;
 };
