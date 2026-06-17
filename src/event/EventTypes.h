@@ -2,6 +2,7 @@
 #define CLS_EVENT_EVENTTYPES_H
 
 #include "core/Types.h"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -73,6 +74,7 @@ struct EventNode {
 
     /// OUTCOME / 附属效果（所有非 DISPLAY/CHOICE 节点都可带效果）
     Attributes delta = {};
+    nlohmann::json hiddenDelta;           ///< 隐藏变量变化（所有节点类型通用）
     int timeAdvanceMinutes = 0;
     std::string flashText;
 };

@@ -1,21 +1,7 @@
 #ifndef CLS_CORE_TYPES_H
 #define CLS_CORE_TYPES_H
 
-/**
- * @struct Attributes
- * @brief 角色属性数据
- *
- * 体力/健康/压力/知识/社交 值域 0-100，金钱 0-9999。
- * 类内初始值即游戏起始属性，难度调整在 applyDifficulty() 中叠加。
- */
-struct Attributes {
-    int energy   = 80;  ///< 体力
-    int health   = 80;  ///< 健康
-    int gold     = 100; ///< 金钱
-    int san      = 80;  ///< 压力 / SAN 值 — 过低触发战斗
-    int academic = 60;  ///< 知识
-    int social   = 60;  ///< 社交
-};
+#include "core/CharacterState.h"
 
 /**
  * @enum EmotionType

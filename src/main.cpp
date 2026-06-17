@@ -52,6 +52,7 @@
 #include "ui/SceneBackground.h"
 
 #include <cmath>
+#include <filesystem>
 #include <sstream>
 #include <iostream>
 #include <array>
@@ -215,7 +216,11 @@ int main() {
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
     auto mealOptions = loadMealConfig(cls::resolveAssetPath("assets/config/meals.json"));
-    eventRunner.loadEvents(cls::resolveAssetPath("assets/config/events/class_attendance.json"));
+    for (const auto& entry : std::filesystem::directory_iterator(
+             cls::resolveAssetPath("assets/config/events"))) {
+        if (entry.path().extension() == ".json")
+            eventRunner.loadEvents(entry.path().string());
+    }
     int heldMealIndex = -1;
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;

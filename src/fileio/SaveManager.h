@@ -19,6 +19,7 @@ struct SavePlayerData {
     std::string name;
     sf::Vector2f position;
     Attributes attributes;
+    HiddenMap hidden = HiddenMap::object();
     bool nextEventPositive = false;
     int nextRollModifier = 0;
 };

@@ -20,6 +20,7 @@ bool SaveManager::saveGame(const SaveGameData& data) {
             {"academic", data.player.attributes.academic},
             {"social", data.player.attributes.social}
         }},
+        {"hidden", data.player.hidden},
         {"combatBuffs", {
             {"nextEventPositive", data.player.nextEventPositive},
             {"nextRollModifier", data.player.nextRollModifier}
@@ -74,6 +75,8 @@ bool SaveManager::loadGame(SaveGameData& data) {
     data.player.attributes.san = attrJson.value("san", 80);
     data.player.attributes.academic = attrJson.value("academic", 60);
     data.player.attributes.social = attrJson.value("social", 60);
+    if (playerJson.contains("hidden"))
+        data.player.hidden = playerJson["hidden"];
     const auto& buffJson = playerJson["combatBuffs"];
     data.player.nextEventPositive = buffJson.value("nextEventPositive", false);
     data.player.nextRollModifier = buffJson.value("nextRollModifier", 0);

@@ -97,16 +97,21 @@ bool EventRunner::loadEvents(const std::string& filepath) {
                 node.failureNode        = n.value("failure", "");
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
-                if (!n["delta"].is_null()) {
-                    node.delta = Attributes{
-                        .energy   = n["delta"].value("energy", 0),
-                        .health   = n["delta"].value("health", 0),
-                        .gold     = n["delta"].value("gold", 0),
-                        .san      = n["delta"].value("san", 0),
-                        .academic = n["delta"].value("academic", 0),
-                        .social   = n["delta"].value("social", 0)
-                    };
+                if (n.contains("delta")) {
+                    const auto& d = n["delta"];
+                    if (!d.is_null()) {
+                        node.delta = Attributes{
+                            .energy   = d.value("energy", 0),
+                            .health   = d.value("health", 0),
+                            .gold     = d.value("gold", 0),
+                            .san      = d.value("san", 0),
+                            .academic = d.value("academic", 0),
+                            .social   = d.value("social", 0)
+                        };
+                    }
                 }
+                if (n.contains("hidden_delta"))
+                    node.hiddenDelta = n["hidden_delta"];
                 break;
 
             case EventNodeType::CHECK:
@@ -125,32 +130,41 @@ bool EventRunner::loadEvents(const std::string& filepath) {
                 node.elseNode = n.value("else", "");
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
-                if (!n["delta"].is_null()) {
-                    node.delta = Attributes{
-                        .energy   = n["delta"].value("energy", 0),
-                        .health   = n["delta"].value("health", 0),
-                        .gold     = n["delta"].value("gold", 0),
-                        .san      = n["delta"].value("san", 0),
-                        .academic = n["delta"].value("academic", 0),
-                        .social   = n["delta"].value("social", 0)
-                    };
+                if (n.contains("delta")) {
+                    const auto& d = n["delta"];
+                    if (!d.is_null()) {
+                        node.delta = Attributes{
+                            .energy   = d.value("energy", 0),
+                            .health   = d.value("health", 0),
+                            .gold     = d.value("gold", 0),
+                            .san      = d.value("san", 0),
+                            .academic = d.value("academic", 0),
+                            .social   = d.value("social", 0)
+                        };
+                    }
                 }
+                if (n.contains("hidden_delta"))
+                    node.hiddenDelta = n["hidden_delta"];
                 break;
 
             case EventNodeType::OUTCOME: {
-                const auto& d = n["delta"];
-                if (!d.is_null()) {
-                    node.delta = Attributes{
-                        .energy   = d.value("energy", 0),
-                        .health   = d.value("health", 0),
-                        .gold     = d.value("gold", 0),
-                        .san      = d.value("san", 0),
-                        .academic = d.value("academic", 0),
-                        .social   = d.value("social", 0)
-                    };
+                if (n.contains("delta")) {
+                    const auto& d = n["delta"];
+                    if (!d.is_null()) {
+                        node.delta = Attributes{
+                            .energy   = d.value("energy", 0),
+                            .health   = d.value("health", 0),
+                            .gold     = d.value("gold", 0),
+                            .san      = d.value("san", 0),
+                            .academic = d.value("academic", 0),
+                            .social   = d.value("social", 0)
+                        };
+                    }
                 }
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
+                if (n.contains("hidden_delta"))
+                    node.hiddenDelta = n["hidden_delta"];
                 break;
             }
             }
@@ -457,6 +471,18 @@ void EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
     if (d.energy != 0 || d.health != 0 || d.gold != 0 ||
         d.san != 0 || d.academic != 0 || d.social != 0)
         ctx.player.modifyAttributes(node.delta);
+    if (!node.hiddenDelta.is_null()) {
+        auto& hidden = ctx.player.getHidden();
+        for (auto it = node.hiddenDelta.begin(); it != node.hiddenDelta.end(); ++it) {
+            if (it.value().is_number_integer()) {
+                int cur = hidden.value(it.key(), 0);
+                int add = it.value();
+                hidden[it.key()] = cur + add;
+            } else {
+                hidden[it.key()] = it.value();
+            }
+        }
+    }
     if (!node.flashText.empty())
         ctx.timeSkipFlash.start(node.flashText);
 }

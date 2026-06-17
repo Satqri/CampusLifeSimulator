@@ -2,6 +2,7 @@
 #define CLS_ENTITY_CHARACTER_H
 
 #include "entity/Entity.h"
+#include "core/CharacterState.h"
 #include "core/Types.h"
 #include <string>
 
@@ -42,6 +43,10 @@ public:
      * @brief 获取角色属性引用
      * @return Attributes& 当前属性
      */
+    /** @brief 获取隐藏变量 */
+    HiddenMap& getHidden() { return mHidden; }
+    const HiddenMap& getHidden() const { return mHidden; }
+
     Attributes& getAttributes();
     const Attributes& getAttributes() const;
 
@@ -67,7 +72,8 @@ public:
     void clampAttributes();
 
 protected:
-    Attributes attributes; ///< 角色属性数据
+    Attributes attributes; ///< 可见属性
+    HiddenMap mHidden = HiddenMap::object(); ///< 隐藏变量 — 叙事累积状态
     float moveSpeed;       ///< 移动速度（像素/秒）
     std::string name;      ///< 角色名称
 };
