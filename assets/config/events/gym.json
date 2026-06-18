@@ -1,0 +1,82 @@
+{
+  "events": [
+    {
+      "id": "gym_equipment_occupied",
+      "trigger": { "type": "interaction", "action_id": "gym_bench" },
+      "root": "intro",
+      "steps": {
+        "intro": {
+          "type": "display",
+          "title": "器械被占",
+          "body": "你走到你最常用的那台器械面前，发现已经有人在上面了。对方正戴着耳机，显然一时半会不会下来。你看了看周围的其他器械，都在占用中。",
+          "then": "decide"
+        },
+        "decide": {
+          "type": "choice",
+          "title": "器械被占",
+          "body": "怎么办？",
+          "options": [
+            { "text": "礼貌询问还要多久", "then": "ask_check" },
+            { "text": "换一组训练计划", "then": "change_check" },
+            { "text": "在旁边硬等", "then": "wait" },
+            { "text": "直接离开", "then": "leave" }
+          ]
+        },
+        "ask_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+          ],
+          "require": "all",
+          "then": "ask_success",
+          "else": "ask_fail"
+        },
+        "ask_success": {
+          "type": "outcome",
+          "title": "问了",
+          "body": "你等对方一组做完，礼貌地问：'请问还要多久？' 对方看了看手表：'还有两组，很快。' 你等了几分钟就轮到了。",
+          "delta": { "energy": -2, "social": 3 }
+        },
+        "ask_fail": {
+          "type": "outcome",
+          "title": "问不出口",
+          "body": "你想开口，但看到对方戴着耳机全神贯注的样子，又咽了回去。你在旁边等了半天。",
+          "delta": { "energy": -3, "san": 5 }
+        },
+        "change_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "academic", "op": ">=", "value": 30 }
+          ],
+          "require": "all",
+          "then": "change_success",
+          "else": "change_fail"
+        },
+        "change_success": {
+          "type": "outcome",
+          "title": "换训练",
+          "body": "你打开手机查了查，找到了一套替代训练动作。虽然重量不一样，但肌肉照样得到了锻炼。",
+          "delta": { "energy": -10, "academic": 2 }
+        },
+        "change_fail": {
+          "type": "outcome",
+          "title": "想不出替代",
+          "body": "你盯着手机半天也想不出替代方案。最后在旁边等了很久。",
+          "delta": { "energy": -3, "san": 5 }
+        },
+        "wait": {
+          "type": "outcome",
+          "title": "硬等",
+          "body": "你靠在墙上，默默等着。时间一分一秒过去。终于轮到你了，但你已经被磨掉了大半热情。",
+          "delta": { "san": 5, "energy": -3 }
+        },
+        "leave": {
+          "type": "outcome",
+          "title": "离开健身房",
+          "body": "你撇了撇嘴，转身离开。'今天不适合锻炼。' 虽然你知道这只是借口。",
+          "delta": { "san": 2 }
+        }
+      }
+    }
+  ]
+}

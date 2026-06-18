@@ -28,10 +28,7 @@
 #include "event/EventRunner.h"
 #include "entity/CombatHelper.h"
 #include "interaction/CafeteriaInteraction.h"
-#include "interaction/ClassroomInteraction.h"
 #include "interaction/DormitoryInteraction.h"
-#include "interaction/GymInteraction.h"
-#include "interaction/LibraryInteraction.h"
 #include "ui/ActivityNotice.h"
 #include "ui/ChoicePrompt.h"
 #include "ui/ModalBox.h"
@@ -52,6 +49,7 @@
 #include "ui/SceneBackground.h"
 
 #include <cmath>
+#include <filesystem>
 #include <sstream>
 #include <iostream>
 #include <array>
@@ -202,7 +200,6 @@ int main() {
     SceneTransition sceneTransition;
     TimeSystem timeSystem;
     ActivityNotice activityNotice;
-    ChoicePrompt classChoicePrompt;
     ChoicePrompt mealChoicePrompt;
     EventRunner eventRunner;
     TimeSkipFlash timeSkipFlash;
@@ -215,8 +212,11 @@ int main() {
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
     auto mealOptions = loadMealConfig(cls::resolveAssetPath("assets/config/meals.json"));
-    eventRunner.loadEvents(cls::resolveAssetPath("assets/config/events/class_attendance.json"));
-    int heldMealIndex = -1;
+    for (const auto& entry : std::filesystem::directory_iterator(
+             cls::resolveAssetPath("assets/config/events"))) {
+        if (entry.path().extension() == ".json")
+            eventRunner.loadEvents(entry.path().string());
+    }
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
     int gamesPlayedToday = 0;
@@ -284,10 +284,10 @@ int main() {
         campusMap.get(), dormitoryMap.get(), gymMap.get(),
         libraryMap.get(), classroomMap.get(), cafeteriaMap.get(),
         timeSystem, combatResult, timeSkipFlash,
-        activityNotice, classChoicePrompt, mealChoicePrompt,
+        activityNotice, mealChoicePrompt,
         pendingPlace, pendingSpawnPosition, hasPendingMapTransition,
         activeEnemies, mealOptions, libraryBooks, libraryBookProgress,
-        selectedLibraryBook, heldMealIndex, lastMealPickupSlot,
+        selectedLibraryBook, lastMealPickupSlot,
         gamePlayDay, gamesPlayedToday, spawnCounter,
         {}, {}, {}, {}  // callbacks 稍后注入
     };
@@ -297,10 +297,6 @@ int main() {
         std::ostringstream message;
         message << body << "\nCurrent time: " << ctx.timeSystem.clockText();
         ctx.activityNotice.show(title, message.str());
-    };
-
-    auto checkClassSchedule = [&ctx](int prev) {
-        ClassroomInteraction::checkClassSchedule(ctx, prev);
     };
 
     auto checkEventTriggers = [&eventRunner, &ctx](int prev) {
@@ -323,7 +319,6 @@ int main() {
         ctx.player.stopMovement();
         ctx.currentPlace = CampusPlace::Dormitory;
         ctx.currentMap = ctx.dormitoryMap;
-        ctx.heldMealIndex = -1;
         ctx.gamePlayDay = ctx.timeSystem.getDay();
         ctx.gamesPlayedToday = 0;
         std::ostringstream body;
@@ -339,20 +334,18 @@ int main() {
             ? "Fourteen Days Complete" : "New Day", body.str());
     };
 
-    auto runTimedActivity = [&ctx, &checkClassSchedule, &checkEventTriggers, &showTimedResult](
+    auto runTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult](
             int minutes, const Attributes& delta,
             const std::string& title, const std::string& body) {
         const int prev = ctx.timeSystem.advanceMinutes(minutes);
         ctx.player.modifyAttributes(delta);
         ctx.timeSkipFlash.start("Time passes...");
         showTimedResult(title, body);
-        checkClassSchedule(prev);
         checkEventTriggers(prev);
     };
 
     ctx.runTimedActivity = runTimedActivity;
     ctx.showTimedResult = showTimedResult;
-    ctx.checkClassSchedule = checkClassSchedule;
     ctx.checkEventTriggers = checkEventTriggers;
     ctx.sleepFromDormitory = sleepFromDormitory;
 
@@ -383,20 +376,14 @@ int main() {
         sceneTransition.skip();
     };
 
-    auto resolveClassChoice = [&ctx](bool attend) {
-        ClassroomInteraction::resolveClassChoice(ctx, attend);
-    };
-
     auto resolveMealChoice = [&ctx](int mealIndex) {
         CafeteriaInteraction::resolveMealChoice(ctx, mealIndex);
     };
 
-    auto handleInteraction = [&ctx](const InteractionPoint& ip) {
-        if (LibraryInteraction::handle(ctx, ip)) return;
+    auto handleInteraction = [&ctx, &eventRunner](const InteractionPoint& ip) {
+        if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
         if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.label)) return;
-        if (GymInteraction::handle(ctx, ip)) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
-        if (ClassroomInteraction::handle(ctx, ip)) return;
         ctx.activityNotice.show(ip.label, ip.description);
     };
 
@@ -460,9 +447,7 @@ int main() {
                     player.setPosition(480.0f, 276.0f);
                     timeSystem = TimeSystem();
                     activityNotice.clear();
-                    classChoicePrompt.clear();
                     mealChoicePrompt.clear();
-                    heldMealIndex = -1;
                     lastMealPickupSlot = -1;
                     gamePlayDay = timeSystem.getDay();
                     gamesPlayedToday = 0;
@@ -500,19 +485,6 @@ int main() {
             if (eventRunner.isActive()) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>())
                     eventRunner.handleInput(keyEv->code, ctx);
-                continue;
-            }
-
-            if (classChoicePrompt.active) {
-                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1
-                        || keyEv->code == sf::Keyboard::Key::Enter) {
-                        resolveClassChoice(true);
-                    } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2
-                               || keyEv->code == sf::Keyboard::Key::Escape) {
-                        resolveClassChoice(false);
-                    }
-                }
                 continue;
             }
 
@@ -571,7 +543,7 @@ int main() {
             continue;
         }
 
-        if (!classChoicePrompt.active && !mealChoicePrompt.active && !activityNotice.active) {
+        if (!mealChoicePrompt.active && !activityNotice.active) {
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -684,17 +656,6 @@ int main() {
         if (activityNotice.active) {
             modalBox.setContent(activityNotice.title, activityNotice.body,
                                 "Press Enter to continue");
-            modalBox.render(window);
-        }
-        if (classChoicePrompt.active) {
-            std::ostringstream body;
-            body << classChoicePrompt.body << "\n\n"
-                 << "[1] " << classChoicePrompt.first
-                 << "\n[2] " << classChoicePrompt.second;
-            if (!classChoicePrompt.third.empty())
-                body << "\n[3] " << classChoicePrompt.third;
-            modalBox.setContent(classChoicePrompt.title, body.str(),
-                                classChoicePrompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
             modalBox.render(window);
         }
         if (mealChoicePrompt.active) {

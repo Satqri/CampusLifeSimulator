@@ -19,6 +19,7 @@ struct SavePlayerData {
     std::string name;
     sf::Vector2f position;
     Attributes attributes;
+    HiddenMap hidden = HiddenMap::object();
     bool nextEventPositive = false;
     int nextRollModifier = 0;
 };
@@ -42,7 +43,6 @@ struct SaveWorldData {
     CampusPlace currentPlace = CampusPlace::Campus;
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
-    int heldMealIndex = -1;
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
     int gamesPlayedToday = 0;

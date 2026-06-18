@@ -1,0 +1,178 @@
+{
+  "description": "主结局判定逻辑 — 代码从 1 到 13 顺序执行 if-else if，一旦满足立即触发该结局并跳出。",
+  "endings": [
+    {
+      "priority": 1,
+      "id": "hospitalized",
+      "name": "因病休学",
+      "tagline": "医院结局",
+      "conditions": [
+        { "kind": "stat", "stat": "healthIndex", "op": "<=", "value": 0 },
+        { "kind": "meta", "desc": "或连续熬夜三天" }
+      ],
+      "require": "any",
+      "description": "身体发出了最后通牒。你被救护车送进了医院，这个学期提前结束了。",
+      "type": "game_over",
+      "trigger": "immediate"
+    },
+    {
+      "priority": 2,
+      "id": "breakdown",
+      "name": "崩溃退学",
+      "tagline": "学期终结者",
+      "conditions": [
+        { "kind": "stat", "stat": "stress", "op": ">=", "value": 100 },
+        { "kind": "stat", "stat": "energy", "op": "<=", "value": 0 }
+      ],
+      "require": "any",
+      "description": "压力彻底压垮了你，或者精力完全耗尽。你甚至没有办法继续待在学校了。",
+      "type": "game_over",
+      "trigger": "immediate"
+    },
+    {
+      "priority": 3,
+      "id": "retention",
+      "name": "留级危机",
+      "tagline": "重修战士",
+      "conditions": [
+        { "kind": "stat", "stat": "academic", "op": "<", "value": 40 },
+        { "kind": "stat", "stat": "skipClassCount", "op": ">=", "value": 6 }
+      ],
+      "require": "all",
+      "description": "你的成绩和出勤率都不足以通过这学期的考核。辅导员找你谈了很久，最后给了你一个方案：重修。"
+    },
+    {
+      "priority": 4,
+      "id": "innovation_star",
+      "name": "创业新星",
+      "tagline": "创新之星",
+      "conditions": [
+        {
+          "kind": "group",
+          "require": "any",
+          "conditions": [
+            { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "excellent" },
+            {
+              "kind": "group",
+              "require": "all",
+              "conditions": [
+                { "kind": "stat", "stat": "innovationProgress", "op": ">=", "value": 80 },
+                { "kind": "stat", "stat": "innovationTeamTrust", "op": ">=", "value": 35 },
+                { "kind": "stat", "stat": "innovationDefenseScore", "op": ">=", "value": 60 }
+              ]
+            }
+          ]
+        }
+      ],
+      "require": "all",
+      "description": "你的大创项目光芒万丈。评委记住了你的名字，甚至在答辩结束后主动递了名片。这个项目的价值远超一个学分。"
+    },
+    {
+      "priority": 5,
+      "id": "top_student",
+      "name": "学霸结局",
+      "tagline": "绩点战神",
+      "conditions": [
+        { "kind": "stat", "stat": "academic", "op": ">=", "value": 85 },
+        { "kind": "stat", "stat": "teacherTrust", "op": ">=", "value": 25 },
+        { "kind": "stat", "stat": "skipClassCount", "op": "<=", "value": 1 }
+      ],
+      "require": "all",
+      "description": "你几乎是全勤坐在教室里的那个人。成绩单上的一排排数字，对得起你用掉的每一支笔芯。"
+    },
+    {
+      "priority": 6,
+      "id": "social_butterfly",
+      "name": "社交达人",
+      "tagline": "校园红人",
+      "conditions": [
+        { "kind": "stat", "stat": "social", "op": ">=", "value": 85 },
+        { "kind": "stat", "stat": "academic", "op": ">=", "value": 50 }
+      ],
+      "require": "all",
+      "description": "无论走到校园哪里，都有人跟你打招呼。你的朋友圈是这个学期最热闹的地方。"
+    },
+    {
+      "priority": 7,
+      "id": "workaholic",
+      "name": "打工皇帝",
+      "tagline": "时间管理大师",
+      "conditions": [
+        { "kind": "stat", "stat": "gold", "op": ">=", "value": 250 },
+        { "kind": "stat", "stat": "partTimeCount", "op": ">=", "value": 6 }
+      ],
+      "require": "all",
+      "description": "你的钱包鼓鼓囊囊。这个学期你在多个岗位上证明了自己的行动力，打工似乎比上课更让你充实。"
+    },
+    {
+      "priority": 8,
+      "id": "fitness_guru",
+      "name": "健身达人",
+      "tagline": "自律先锋",
+      "conditions": [
+        { "kind": "stat", "stat": "healthIndex", "op": ">=", "value": 110 },
+        { "kind": "stat", "stat": "exerciseCount", "op": ">=", "value": 7 }
+      ],
+      "require": "all",
+      "description": "你的身体状态是整个学期最亮眼的成绩。坚持锻炼不仅让你更有精神，也让你在校园里脱颖而出。"
+    },
+    {
+      "priority": 9,
+      "id": "network_king",
+      "name": "人脉王",
+      "tagline": "校园关系户",
+      "conditions": [
+        { "kind": "stat", "stat": "friendBond", "op": ">=", "value": 10 },
+        { "kind": "stat", "stat": "social", "op": ">=", "value": 80 }
+      ],
+      "require": "all",
+      "description": "你在校园里织了一张看不见的网。无论是打听消息、找人帮忙还是随便聊天，你都不愁没有路子。"
+    },
+    {
+      "priority": 10,
+      "id": "gamer_legend",
+      "name": "电竞高手",
+      "tagline": "宿舍传说",
+      "conditions": [
+        { "kind": "stat", "stat": "gameAddiction", "op": ">=", "value": 30 },
+        { "kind": "stat", "stat": "stress", "op": "<=", "value": 50 }
+      ],
+      "require": "all",
+      "description": "你在游戏里达到了普通人难以企及的高度。虽然现实中的课堂缺了一些，但你在另一个世界里是无可争议的王者。"
+    },
+    {
+      "priority": 11,
+      "id": "night_grinder",
+      "name": "肝帝结局",
+      "tagline": "永不熄灯",
+      "conditions": [
+        { "kind": "stat", "stat": "academic", "op": ">=", "value": 70 },
+        { "kind": "stat", "stat": "lateNightLevel", "op": ">=", "value": 25 }
+      ],
+      "require": "all",
+      "description": "你的台灯是这个楼层最晚熄灭的那一盏。虽然代价是无数个通宵的夜晚，但你的成绩证明了这一切是值得的。"
+    },
+    {
+      "priority": 12,
+      "id": "happy_slacker",
+      "name": "摆烂快乐人",
+      "tagline": "精神胜利法大师",
+      "conditions": [
+        { "kind": "stat", "stat": "stress", "op": "<=", "value": 30 },
+        { "kind": "stat", "stat": "academic", "op": "<", "value": 50 }
+      ],
+      "require": "all",
+      "description": "你没有被绩点绑架，也没有被社交绑架。你用自己的节奏过完了这个学期。成绩也许不够亮眼，但心情从来没崩过。"
+    },
+    {
+      "priority": 13,
+      "id": "normal_graduate",
+      "name": "普通毕业",
+      "tagline": "顺利毕业",
+      "conditions": [],
+      "require": "all",
+      "description": "你没有惊艳所有人，也没有让任何人失望。安安稳稳地走完了这一学期。也许这就是大多数人的大学生活——平凡，但真实。",
+      "type": "default"
+    }
+  ]
+}

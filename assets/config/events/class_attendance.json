@@ -11,55 +11,100 @@
             { "kind": "location", "place": "classroom" }
           ],
           "require": "all",
-          "then": "attend_outcome",
-          "else": "skip_roll_check"
+          "then": "attend_normal",
+          "else": "roll_call"
         },
-        "attend_outcome": {
+        "attend_normal": {
           "type": "outcome",
-          "title": "课堂结束",
-          "body": "你已经在教室里了，专注地听完了上午的课程。知识 +8，压力 -8，体力 -12。",
-          "time_advance": 205,
-          "delta": { "energy": -12, "san": -8, "academic": 8 },
-          "flash": "上课中..."
+          "title": "正常上课",
+          "body": "你坐在教室里，老师点名时你正常答到。这节课至少没有出事故。",
+          "delta": { "academic": 10, "energy": -10 },
+          "hidden_delta": { "classAttendCount": 1, "teacherTrust": 2 },
+          "time_advance": 45
         },
-        "skip_roll_check": {
+        "roll_call": {
           "type": "random_check",
           "probability": 45,
-          "title": "时间流逝",
-          "body": "你不在教室。10:20，老师开始点名...",
-          "success": "roll_caught",
-          "failure": "roll_safe",
+          "title": "点名中...",
+          "body": "10:20，老师开始点名。你不在教室里。",
+          "success": "roll_call_caught",
+          "failure": "skip_success",
           "time_advance": 90,
-          "flash": "逃课中..."
+          "flash": "时间流逝..."
         },
-        "roll_caught": {
+        "skip_success": {
+          "type": "outcome",
+          "title": "逃课成功",
+          "body": "老师今天没有点名。你获得了一段自由时间，但缺课记录悄悄增加了。",
+          "delta": { "san": -5 },
+          "hidden_delta": { "skipClassCount": 1, "teacherTrust": -2 }
+        },
+        "roll_call_caught": {
+          "type": "choice",
+          "title": "被点名了！",
+          "body": "老师点到你的名字。你的手机震了一下，有同学发消息问你怎么办。",
+          "options": [
+            { "text": "请同学圆场", "then": "friend_cover_check" },
+            { "text": "立刻赶回教室", "then": "rush_back_check" },
+            { "text": "假装不知道", "then": "ignore_roll_call" }
+          ]
+        },
+        "friend_cover_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+          ],
+          "require": "any",
+          "title": "同学回应",
+          "body": "你发消息请同学帮你圆场...",
+          "then": "friend_cover_success",
+          "else": "friend_cover_fail"
+        },
+        "friend_cover_success": {
+          "type": "outcome",
+          "title": "圆场成功",
+          "body": "同学帮你应付了点名。你躲过一劫，但这份人情以后要还。",
+          "delta": { "san": 5 },
+          "hidden_delta": { "rollCallCount": 1, "rollCallSavedCount": 1, "owedFavor": true }
+        },
+        "friend_cover_fail": {
+          "type": "outcome",
+          "title": "圆场失败",
+          "body": "同学没能帮你圆过去。老师停顿了一下，在名单上做了标记。",
+          "delta": { "san": 8 },
+          "hidden_delta": { "rollCallCount": 1, "teacherTrust": -2 }
+        },
+        "rush_back_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
           ],
           "require": "all",
-          "title": "点名被抓！",
-          "body": "老师叫了你的名字。有同学能帮你代答道吗？\n(社交检定: 需要 >= 50)",
-          "then": "covered_outcome",
-          "else": "penalty_outcome"
+          "title": "赶回教室",
+          "body": "你一路小跑冲回教室...",
+          "then": "rush_back_success",
+          "else": "rush_back_fail"
         },
-        "roll_safe": {
+        "rush_back_success": {
           "type": "outcome",
-          "title": "侥幸逃脱",
-          "body": "老师今天没点名，你躲过一劫，但错过了课堂内容。",
-          "delta": { "energy": -2, "san": 3, "academic": -2 }
+          "title": "赶回教室",
+          "body": "你气喘吁吁地冲进教室。老师看了你一眼，但没说什么。虽然狼狈，但好歹赶上了。",
+          "delta": { "energy": -15, "san": 5 },
+          "hidden_delta": { "lateCount": 1, "returnClassCount": 1, "rollCallSavedCount": 1, "classAttendCount": 1, "teacherTrust": 2 }
         },
-        "covered_outcome": {
+        "rush_back_fail": {
           "type": "outcome",
-          "title": "同学代答",
-          "body": "一位朋友帮你答了到。有惊无险。",
-          "delta": { "energy": -2, "san": -3, "academic": -3, "social": 2 }
+          "title": "体力不支",
+          "body": "你实在没有体力赶回教室了。老师记下了你的缺勤。",
+          "delta": { "san": 8 },
+          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5 }
         },
-        "penalty_outcome": {
+        "ignore_roll_call": {
           "type": "outcome",
-          "title": "逃课被抓",
-          "body": "没人帮你。老师记了旷课 — 压力暴增，名声受损。",
-          "delta": { "energy": -2, "san": -10, "academic": -10, "social": -8 }
+          "title": "被记缺勤",
+          "body": "你不在教室，也没人能替你解释。逃课的代价落到了你头上。",
+          "delta": { "san": 8 },
+          "hidden_delta": { "rollCallCount": 1, "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5 }
         }
       }
     }

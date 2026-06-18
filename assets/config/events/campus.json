@@ -1,0 +1,97 @@
+{
+  "events": [
+    {
+      "id": "campus_roadshow",
+      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "root": "intro",
+      "steps": {
+        "intro": {
+          "type": "display",
+          "title": "校园路演拉上台",
+          "body": "你正穿过校园广场，突然听到台上有人大喊你的名字。'那边那位同学！对，就是你！' 一个搞校园路演的主持人兴奋地朝你招手，麦克风声音大到你想躲都躲不掉。'来一起玩个互动游戏吧！' 周围的人都看向了你。",
+          "then": "decide"
+        },
+        "decide": {
+          "type": "choice",
+          "title": "被拉上台",
+          "body": "怎么办？",
+          "options": [
+            { "text": "大方上台互动", "then": "go_up_check" },
+            { "text": "用幽默化解尴尬", "then": "humor_check" },
+            { "text": "找借口快速离开", "then": "escape_check" },
+            { "text": "尴尬站住", "then": "embarrassed" }
+          ]
+        },
+        "go_up_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+          ],
+          "require": "all",
+          "then": "go_up_success",
+          "else": "go_up_fail"
+        },
+        "go_up_success": {
+          "type": "outcome",
+          "title": "上台互动",
+          "body": "你深吸一口气，大步走上台。没想到你还挺有台风——配合主持人的互动游戏把台下逗得哈哈大笑。下台时甚至有人给你竖大拇指。",
+          "delta": { "social": 10, "san": -5, "energy": -5 }
+        },
+        "go_up_fail": {
+          "type": "outcome",
+          "title": "台上结巴",
+          "body": "你走上台，但瞬间大脑空白。主持人帮你圆了场，你在一片礼貌的掌声中匆匆下台。",
+          "delta": { "social": -3, "san": 10, "energy": -5 }
+        },
+        "humor_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "social", "op": ">=", "value": 60 }
+          ],
+          "require": "all",
+          "then": "humor_success",
+          "else": "humor_fail"
+        },
+        "humor_success": {
+          "type": "outcome",
+          "title": "幽默化解",
+          "body": "你对着麦克风摆摆手：'我社恐，但可以给你们做第一个鼓掌的观众！' 台下爆笑，主持人也配合地放过了你。你用一段机智的回应赢得了比上台更多的笑声。",
+          "delta": { "social": 15, "energy": -5 }
+        },
+        "humor_fail": {
+          "type": "outcome",
+          "title": "段子没响",
+          "body": "你试着说了个自嘲的段子，但台下安静了一下。主持人尬笑了一声：'好吧谢谢这位同学。'",
+          "delta": { "san": 5, "energy": -3 }
+        },
+        "escape_check": {
+          "type": "check",
+          "conditions": [
+            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
+          ],
+          "require": "all",
+          "then": "escape_success",
+          "else": "escape_fail"
+        },
+        "escape_success": {
+          "type": "outcome",
+          "title": "快速离开",
+          "body": "你灵巧地做了个'我有急事'的手势，加快脚步消失在人群中。主持人在身后喊了一声'哎——'，但已经来不及抓你了。",
+          "delta": { "energy": -10, "san": 2 }
+        },
+        "escape_fail": {
+          "type": "outcome",
+          "title": "没逃掉",
+          "body": "你想跑，但人群围得太紧，你根本挤不出去。只好硬着头皮停住。",
+          "delta": { "san": 3, "energy": -3 }
+        },
+        "embarrassed": {
+          "type": "outcome",
+          "title": "尴尬站住",
+          "body": "你像被定在了原地，脑子飞速旋转但身体一动不动。主持人看你没反应，自己找了个台阶下：'看来这位同学太害羞了，我们换一位！' 你低头希望地面能裂开一个缝。",
+          "delta": { "san": 10, "energy": -2 }
+        }
+      }
+    }
+  ]
+}

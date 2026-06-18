@@ -33,6 +33,9 @@ public:
     /** @brief 渲染当前节点到 ModalBox */
     void render(sf::RenderWindow& window, ModalBox& modalBox);
 
+    /** @brief 按交互点 actionId 查找并启动匹配事件 */
+    bool triggerByAction(const std::string& actionId, GameContext& ctx);
+
     /** @brief 轮询所有触发器，首个命中则启动事件 */
     bool checkTriggers(GameContext& ctx, int previousMinute);
 

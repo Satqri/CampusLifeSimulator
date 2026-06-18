@@ -20,6 +20,7 @@ bool SaveManager::saveGame(const SaveGameData& data) {
             {"academic", data.player.attributes.academic},
             {"social", data.player.attributes.social}
         }},
+        {"hidden", data.player.hidden},
         {"combatBuffs", {
             {"nextEventPositive", data.player.nextEventPositive},
             {"nextRollModifier", data.player.nextRollModifier}
@@ -35,7 +36,6 @@ bool SaveManager::saveGame(const SaveGameData& data) {
         {"currentPlace", static_cast<int>(data.world.currentPlace)},
         {"selectedLibraryBook", data.world.selectedLibraryBook},
         {"libraryBookProgress", data.world.libraryBookProgress},
-        {"heldMealIndex", data.world.heldMealIndex},
         {"lastMealPickupSlot", data.world.lastMealPickupSlot},
         {"gamePlayDay", data.world.gamePlayDay},
         {"gamesPlayedToday", data.world.gamesPlayedToday}
@@ -74,6 +74,8 @@ bool SaveManager::loadGame(SaveGameData& data) {
     data.player.attributes.san = attrJson.value("san", 80);
     data.player.attributes.academic = attrJson.value("academic", 60);
     data.player.attributes.social = attrJson.value("social", 60);
+    if (playerJson.contains("hidden"))
+        data.player.hidden = playerJson["hidden"];
     const auto& buffJson = playerJson["combatBuffs"];
     data.player.nextEventPositive = buffJson.value("nextEventPositive", false);
     data.player.nextRollModifier = buffJson.value("nextRollModifier", 0);
@@ -91,7 +93,6 @@ bool SaveManager::loadGame(SaveGameData& data) {
     for (std::size_t i = 0; i < data.world.libraryBookProgress.size() && i < progressJson.size(); ++i) {
         data.world.libraryBookProgress[i] = progressJson[i].get<int>();
     }
-    data.world.heldMealIndex = worldJson.value("heldMealIndex", -1);
     data.world.lastMealPickupSlot = worldJson.value("lastMealPickupSlot", -1);
     data.world.gamePlayDay = worldJson.value("gamePlayDay", 1);
     data.world.gamesPlayedToday = worldJson.value("gamesPlayedToday", 0);
