@@ -14,6 +14,7 @@
 
 #include "core/AssetPath.h"
 #include "core/CombatResult.h"
+#include "core/GameSettings.h"
 #include "core/Localization.h"
 #include "core/LibraryConfig.h"
 #include "core/MealConfig.h"
@@ -23,6 +24,7 @@
 #include "core/TimeSkipFlash.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
+#include "core/WindowScaler.h"
 #include "core/CombatSystem.h"
 #include "core/GameContext.h"
 #include "core/SettlementResolver.h"
@@ -49,7 +51,9 @@
 #include "ui/HUD.h"
 #include "ui/TitleScreen.h"
 #include "ui/DifficultyPanel.h"
+#include "ui/HelpPanel.h"
 #include "ui/SceneBackground.h"
+#include "ui/SettingsPanel.h"
 
 #include <cmath>
 #include <filesystem>
@@ -62,6 +66,8 @@
 
 enum class GameScreen {
     TITLE,
+    SETTINGS,
+    HELP,
     DIFFICULTY,
     GAME
 };
@@ -155,16 +161,24 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
 // main
 // ──────────────────────────────────────────────────────────────
 int main() {
+    constexpr const char* kSettingsPath = "assets/config/settings.json";
+    cls::GameSettings gameSettings = cls::loadSettings(kSettingsPath);
 #ifdef CLS_LANG_CHINESE
-    cls::setLanguage(cls::Language::Chinese);
+    if (!std::filesystem::exists(cls::resolveAssetPath(kSettingsPath))) {
+        gameSettings.language = cls::Language::Chinese;
+    }
 #endif
+    cls::clampSettings(gameSettings);
+    cls::setLanguage(gameSettings.language);
 
     // ── 窗口 ────────────────────────────────────────────────
-    sf::RenderWindow window(sf::VideoMode({kWindowWidth, kWindowHeight}), "CampusLifeSimulator - Class Demo");
+    const auto& initialWindowSize = cls::windowScalePresets()[gameSettings.windowScaleIndex];
+    sf::RenderWindow window(sf::VideoMode({initialWindowSize.width, initialWindowSize.height}),
+                            "CampusLifeSimulator - Class Demo");
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
-    // 将 960×540 渲染坐标系映射到 1280×720 窗口
+    // 将 960×540 渲染坐标系映射到当前窗口尺寸
     sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
     window.setView(gameView);
 
@@ -199,6 +213,11 @@ int main() {
     // ── 创建 Entity 对象 ─────────────────────────────────────
     TitleScreen titleScreen(font, "assets/ui/campus_title_bg.png");
     DifficultyPanel difficultyPanel(font);
+    SettingsPanel settingsPanel(font);
+    HelpPanel helpPanel(font);
+    settingsPanel.setSettings(&gameSettings);
+    settingsPanel.setOverlayMode(false);
+    helpPanel.setOverlayMode(false);
     SceneBackground sceneBackground;
     SceneTransition sceneTransition;
     TimeSystem timeSystem;
@@ -229,6 +248,51 @@ int main() {
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
     int gamesPlayedToday = 0;
+
+    auto applyRuntimeSettings = [&]() {
+        cls::clampSettings(gameSettings);
+        cls::setLanguage(gameSettings.language);
+        const auto& windowSize = cls::windowScalePresets()[gameSettings.windowScaleIndex];
+        cls::applyWindowSize(window, gameView, windowSize.width, windowSize.height);
+    };
+
+    auto saveRuntimeSettings = [&]() {
+        if (!cls::saveSettings(kSettingsPath, gameSettings)) {
+            std::cerr << "[Settings] Failed to save settings: " << kSettingsPath << std::endl;
+        }
+    };
+
+    auto closeTitlePanel = [&]() {
+        settingsPanel.setEditing(false);
+        screen = GameScreen::TITLE;
+    };
+
+    auto handleTitleAction = [&](TitleAction action) {
+        switch (action) {
+            case TitleAction::Start:
+                screen = GameScreen::DIFFICULTY;
+                break;
+            case TitleAction::Settings:
+                settingsPanel.setEditing(false);
+                screen = GameScreen::SETTINGS;
+                break;
+            case TitleAction::Help:
+                screen = GameScreen::HELP;
+                break;
+            case TitleAction::None:
+                break;
+        }
+    };
+
+    auto handleSettingsAction = [&](SettingsAction action) {
+        if (action == SettingsAction::Changed) {
+            applyRuntimeSettings();
+            saveRuntimeSettings();
+        } else if (action == SettingsAction::Close) {
+            saveRuntimeSettings();
+            closeTitlePanel();
+        }
+    };
 
     // ── 地图对象 ───────────────────────────────────────────────
     auto campusMap     = std::make_unique<CampusMap>();
@@ -536,17 +600,66 @@ int main() {
             }
             if (screen == GameScreen::TITLE) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    if (keyEv->code == sf::Keyboard::Key::Enter) {
-                        screen = GameScreen::DIFFICULTY;
+                    if (keyEv->code == sf::Keyboard::Key::A
+                        || keyEv->code == sf::Keyboard::Key::Left) {
+                        titleScreen.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::D
+                        || keyEv->code == sf::Keyboard::Key::Right) {
+                        titleScreen.moveSelection(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::S) {
+                        handleTitleAction(TitleAction::Settings);
+                    } else if (keyEv->code == sf::Keyboard::Key::H) {
+                        handleTitleAction(TitleAction::Help);
+                    } else if (keyEv->code == sf::Keyboard::Key::Enter
+                        || keyEv->code == sf::Keyboard::Key::Space) {
+                        handleTitleAction(titleScreen.confirmSelection());
                     }
                 } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = titleScreen.handleClick({
-                        static_cast<float>(mouseEv->position.x),
-                        static_cast<float>(mouseEv->position.y)
-                    });
-                    if (action == TitleAction::Start) {
-                        screen = GameScreen::DIFFICULTY;
+                    const auto action = titleScreen.handleClick(
+                        window.mapPixelToCoords(mouseEv->position, gameView));
+                    handleTitleAction(action);
+                }
+                continue;
+            }
+
+            if (screen == GameScreen::SETTINGS) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Escape
+                        || keyEv->code == sf::Keyboard::Key::S) {
+                        saveRuntimeSettings();
+                        closeTitlePanel();
+                    } else if (keyEv->code == sf::Keyboard::Key::Up) {
+                        settingsPanel.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Down) {
+                        settingsPanel.moveSelection(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Left
+                        || keyEv->code == sf::Keyboard::Key::A) {
+                        handleSettingsAction(settingsPanel.adjustCurrent(gameSettings, -1));
+                    } else if (keyEv->code == sf::Keyboard::Key::Right
+                        || keyEv->code == sf::Keyboard::Key::D) {
+                        handleSettingsAction(settingsPanel.adjustCurrent(gameSettings, 1));
+                    } else if (keyEv->code == sf::Keyboard::Key::Enter
+                        || keyEv->code == sf::Keyboard::Key::Space) {
+                        handleSettingsAction(settingsPanel.confirmCurrent(gameSettings));
                     }
+                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
+                    handleSettingsAction(settingsPanel.handleClick(
+                        window.mapPixelToCoords(mouseEv->position, gameView),
+                        gameSettings));
+                }
+                continue;
+            }
+
+            if (screen == GameScreen::HELP) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (keyEv->code == sf::Keyboard::Key::Escape
+                        || keyEv->code == sf::Keyboard::Key::H
+                        || keyEv->code == sf::Keyboard::Key::Enter
+                        || keyEv->code == sf::Keyboard::Key::Space) {
+                        closeTitlePanel();
+                    }
+                } else if (event.is<sf::Event::MouseButtonPressed>()) {
+                    closeTitlePanel();
                 }
                 continue;
             }
@@ -582,10 +695,8 @@ int main() {
                         startGameWithDifficulty(Difficulty::Hard);
                     }
                 } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = difficultyPanel.handleClick({
-                        static_cast<float>(mouseEv->position.x),
-                        static_cast<float>(mouseEv->position.y)
-                    });
+                    const auto action = difficultyPanel.handleClick(
+                        window.mapPixelToCoords(mouseEv->position, gameView));
                     if (action.type == DifficultyActionType::Back) {
                         screen = GameScreen::TITLE;
                     } else if (action.type == DifficultyActionType::Select) {
@@ -659,6 +770,22 @@ int main() {
             titleScreen.update(dt);
             window.clear(sf::Color(20, 20, 30));
             titleScreen.render(window);
+            window.display();
+            continue;
+        }
+
+        if (screen == GameScreen::SETTINGS) {
+            settingsPanel.update(dt);
+            window.clear(sf::Color(20, 20, 30));
+            settingsPanel.render(window);
+            window.display();
+            continue;
+        }
+
+        if (screen == GameScreen::HELP) {
+            helpPanel.update(dt);
+            window.clear(sf::Color(20, 20, 30));
+            helpPanel.render(window);
             window.display();
             continue;
         }
