@@ -4,23 +4,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run
 
-### Build Priority
+### Mandatory AI Build Policy
 
-Default to the repository-provided Windows runner when working on Windows:
+When working from an AI/assistant terminal in this repository, **do not use MSYS, MSYS2, UCRT64, MinGW, or `build-msys2` for build verification**.
+
+Forbidden for AI terminal use:
+
+- `cmake --build build-msys2`
+- `cmake -S . -B build-msys2 ...`
+- `.\run-game.bat mingw`
+- `mingw32-make`, MSYS2 `ninja`, or `pacman`
+- Direct compiler/tool paths under `D:\msys2\...`
+- Direct compiler/tool paths under `C:\x86_64-*-mingw64\...`
+
+The user's manual MSYS/MinGW workflow may work locally, but AI terminal sessions in this project have repeatedly failed on that route. Do not retry it unless the user explicitly overrides this rule in the current conversation.
+
+Default AI verification command on Windows:
+
+```powershell
+cmake --build build --config Debug
+```
+
+If the Visual Studio `build` directory is not configured, configure/use Visual Studio instead of MSYS:
+
+```powershell
+.\run-game.bat vs
+```
+
+Only use vcpkg or Homebrew for non-Windows/cross-platform contexts when appropriate.
+
+### Build Priority For Humans
+
+For manual/user-driven Windows development, the repository runner is available:
 
 ```powershell
 .\run-game.bat mingw
 ```
 
-Use this order unless the user asks for a specific toolchain:
+Human/manual route order:
 
 1. Windows local development: `.\run-game.bat mingw`
 2. Windows Visual Studio generator: `.\run-game.bat vs`
 3. Cross-platform / CI / clean setup: vcpkg preset
 4. macOS: Homebrew preset
-5. MSYS2 UCRT64: last-resort fallback only
-
-Do not default to the MSYS2 UCRT64 shell route. Use MSYS2 only if the runner and vcpkg route are unavailable, or if the user explicitly asks for MSYS2.
+5. MSYS2 UCRT64: manual use only, not AI terminal verification
 
 ### Windows runner（default on Windows）
 
@@ -44,7 +71,9 @@ brew install sfml nlohmann-json curl
 cmake --preset homebrew -S . -B build && cmake --build build
 ```
 
-### MSYS2 UCRT64（last resort）
+### MSYS2 UCRT64（manual use only）
+
+This section is for the user running commands manually. AI assistants must not use this route for build verification.
 
 ```bash
 pacman -S --needed mingw-w64-ucrt-x86_64-{gcc,cmake,ninja,sfml,nlohmann-json,curl}

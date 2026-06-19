@@ -6,36 +6,62 @@
 
 ### 推荐路线
 
-Windows 默认使用项目自带脚本：
+> AI/assistant 终端注意：不要使用 MSYS、MSYS2、UCRT64、MinGW、`build-msys2` 或 `.\run-game.bat mingw` 做编译验证。本项目在 AI 终端里这条路线反复失败。AI 默认使用：
 
 ```powershell
-.\run-game.bat mingw
+cmake --build build --config Debug
 ```
 
-该脚本会自动配置、编译并启动游戏。只有在明确需要 Visual Studio 生成器时，才使用：
+如果 `build` 目录不可用，AI 使用 Visual Studio 路线：
 
 ```powershell
 .\run-game.bat vs
 ```
 
-跨平台或干净环境优先使用 vcpkg。**不要默认使用 MSYS2 UCRT64 shell 构建；MSYS2 只是最后兜底路线。**
+Windows 手动开发时，可以使用项目自带脚本：
+
+```powershell
+.\run-game.bat mingw
+```
+
+该脚本会自动配置、编译并启动游戏。需要 Visual Studio 生成器时，使用：
+
+```powershell
+.\run-game.bat vs
+```
+
+跨平台或干净环境优先使用 vcpkg。**AI 不使用 MSYS2 UCRT64 shell 构建；MSYS2 仅保留给用户手动操作。**
 
 推荐优先级：
 
-1. Windows 本机开发：`.\run-game.bat mingw`
-2. Windows + Visual Studio：`.\run-game.bat vs`
-3. 跨平台/CI/新机器：vcpkg preset
-4. macOS：Homebrew preset
-5. MSYS2 UCRT64：仅当前面路线不可用，或用户明确要求 MSYS2 时使用
+1. AI/assistant 终端：`cmake --build build --config Debug`
+2. AI 若需重新配置：`.\run-game.bat vs`
+3. Windows 用户手动开发：`.\run-game.bat mingw`
+4. Windows + Visual Studio：`.\run-game.bat vs`
+5. 跨平台/CI/新机器：vcpkg preset
+6. macOS：Homebrew preset
 
-### Windows 一键运行（首选）
+### Windows AI 验证（首选）
+
+```powershell
+cd C:\Users\ASUS\Desktop\demo2
+cmake --build build --config Debug
+```
+
+### Windows 手动运行
 
 ```powershell
 cd C:\Users\ASUS\Desktop\demo2
 .\run-game.bat mingw
 ```
 
-脚本内部使用 `build-local` 目录，不需要手动进入 MSYS2 shell。
+脚本内部使用 `build-local` 目录，不需要手动进入 MSYS2 shell。AI 不使用这条路线。
+
+### Windows Visual Studio 路线
+
+```powershell
+.\run-game.bat vs
+```
 
 ### vcpkg（推荐，跨平台）
 
@@ -56,15 +82,9 @@ cmake --preset vcpkg -S . -B build -DCLS_LANG_CHINESE=ON
 ./build/Debug/CampusLifeSimulator.exe
 ```
 
-### MSYS2 UCRT64（最后兜底）
+### MSYS2 UCRT64（仅限用户手动）
 
-仅在以下情况使用本路线：
-
-- `run-game.bat mingw` / `run-game.bat vs` 不可用
-- vcpkg preset 不可用
-- 用户明确要求使用 MSYS2
-
-不要把 MSYS2 作为 Windows 默认构建方式。
+AI/assistant 终端禁止使用本路线。仅在用户自己手动操作且明确需要时使用。
 
 ```bash
 # 首次：安装依赖
