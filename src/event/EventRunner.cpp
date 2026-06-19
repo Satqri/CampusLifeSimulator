@@ -128,13 +128,40 @@ static Condition parseCondition(const json& c) {
     return cond;
 }
 
-// ─── JSON 加载 ───────────────────────────────────────────────────────────────
-
-
 static std::string localizedValue(const std::string& key, const std::string& fallback) {
     if (!key.empty()) return cls::text(key);
     return fallback;
 }
+
+static std::string nodeTypeName(EventNodeType type) {
+    switch (type) {
+        case EventNodeType::DISPLAY: return "display";
+        case EventNodeType::CHOICE: return "choice";
+        case EventNodeType::RANDOM_CHECK: return "random_check";
+        case EventNodeType::CHECK: return "check";
+        case EventNodeType::OUTCOME: return "outcome";
+    }
+    return "unknown";
+}
+
+static std::string triggerTypeName(const EventTrigger& trigger) {
+    switch (trigger.type) {
+        case EventTrigger::TIME_SCHEDULE: return "time_schedule";
+        case EventTrigger::INTERACTION: return "interaction";
+        case EventTrigger::NONE: return "none";
+    }
+    return "none";
+}
+
+static std::string triggerLabel(const EventTrigger& trigger) {
+    if (trigger.type == EventTrigger::TIME_SCHEDULE)
+        return trigger.method.empty() ? "time" : trigger.method;
+    if (trigger.type == EventTrigger::INTERACTION)
+        return trigger.actionId.empty() ? "interaction" : trigger.actionId;
+    return "none";
+}
+
+// ─── JSON 加载 ───────────────────────────────────────────────────────────────
 
 bool EventRunner::loadEvents(const std::string& filepath) {
     std::ifstream file(filepath);
@@ -303,6 +330,7 @@ bool EventRunner::startEvent(const std::string& eventId, GameContext& ctx) {
     mWaitingForEnter = false;
 
     std::cout << "[Event] Starting: " << eventId << std::endl;
+    appendDebugHistory("start " + eventId);
     transitionTo(mCurrentEvent->rootNode, ctx);
     return true;
 }
@@ -313,6 +341,102 @@ void EventRunner::clear() {
     mCurrentEvent    = nullptr;
     mCurrentEventId.clear();
     mCurrentNodeId.clear();
+}
+
+void EventRunner::setRandomSeed(unsigned int seed) {
+    mRng.seed(seed);
+    std::cout << "[Event] Debug seed set: " << seed << std::endl;
+    appendDebugHistory("seed " + std::to_string(seed));
+}
+
+void EventRunner::clearDebugHistory() {
+    mDebugHistory.clear();
+}
+
+std::vector<DebugEventInfo> EventRunner::debugEvents(GameContext& ctx) {
+    std::vector<DebugEventInfo> result;
+    result.reserve(mEventOrder.size());
+
+    for (const auto& id : mEventOrder) {
+        auto it = mEvents.find(id);
+        if (it == mEvents.end()) continue;
+
+        auto& def = it->second;
+        const auto& trigger = def.trigger;
+        const auto& hidden = ctx.player.getHidden();
+        const std::string countKey = eventCountKey(def.id);
+        const std::string lastDayKey = eventLastDayKey(def.id);
+
+        DebugEventInfo info;
+        info.id = def.id;
+        info.triggerType = triggerTypeName(trigger);
+        info.triggerLabel = triggerLabel(trigger);
+        info.actionId = trigger.actionId;
+        info.chance = trigger.chance;
+        info.once = trigger.once;
+        info.cooldownDays = trigger.cooldownDays;
+        info.triggerCount = hidden.value(countKey, 0);
+        info.lastDay = hidden.value(lastDayKey, -1);
+
+        if (trigger.type == EventTrigger::NONE) {
+            info.currentContext = true;
+        } else if (trigger.type == EventTrigger::INTERACTION) {
+            if (ctx.currentMap) {
+                for (const auto& interaction : ctx.currentMap->getInteractionPoints()) {
+                    const std::string normalizedAction = normalizeActionId(interaction.actionId);
+                    if (trigger.actionId == interaction.actionId || trigger.actionId == normalizedAction) {
+                        info.currentContext = true;
+                        break;
+                    }
+                }
+            }
+        } else if (trigger.type == EventTrigger::TIME_SCHEDULE) {
+            if (trigger.method == "crossed_class_time") {
+                info.currentContext = ctx.timeSystem.shouldForceClass()
+                    || ctx.timeSystem.getMinuteOfDay() == TimeSystem::kClassMinute;
+            } else {
+                info.currentContext = true;
+            }
+        }
+
+        info.conditionsPass = trigger.conditions.empty()
+            || evaluateConditions(trigger.conditions, trigger.requireMode, ctx);
+
+        info.gatePass = true;
+        if (trigger.once && info.triggerCount > 0) {
+            info.gatePass = false;
+            info.reason = "once already triggered";
+        } else if (trigger.cooldownDays > 0 && hidden.contains(lastDayKey)) {
+            const int lastDay = hidden.value(lastDayKey, -999);
+            if (ctx.timeSystem.getDay() - lastDay <= trigger.cooldownDays) {
+                info.gatePass = false;
+                info.reason = "cooldown";
+            }
+        }
+        if (info.gatePass && trigger.chance < 100) {
+            info.reason = "chance gate";
+        }
+        if (!info.conditionsPass) {
+            info.reason = "conditions fail";
+        }
+        if (!info.currentContext) {
+            info.reason = "context mismatch";
+        }
+        info.eligible = info.currentContext && info.conditionsPass && info.gatePass;
+
+        result.push_back(info);
+    }
+
+    return result;
+}
+
+void EventRunner::appendDebugHistory(const std::string& message) {
+    static constexpr std::size_t kMaxHistory = 48;
+    mDebugHistory.push_back(message);
+    if (mDebugHistory.size() > kMaxHistory) {
+        mDebugHistory.erase(mDebugHistory.begin(),
+                            mDebugHistory.begin() + static_cast<long long>(mDebugHistory.size() - kMaxHistory));
+    }
 }
 
 // ─── 节点跳转 ───────────────────────────────────────────────────────────────
@@ -328,6 +452,7 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
 
     mCurrentNodeId = nodeId;
     const EventNode& node = it->second;
+    appendDebugHistory(mCurrentEventId + ":" + nodeId + " [" + nodeTypeName(node.type) + "]");
 
     // 带 title 的 RANDOM_CHECK/CHECK：先展示文字，等待 Enter 后再解析
     if ((!node.title.empty() || !node.titleKey.empty()) &&
@@ -353,6 +478,9 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         std::cout << "[Event] Random: roll=" << roll
                   << " p=" << node.probability
                   << " -> " << (success ? "success" : "failure") << std::endl;
+        appendDebugHistory("random roll=" + std::to_string(roll)
+            + " p=" + std::to_string(node.probability)
+            + " -> " + (success ? "success" : "failure"));
         transitionTo(success ? node.successNode : node.failureNode, ctx);
         return;
     }
@@ -360,6 +488,7 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         applyEffects(node, ctx);
         const bool passed = evaluateConditions(
             node.conditions, node.requireMode, ctx);
+        appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
         const std::string& next = passed ? node.thenNode : node.elseNode;
         if (next.empty()) {
             std::cerr << "[Event] CHECK node has no " << (passed ? "then" : "else") << std::endl;
@@ -412,6 +541,9 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
             const bool success = roll < node.probability;
             std::cout << "[Event] Random (on Enter): roll=" << roll
                       << " -> " << (success ? "success" : "failure") << std::endl;
+            appendDebugHistory("random roll=" + std::to_string(roll)
+                + " p=" + std::to_string(node.probability)
+                + " -> " + (success ? "success" : "failure"));
             transitionTo(success ? node.successNode : node.failureNode, ctx);
             return;
         }
@@ -419,6 +551,7 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
             applyEffects(node, ctx);
             const bool passed = evaluateConditions(
                 node.conditions, node.requireMode, ctx);
+            appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
             const std::string& next = passed ? node.thenNode : node.elseNode;
             if (next.empty()) { clear(); return; }
             transitionTo(next, ctx);

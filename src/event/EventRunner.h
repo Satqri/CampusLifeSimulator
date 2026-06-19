@@ -12,6 +12,23 @@ namespace sf { class RenderWindow; }
 class ModalBox;
 struct GameContext;
 
+struct DebugEventInfo {
+    std::string id;
+    std::string triggerType;
+    std::string triggerLabel;
+    std::string actionId;
+    bool currentContext = false;
+    bool conditionsPass = false;
+    bool gatePass = false;
+    bool eligible = false;
+    int chance = 100;
+    int triggerCount = 0;
+    int lastDay = -1;
+    bool once = false;
+    int cooldownDays = 0;
+    std::string reason;
+};
+
 class EventRunner {
 public:
     EventRunner();
@@ -24,6 +41,12 @@ public:
 
     /** @brief 当前事件 ID（用于避免重复触发） */
     const std::string& currentEventId() const { return mCurrentEventId; }
+
+    /** @brief 当前事件节点 ID（Debug/QA 面板使用） */
+    const std::string& currentNodeId() const { return mCurrentNodeId; }
+
+    /** @brief 最近事件运行记录（Debug/QA 面板使用） */
+    const std::vector<std::string>& debugHistory() const { return mDebugHistory; }
 
     /** @brief 启动指定事件 */
     bool startEvent(const std::string& eventId, GameContext& ctx);
@@ -43,12 +66,24 @@ public:
     /** @brief 重置当前事件 */
     void clear();
 
+    /** @brief 固定事件随机数种子，用于复现随机检定结果 */
+    void setRandomSeed(unsigned int seed);
+
+    /** @brief 供 Debug/QA 面板读取当前事件池与触发状态 */
+    std::vector<DebugEventInfo> debugEvents(GameContext& ctx);
+
+    /** @brief 清空 Debug/QA 事件运行记录 */
+    void clearDebugHistory();
+
 private:
     /** @brief 递归跳转到目标节点，自动解析 RANDOM_CHECK/CHECK */
     void transitionTo(const std::string& nodeId, GameContext& ctx);
 
     /** @brief 执行节点的附属效果（delta + time_advance + flash） */
     void applyEffects(const EventNode& node, GameContext& ctx);
+
+    /** @brief 添加一条 Debug/QA 事件运行记录 */
+    void appendDebugHistory(const std::string& message);
 
     /** @brief 求值 conditions 数组 */
     bool evaluateConditions(const std::vector<Condition>& conditions,
@@ -65,6 +100,7 @@ private:
     bool mActive = false;
     bool mWaitingForEnter = false; ///< 等待玩家按 Enter 后再解析
     std::mt19937 mRng;
+    std::vector<std::string> mDebugHistory;
 };
 
 #endif

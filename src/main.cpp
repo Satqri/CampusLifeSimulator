@@ -35,6 +35,7 @@
 #include "interaction/RegularInteraction.h"
 #include "ui/ActivityNotice.h"
 #include "ui/ChoicePrompt.h"
+#include "ui/DebugSandboxPanel.h"
 #include "ui/ModalBox.h"
 #include "ui/TimePanel.h"
 #include "entity/Player.h"
@@ -237,6 +238,7 @@ int main() {
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
+    DebugSandboxPanel debugSandbox(font);
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
@@ -608,6 +610,37 @@ int main() {
                 }
                 continue;
             }
+            if (screen == GameScreen::GAME) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    const bool sandboxWasExpanded = debugSandbox.isExpanded();
+                    const bool sandboxConsumesKey = keyEv->code == sf::Keyboard::Key::F1
+                        || (debugSandbox.isEnabled() && keyEv->code == sf::Keyboard::Key::F2)
+                        || (sandboxWasExpanded
+                            && (keyEv->code == sf::Keyboard::Key::Tab
+                            || keyEv->code == sf::Keyboard::Key::Escape
+                            || keyEv->code == sf::Keyboard::Key::Up
+                            || keyEv->code == sf::Keyboard::Key::Down
+                            || keyEv->code == sf::Keyboard::Key::Left
+                            || keyEv->code == sf::Keyboard::Key::Right
+                            || keyEv->code == sf::Keyboard::Key::W
+                            || keyEv->code == sf::Keyboard::Key::A
+                            || keyEv->code == sf::Keyboard::Key::S
+                            || keyEv->code == sf::Keyboard::Key::D
+                            || keyEv->code == sf::Keyboard::Key::Enter
+                            || keyEv->code == sf::Keyboard::Key::Space
+                            || keyEv->code == sf::Keyboard::Key::R
+                            || keyEv->code == sf::Keyboard::Key::E
+                            || keyEv->code == sf::Keyboard::Key::Delete));
+                    const DebugSandboxResult debugResult = debugSandbox.handleKey(
+                        keyEv->code, ctx, eventRunner);
+                    if (debugResult.action != DebugSandboxAction::None) {
+                        std::cout << "[DebugSandbox] " << debugResult.message << std::endl;
+                    }
+                    if (sandboxConsumesKey) {
+                        continue;
+                    }
+                }
+            }
             if (screen == GameScreen::TITLE) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::A
@@ -726,7 +759,8 @@ int main() {
                 continue;
             }
 
-            if (screen == GameScreen::GAME && !mealChoicePrompt.active && !activityNotice.active) {
+            if (screen == GameScreen::GAME && !debugSandbox.isExpanded()
+                && !mealChoicePrompt.active && !activityNotice.active) {
                 if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEv->button == sf::Mouse::Button::Left) {
                         const sf::Vector2f target = window.mapPixelToCoords(mouseEv->position, gameView);
@@ -821,7 +855,7 @@ int main() {
             continue;
         }
 
-        if (!mealChoicePrompt.active && !activityNotice.active) {
+        if (!debugSandbox.isExpanded() && !mealChoicePrompt.active && !activityNotice.active) {
             float dx = 0.0f, dy = 0.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    dy = -1.0f;
@@ -959,6 +993,10 @@ int main() {
             modalBox.setContent(mealChoicePrompt.title, body.str(),
                                 mealChoicePrompt.third.empty() ? cls::text("prompt.choice12") : cls::text("prompt.choice123"));
             modalBox.render(window);
+        }
+        if (fontOk) {
+            debugSandbox.refresh(ctx, eventRunner);
+            debugSandbox.render(window);
         }
 
         window.display();
