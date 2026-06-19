@@ -63,6 +63,29 @@ bool findFrom(fs::path start, const fs::path& relativePath, fs::path& resolved) 
     return false;
 }
 
+bool findProjectRootAssetFrom(fs::path start, const fs::path& relativePath, fs::path& resolved) {
+    std::error_code ec;
+    start = fs::absolute(start, ec);
+    if (ec) return false;
+
+    while (!start.empty()) {
+        const fs::path marker = start / "CMakeLists.txt";
+        const fs::path assetRoot = start / "assets";
+        if (fs::exists(marker, ec) && !ec && fs::exists(assetRoot, ec) && !ec) {
+            const fs::path candidate = start / relativePath;
+            if (fs::exists(candidate, ec) && !ec) {
+                resolved = candidate;
+                return true;
+            }
+        }
+
+        const fs::path parent = start.parent_path();
+        if (parent == start) break;
+        start = parent;
+    }
+    return false;
+}
+
 } // namespace
 
 std::string resolveAssetPath(const std::string& relativePath) {
@@ -80,6 +103,12 @@ std::string resolveAssetPath(const std::string& relativePath) {
     addStartPath(starts, executableDirectory());
 
     fs::path resolved;
+    for (const auto& start : starts) {
+        if (findProjectRootAssetFrom(start, requested, resolved)) {
+            return resolved.lexically_normal().string();
+        }
+    }
+
     for (const auto& start : starts) {
         if (findFrom(start, requested, resolved)) {
             return resolved.lexically_normal().string();

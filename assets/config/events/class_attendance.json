@@ -2,13 +2,19 @@
   "events": [
     {
       "id": "class_attendance",
-      "trigger": { "type": "time_schedule", "method": "crossed_class_time" },
+      "trigger": {
+        "type": "time_schedule",
+        "method": "crossed_class_time"
+      },
       "root": "check_location",
       "steps": {
         "check_location": {
           "type": "check",
           "conditions": [
-            { "kind": "location", "place": "classroom" }
+            {
+              "kind": "location",
+              "place": "classroom"
+            }
           ],
           "require": "all",
           "then": "attend_normal",
@@ -16,95 +22,158 @@
         },
         "attend_normal": {
           "type": "outcome",
-          "title": "正常上课",
-          "body": "你坐在教室里，老师点名时你正常答到。这节课至少没有出事故。",
-          "delta": { "academic": 10, "energy": -10 },
-          "hidden_delta": { "classAttendCount": 1, "teacherTrust": 2 },
-          "time_advance": 45
+          "delta": {
+            "academic": 10,
+            "energy": -10
+          },
+          "hidden_delta": {
+            "classAttendCount": 1,
+            "teacherTrust": 2
+          },
+          "time_advance": 45,
+          "title_key": "event.class_attendance.attend_normal.title",
+          "body_key": "event.class_attendance.attend_normal.body"
         },
         "roll_call": {
           "type": "random_check",
           "probability": 45,
-          "title": "点名中...",
-          "body": "10:20，老师开始点名。你不在教室里。",
           "success": "roll_call_caught",
           "failure": "skip_success",
           "time_advance": 90,
-          "flash": "时间流逝..."
+          "title_key": "event.class_attendance.roll_call.title",
+          "body_key": "event.class_attendance.roll_call.body",
+          "flash_key": "event.class_attendance.roll_call.flash"
         },
         "skip_success": {
           "type": "outcome",
-          "title": "逃课成功",
-          "body": "老师今天没有点名。你获得了一段自由时间，但缺课记录悄悄增加了。",
-          "delta": { "san": -5 },
-          "hidden_delta": { "skipClassCount": 1, "teacherTrust": -2 }
+          "delta": {
+            "san": -5
+          },
+          "hidden_delta": {
+            "skipClassCount": 1,
+            "teacherTrust": -2
+          },
+          "title_key": "event.class_attendance.skip_success.title",
+          "body_key": "event.class_attendance.skip_success.body"
         },
         "roll_call_caught": {
           "type": "choice",
-          "title": "被点名了！",
-          "body": "老师点到你的名字。你的手机震了一下，有同学发消息问你怎么办。",
           "options": [
-            { "text": "请同学圆场", "then": "friend_cover_check" },
-            { "text": "立刻赶回教室", "then": "rush_back_check" },
-            { "text": "假装不知道", "then": "ignore_roll_call" }
-          ]
+            {
+              "then": "friend_cover_check",
+              "text_key": "event.class_attendance.roll_call_caught.option1"
+            },
+            {
+              "then": "rush_back_check",
+              "text_key": "event.class_attendance.roll_call_caught.option2"
+            },
+            {
+              "then": "ignore_roll_call",
+              "text_key": "event.class_attendance.roll_call_caught.option3"
+            }
+          ],
+          "title_key": "event.class_attendance.roll_call_caught.title",
+          "body_key": "event.class_attendance.roll_call_caught.body"
         },
         "friend_cover_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "any",
-          "title": "同学回应",
-          "body": "你发消息请同学帮你圆场...",
           "then": "friend_cover_success",
-          "else": "friend_cover_fail"
+          "else": "friend_cover_fail",
+          "title_key": "event.class_attendance.friend_cover_check.title",
+          "body_key": "event.class_attendance.friend_cover_check.body"
         },
         "friend_cover_success": {
           "type": "outcome",
-          "title": "圆场成功",
-          "body": "同学帮你应付了点名。你躲过一劫，但这份人情以后要还。",
-          "delta": { "san": 5 },
-          "hidden_delta": { "rollCallCount": 1, "rollCallSavedCount": 1, "owedFavor": true }
+          "delta": {
+            "san": 5
+          },
+          "hidden_delta": {
+            "rollCallCount": 1,
+            "rollCallSavedCount": 1,
+            "owedFavor": true
+          },
+          "title_key": "event.class_attendance.friend_cover_success.title",
+          "body_key": "event.class_attendance.friend_cover_success.body"
         },
         "friend_cover_fail": {
           "type": "outcome",
-          "title": "圆场失败",
-          "body": "同学没能帮你圆过去。老师停顿了一下，在名单上做了标记。",
-          "delta": { "san": 8 },
-          "hidden_delta": { "rollCallCount": 1, "teacherTrust": -2 }
+          "delta": {
+            "san": 8
+          },
+          "hidden_delta": {
+            "rollCallCount": 1,
+            "teacherTrust": -2
+          },
+          "title_key": "event.class_attendance.friend_cover_fail.title",
+          "body_key": "event.class_attendance.friend_cover_fail.body"
         },
         "rush_back_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
-          "title": "赶回教室",
-          "body": "你一路小跑冲回教室...",
           "then": "rush_back_success",
-          "else": "rush_back_fail"
+          "else": "rush_back_fail",
+          "title_key": "event.class_attendance.rush_back_check.title",
+          "body_key": "event.class_attendance.rush_back_check.body"
         },
         "rush_back_success": {
           "type": "outcome",
-          "title": "赶回教室",
-          "body": "你气喘吁吁地冲进教室。老师看了你一眼，但没说什么。虽然狼狈，但好歹赶上了。",
-          "delta": { "energy": -15, "san": 5 },
-          "hidden_delta": { "lateCount": 1, "returnClassCount": 1, "rollCallSavedCount": 1, "classAttendCount": 1, "teacherTrust": 2 }
+          "delta": {
+            "energy": -15,
+            "san": 5
+          },
+          "hidden_delta": {
+            "lateCount": 1,
+            "returnClassCount": 1,
+            "rollCallSavedCount": 1,
+            "classAttendCount": 1,
+            "teacherTrust": 2
+          },
+          "title_key": "event.class_attendance.rush_back_success.title",
+          "body_key": "event.class_attendance.rush_back_success.body"
         },
         "rush_back_fail": {
           "type": "outcome",
-          "title": "体力不支",
-          "body": "你实在没有体力赶回教室了。老师记下了你的缺勤。",
-          "delta": { "san": 8 },
-          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5 }
+          "delta": {
+            "san": 8
+          },
+          "hidden_delta": {
+            "skipClassCount": 1,
+            "absencePenaltyCount": 1,
+            "teacherTrust": -5
+          },
+          "title_key": "event.class_attendance.rush_back_fail.title",
+          "body_key": "event.class_attendance.rush_back_fail.body"
         },
         "ignore_roll_call": {
           "type": "outcome",
-          "title": "被记缺勤",
-          "body": "你不在教室，也没人能替你解释。逃课的代价落到了你头上。",
-          "delta": { "san": 8 },
-          "hidden_delta": { "rollCallCount": 1, "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5 }
+          "delta": {
+            "san": 8
+          },
+          "hidden_delta": {
+            "rollCallCount": 1,
+            "skipClassCount": 1,
+            "absencePenaltyCount": 1,
+            "teacherTrust": -5
+          },
+          "title_key": "event.class_attendance.ignore_roll_call.title",
+          "body_key": "event.class_attendance.ignore_roll_call.body"
         }
       }
     }

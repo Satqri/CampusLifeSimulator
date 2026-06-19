@@ -15,9 +15,13 @@ CampusMap::CampusMap() {
 
     interactions = {
         InteractionPoint{sf::FloatRect({392.0f, 182.0f}, {176.0f, 152.0f}), "campus_square",
-            "Campus Square", "The center square is lively. Clubs, roadshows, and chance encounters gather here."},
+            "Campus Square", "interaction.campus_square.label",
+            "The center square is lively. Clubs, roadshows, and chance encounters gather here.",
+            "interaction.campus_square.description"},
         InteractionPoint{sf::FloatRect({612.0f, 236.0f}, {74.0f, 110.0f}), "campus_bulletin",
-            "Bulletin Board", "Posters and notices overlap on the board. Competitions and club news are updated often."}
+            "Bulletin Board", "interaction.campus_bulletin.label",
+            "Posters and notices overlap on the board. Competitions and club news are updated often.",
+            "interaction.campus_bulletin.description"}
     };
 
     // 添加建筑碰撞体（与 MapPortal area 一致）

@@ -1,28 +1,48 @@
 {
   "interactions": [
     {
-      "area": { "x": 90.0, "y": 108.0, "w": 180.0, "h": 70.0 },
+      "area": {
+        "x": 90.0,
+        "y": 108.0,
+        "w": 180.0,
+        "h": 70.0
+      },
       "actionId": "dormitory_bed",
-      "label": "Rest on Bed",
-      "description": "A soft bed. A short rest might restore some energy before the next challenge."
+      "label_key": "interaction.dormitory_bed.label",
+      "description_key": "interaction.dormitory_bed.description"
     },
     {
-      "area": { "x": 636.0, "y": 112.0, "w": 210.0, "h": 66.0 },
+      "area": {
+        "x": 636.0,
+        "y": 112.0,
+        "w": 210.0,
+        "h": 66.0
+      },
       "actionId": "dormitory_desk",
-      "label": "Study at Desk",
-      "description": "Your desk is covered with notes and textbooks. A few hours of study could sharpen your academics."
+      "label_key": "interaction.dormitory_desk.label",
+      "description_key": "interaction.dormitory_desk.description"
     },
     {
-      "area": { "x": 660.0, "y": 190.0, "w": 168.0, "h": 62.0 },
+      "area": {
+        "x": 660.0,
+        "y": 190.0,
+        "w": 168.0,
+        "h": 62.0
+      },
       "actionId": "dormitory_games",
-      "label": "Play Games",
-      "description": "A small console and monitor. A little play can restore your mood, but too much drains energy."
+      "label_key": "interaction.dormitory_games.label",
+      "description_key": "interaction.dormitory_games.description"
     },
     {
-      "area": { "x": 365.0, "y": 285.0, "w": 230.0, "h": 110.0 },
+      "area": {
+        "x": 365.0,
+        "y": 285.0,
+        "w": 230.0,
+        "h": 110.0
+      },
       "actionId": "dormitory_rug",
-      "label": "Sit on Rug",
-      "description": "A green rug in the middle of the room. A quiet place to sit and gather your thoughts."
+      "label_key": "interaction.dormitory_rug.label",
+      "description_key": "interaction.dormitory_rug.description"
     }
   ]
 }

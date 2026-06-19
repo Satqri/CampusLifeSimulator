@@ -2,364 +2,625 @@
   "description": "隐藏称号系统 — 可叠加获取，按结算组别分类。",
   "groups": [
     {
-      "group": "课程点名组",
       "titles": [
         {
           "id": "class_stable_student",
-          "name": "课堂稳定器",
-          "subtitle": "稳定上课",
           "conditions": [
-            { "kind": "stat", "stat": "classAttendCount", "op": ">=", "value": 8 },
-            { "kind": "stat", "stat": "skipClassCount", "op": "<=", "value": 1 },
-            { "kind": "stat", "stat": "teacherTrust", "op": ">=", "value": 20 }
+            {
+              "kind": "stat",
+              "stat": "classAttendCount",
+              "op": ">=",
+              "value": 8
+            },
+            {
+              "kind": "stat",
+              "stat": "skipClassCount",
+              "op": "<=",
+              "value": 1
+            },
+            {
+              "kind": "stat",
+              "stat": "teacherTrust",
+              "op": ">=",
+              "value": 20
+            }
           ],
           "require": "all",
-          "text": "你大多数时候都坐在教室里。它不传奇，但足够稳定，也足够让老师记住你是个靠谱的人。"
+          "name_key": "title.class_stable_student.name",
+          "subtitle_key": "title.class_stable_student.subtitle",
+          "text_key": "title.class_stable_student.text"
         },
         {
           "id": "class_honest_repair",
-          "name": "迟到补锅人",
-          "subtitle": "诚实补救",
           "conditions": [
-            { "kind": "stat", "stat": "returnClassCount", "op": ">=", "value": 2 },
-            { "kind": "meta", "desc": "经常在被点名时选择'立刻赶回教室'或主动解释" }
+            {
+              "kind": "stat",
+              "stat": "returnClassCount",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "kind": "meta",
+              "desc": "经常在被点名时选择'立刻赶回教室'或主动解释"
+            }
           ],
           "require": "all",
-          "text": "你犯过错，但也愿意补救。这个学期没有完美答案，只有一次次赶回去的选择。"
+          "name_key": "title.class_honest_repair.name",
+          "subtitle_key": "title.class_honest_repair.subtitle",
+          "text_key": "title.class_honest_repair.text"
         },
         {
           "id": "class_roll_call_survivor",
-          "name": "点名边缘人",
-          "subtitle": "点名幸存",
           "conditions": [
-            { "kind": "stat", "stat": "skipClassCount", "op": ">=", "value": 2 },
-            { "kind": "stat", "stat": "rollCallSavedCount", "op": ">=", "value": 2 }
+            {
+              "kind": "stat",
+              "stat": "skipClassCount",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "kind": "stat",
+              "stat": "rollCallSavedCount",
+              "op": ">=",
+              "value": 2
+            }
           ],
           "require": "all",
-          "text": "你不是没逃过课，只是每次危险都差一点擦肩而过。点名册上有你的传说，也有你的冷汗。"
+          "name_key": "title.class_roll_call_survivor.name",
+          "subtitle_key": "title.class_roll_call_survivor.subtitle",
+          "text_key": "title.class_roll_call_survivor.text"
         },
         {
           "id": "class_absence_warning",
-          "name": "缺勤边缘户",
-          "subtitle": "缺勤预警",
           "conditions": [
-            { "kind": "stat", "stat": "skipClassCount", "op": ">=", "value": 5 },
-            { "kind": "stat", "stat": "absencePenaltyCount", "op": ">=", "value": 3 },
-            { "kind": "stat", "stat": "teacherTrust", "op": "<=", "value": 10 }
+            {
+              "kind": "stat",
+              "stat": "skipClassCount",
+              "op": ">=",
+              "value": 5
+            },
+            {
+              "kind": "stat",
+              "stat": "absencePenaltyCount",
+              "op": ">=",
+              "value": 3
+            },
+            {
+              "kind": "stat",
+              "stat": "teacherTrust",
+              "op": "<=",
+              "value": 10
+            }
           ],
           "require": "all",
-          "text": "你获得了很多自由时间，也把自己推到了危险边缘。老师的点名册成了你本学期最大的敌人。"
+          "name_key": "title.class_absence_warning.name",
+          "subtitle_key": "title.class_absence_warning.subtitle",
+          "text_key": "title.class_absence_warning.text"
         }
-      ]
+      ],
+      "group_key": "title_group.class_attendance.name"
     },
     {
-      "group": "社交互助组",
       "titles": [
         {
           "id": "friend_reliable_partner",
-          "name": "靠谱同桌",
-          "subtitle": "可靠搭档",
           "conditions": [
-            { "kind": "stat", "stat": "friendBond", "op": ">=", "value": 6 },
-            { "kind": "stat", "stat": "friendHelpCount", "op": ">=", "value": 3 }
+            {
+              "kind": "stat",
+              "stat": "friendBond",
+              "op": ">=",
+              "value": 6
+            },
+            {
+              "kind": "stat",
+              "stat": "friendHelpCount",
+              "op": ">=",
+              "value": 3
+            }
           ],
           "require": "all",
-          "text": "这个学期里，你们不只是普通同学。你帮过他，他也在关键时候拉过你一把。"
+          "name_key": "title.friend_reliable_partner.name",
+          "subtitle_key": "title.friend_reliable_partner.subtitle",
+          "text_key": "title.friend_reliable_partner.text"
         },
         {
           "id": "friend_roll_call_buddy",
-          "name": "点名互保人",
-          "subtitle": "点名战友",
           "conditions": [
-            { "kind": "stat", "stat": "friendRollCallHelpCount", "op": ">=", "value": 1 }
+            {
+              "kind": "stat",
+              "stat": "friendRollCallHelpCount",
+              "op": ">=",
+              "value": 1
+            }
           ],
           "require": "all",
-          "text": "你们的关系有点微妙，但有一件事很确定：点名发生时，他真的帮你挡过一次风。"
+          "name_key": "title.friend_roll_call_buddy.name",
+          "subtitle_key": "title.friend_roll_call_buddy.subtitle",
+          "text_key": "title.friend_roll_call_buddy.text"
         },
         {
           "id": "friend_exam_ally",
-          "name": "资料共享者",
-          "subtitle": "考前伙伴",
           "conditions": [
-            { "kind": "stat", "stat": "sharedNotes", "op": "eq", "value": true },
-            { "kind": "stat", "stat": "friendReviewCount", "op": ">=", "value": 1 }
+            {
+              "kind": "stat",
+              "stat": "sharedNotes",
+              "op": "eq",
+              "value": true
+            },
+            {
+              "kind": "stat",
+              "stat": "friendReviewCount",
+              "op": ">=",
+              "value": 1
+            }
           ],
           "require": "all",
-          "text": "你们靠互相分享资料撑过了考试。成绩也许不是奇迹，但至少不是孤军奋战。"
+          "name_key": "title.friend_exam_ally.name",
+          "subtitle_key": "title.friend_exam_ally.subtitle",
+          "text_key": "title.friend_exam_ally.text"
         },
         {
           "id": "friend_nodding_terms",
-          "name": "点头之交",
-          "subtitle": "普通同学",
           "conditions": [
-            { "kind": "stat", "stat": "friendBond", "op": ">=", "value": 0 },
-            { "kind": "stat", "stat": "friendBond", "op": "<=", "value": 2 },
-            { "kind": "stat", "stat": "friendHelpCount", "op": "<=", "value": 1 }
+            {
+              "kind": "stat",
+              "stat": "friendBond",
+              "op": ">=",
+              "value": 0
+            },
+            {
+              "kind": "stat",
+              "stat": "friendBond",
+              "op": "<=",
+              "value": 2
+            },
+            {
+              "kind": "stat",
+              "stat": "friendHelpCount",
+              "op": "<=",
+              "value": 1
+            }
           ],
           "require": "all",
-          "text": "你们认识，但没有真正走近。校园里很多关系都是这样，停在见面点头的距离。"
+          "name_key": "title.friend_nodding_terms.name",
+          "subtitle_key": "title.friend_nodding_terms.subtitle",
+          "text_key": "title.friend_nodding_terms.text"
         },
         {
           "id": "friend_read_ignored",
-          "name": "已读不回的人",
-          "subtitle": "关系冷淡",
           "conditions": [
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "stat", "stat": "friendRefuseCount", "op": ">=", "value": 2 },
-                { "kind": "stat", "stat": "friendBond", "op": "<", "value": 0 }
+                {
+                  "kind": "stat",
+                  "stat": "friendRefuseCount",
+                  "op": ">=",
+                  "value": 2
+                },
+                {
+                  "kind": "stat",
+                  "stat": "friendBond",
+                  "op": "<",
+                  "value": 0
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "对方后来很少再找你。你们没有吵架，只是自然地疏远了。"
+          "name_key": "title.friend_read_ignored.name",
+          "subtitle_key": "title.friend_read_ignored.subtitle",
+          "text_key": "title.friend_read_ignored.text"
         }
-      ]
+      ],
+      "group_key": "title_group.friend_help.name"
     },
     {
-      "group": "社团活动组",
       "titles": [
         {
           "id": "club_backbone",
-          "name": "社团主心骨",
-          "subtitle": "核心成员",
           "conditions": [
-            { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" },
-            { "kind": "stat", "stat": "clubContribution", "op": ">=", "value": 6 },
-            { "kind": "stat", "stat": "clubShowcaseSuccess", "op": "eq", "value": true }
+            {
+              "kind": "stat",
+              "stat": "clubType",
+              "op": "neq",
+              "value": "none"
+            },
+            {
+              "kind": "stat",
+              "stat": "clubContribution",
+              "op": ">=",
+              "value": 6
+            },
+            {
+              "kind": "stat",
+              "stat": "clubShowcaseSuccess",
+              "op": "eq",
+              "value": true
+            }
           ],
           "require": "all",
-          "text": "社团里每个人都知道——真有事的时候，找你就对了。"
+          "name_key": "title.club_backbone.name",
+          "subtitle_key": "title.club_backbone.subtitle",
+          "text_key": "title.club_backbone.text"
         },
         {
           "id": "club_mediator",
-          "name": "气氛修补匠",
-          "subtitle": "折中协调",
           "conditions": [
-            { "kind": "stat", "stat": "clubRelation", "op": ">=", "value": 5 },
-            { "kind": "meta", "desc": "社团分歧时选择了'协调折中方案'" }
+            {
+              "kind": "stat",
+              "stat": "clubRelation",
+              "op": ">=",
+              "value": 5
+            },
+            {
+              "kind": "meta",
+              "desc": "社团分歧时选择了'协调折中方案'"
+            }
           ],
           "require": "all",
-          "text": "你在团队最混乱的时候站了出来，用耐心和沟通把大家重新捏合在一起。"
+          "name_key": "title.club_mediator.name",
+          "subtitle_key": "title.club_mediator.subtitle",
+          "text_key": "title.club_mediator.text"
         },
         {
           "id": "club_showcase_star",
-          "name": "展示担当",
-          "subtitle": "台上亮眼",
           "conditions": [
-            { "kind": "stat", "stat": "clubShowcaseScore", "op": ">=", "value": 18 },
+            {
+              "kind": "stat",
+              "stat": "clubShowcaseScore",
+              "op": ">=",
+              "value": 18
+            },
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "stat", "stat": "expressionUnlocked", "op": "eq", "value": true },
-                { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+                {
+                  "kind": "stat",
+                  "stat": "expressionUnlocked",
+                  "op": "eq",
+                  "value": true
+                },
+                {
+                  "kind": "stat",
+                  "stat": "social",
+                  "op": ">=",
+                  "value": 50
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "你站在台上的那一刻，所有人都看了过来。你的表现没有辜负社团一学期的努力。"
+          "name_key": "title.club_showcase_star.name",
+          "subtitle_key": "title.club_showcase_star.subtitle",
+          "text_key": "title.club_showcase_star.text"
         },
         {
           "id": "club_steady_member",
-          "name": "稳定成员",
-          "subtitle": "踏实参与",
           "conditions": [
-            { "kind": "stat", "stat": "clubActivityCount", "op": ">=", "value": 2 },
-            { "kind": "stat", "stat": "clubContribution", "op": ">=", "value": 2 },
-            { "kind": "stat", "stat": "clubContribution", "op": "<=", "value": 5 }
+            {
+              "kind": "stat",
+              "stat": "clubActivityCount",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "kind": "stat",
+              "stat": "clubContribution",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "kind": "stat",
+              "stat": "clubContribution",
+              "op": "<=",
+              "value": 5
+            }
           ],
           "require": "all",
-          "text": "你不是社团里最耀眼的，但你每一次任务都没有掉链子。稳定本身就是一种贡献。"
+          "name_key": "title.club_steady_member.name",
+          "subtitle_key": "title.club_steady_member.subtitle",
+          "text_key": "title.club_steady_member.text"
         },
         {
           "id": "club_ghost_member",
-          "name": "社团幽灵成员",
-          "subtitle": "若有若无",
           "conditions": [
-            { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" },
+            {
+              "kind": "stat",
+              "stat": "clubType",
+              "op": "neq",
+              "value": "none"
+            },
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "stat", "stat": "clubActivityCount", "op": "<=", "value": 1 },
-                { "kind": "stat", "stat": "clubContribution", "op": "<", "value": 0 }
+                {
+                  "kind": "stat",
+                  "stat": "clubActivityCount",
+                  "op": "<=",
+                  "value": 1
+                },
+                {
+                  "kind": "stat",
+                  "stat": "clubContribution",
+                  "op": "<",
+                  "value": 0
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "你在社团名单上，但大家对你的印象很模糊。有时候连你自己都忘了自己加入了什么社团。"
+          "name_key": "title.club_ghost_member.name",
+          "subtitle_key": "title.club_ghost_member.subtitle",
+          "text_key": "title.club_ghost_member.text"
         },
         {
           "id": "club_free_spirit",
-          "name": "自由时间守护者",
-          "subtitle": "不加入社团",
           "conditions": [
-            { "kind": "stat", "stat": "clubType", "op": "eq", "value": "none" }
+            {
+              "kind": "stat",
+              "stat": "clubType",
+              "op": "eq",
+              "value": "none"
+            }
           ],
           "require": "all",
-          "text": "你没有加入任何社团。你把时间留给了自己，这也是一种生活态度。"
+          "name_key": "title.club_free_spirit.name",
+          "subtitle_key": "title.club_free_spirit.subtitle",
+          "text_key": "title.club_free_spirit.text"
         }
-      ]
+      ],
+      "group_key": "title_group.club.name"
     },
     {
-      "group": "大创专属组",
       "titles": [
         {
           "id": "innovation_campus_star",
-          "name": "校园创新之星",
-          "subtitle": "优秀项目",
           "conditions": [
-            { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "excellent" }
+            {
+              "kind": "enum",
+              "stat": "innovationResult",
+              "op": "eq",
+              "value": "excellent"
+            }
           ],
           "require": "all",
-          "text": "你的项目不仅是完成，更是出彩。校园里开始有人打听你的名字和作品。"
+          "name_key": "title.innovation_campus_star.name",
+          "subtitle_key": "title.innovation_campus_star.subtitle",
+          "text_key": "title.innovation_campus_star.text"
         },
         {
           "id": "innovation_team_harmony",
-          "name": "和谐团队",
-          "subtitle": "团队信任",
           "conditions": [
-            { "kind": "stat", "stat": "innovationTeamTrust", "op": ">=", "value": 40 },
-            { "kind": "enum", "stat": "innovationResult", "op": "neq", "value": "failed" }
+            {
+              "kind": "stat",
+              "stat": "innovationTeamTrust",
+              "op": ">=",
+              "value": 40
+            },
+            {
+              "kind": "enum",
+              "stat": "innovationResult",
+              "op": "neq",
+              "value": "failed"
+            }
           ],
           "require": "all",
-          "text": "不管最终结果如何，你的队伍始终没有散。这种信任比任何分数都难得。"
+          "name_key": "title.innovation_team_harmony.name",
+          "subtitle_key": "title.innovation_team_harmony.subtitle",
+          "text_key": "title.innovation_team_harmony.text"
         },
         {
           "id": "innovation_firefighter",
-          "name": "通宵救火队长",
-          "subtitle": "最佳救火",
           "conditions": [
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "firefighter" },
+                {
+                  "kind": "enum",
+                  "stat": "innovationResult",
+                  "op": "eq",
+                  "value": "firefighter"
+                },
                 {
                   "kind": "group",
                   "require": "all",
                   "conditions": [
-                    { "kind": "stat", "stat": "innovationCrisisCount", "op": ">=", "value": 2 },
-                    { "kind": "stat", "stat": "innovationProgress", "op": ">=", "value": 60 }
+                    {
+                      "kind": "stat",
+                      "stat": "innovationCrisisCount",
+                      "op": ">=",
+                      "value": 2
+                    },
+                    {
+                      "kind": "stat",
+                      "stat": "innovationProgress",
+                      "op": ">=",
+                      "value": 60
+                    }
                   ]
                 }
               ]
             }
           ],
           "require": "all",
-          "text": "每一次危机你都顶了上去。虽然过程惊心动魄，但你的熬夜和汗水没有白费。"
+          "name_key": "title.innovation_firefighter.name",
+          "subtitle_key": "title.innovation_firefighter.subtitle",
+          "text_key": "title.innovation_firefighter.text"
         },
         {
           "id": "innovation_completed",
-          "name": "稳定结项人",
-          "subtitle": "顺利结项",
           "conditions": [
-            { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "completed" }
+            {
+              "kind": "enum",
+              "stat": "innovationResult",
+              "op": "eq",
+              "value": "completed"
+            }
           ],
           "require": "all",
-          "text": "你的项目顺利通过了。没有惊艳全场，但也绝对没有翻车。这份稳定值得肯定。"
+          "name_key": "title.innovation_completed.name",
+          "subtitle_key": "title.innovation_completed.subtitle",
+          "text_key": "title.innovation_completed.text"
         },
         {
           "id": "innovation_ppt_master",
-          "name": "PPT 保命大师",
-          "subtitle": "勉强通过",
           "conditions": [
-            { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "pass" },
+            {
+              "kind": "enum",
+              "stat": "innovationResult",
+              "op": "eq",
+              "value": "pass"
+            },
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "enum", "stat": "innovationDemoMode", "op": "eq", "value": "safe" },
-                { "kind": "stat", "stat": "innovationDefenseScore", "op": ">=", "value": 25 }
+                {
+                  "kind": "enum",
+                  "stat": "innovationDemoMode",
+                  "op": "eq",
+                  "value": "safe"
+                },
+                {
+                  "kind": "stat",
+                  "stat": "innovationDefenseScore",
+                  "op": ">=",
+                  "value": 25
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "你的实际成果可能不多，但你的 PPT 帮你活了下来。有些时候，包装也是一种能力。"
+          "name_key": "title.innovation_ppt_master.name",
+          "subtitle_key": "title.innovation_ppt_master.subtitle",
+          "text_key": "title.innovation_ppt_master.text"
         },
         {
           "id": "innovation_silent",
-          "name": "项目群沉默者",
-          "subtitle": "项目翻车",
           "conditions": [
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "failed" },
-                { "kind": "stat", "stat": "innovationTeamTrust", "op": "<=", "value": 0 }
+                {
+                  "kind": "enum",
+                  "stat": "innovationResult",
+                  "op": "eq",
+                  "value": "failed"
+                },
+                {
+                  "kind": "stat",
+                  "stat": "innovationTeamTrust",
+                  "op": "<=",
+                  "value": 0
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "大创群的消息提示从此不再响起。有些事，不提也罢。"
+          "name_key": "title.innovation_silent.name",
+          "subtitle_key": "title.innovation_silent.subtitle",
+          "text_key": "title.innovation_silent.text"
         },
         {
           "id": "innovation_bystander",
-          "name": "大创旁观者",
-          "subtitle": "没有参加",
           "conditions": [
             {
               "kind": "group",
               "require": "any",
               "conditions": [
-                { "kind": "enum", "stat": "innovationResult", "op": "eq", "value": "bystander" },
-                { "kind": "stat", "stat": "innovationJoined", "op": "eq", "value": false }
+                {
+                  "kind": "enum",
+                  "stat": "innovationResult",
+                  "op": "eq",
+                  "value": "bystander"
+                },
+                {
+                  "kind": "stat",
+                  "stat": "innovationJoined",
+                  "op": "eq",
+                  "value": false
+                }
               ]
             }
           ],
           "require": "all",
-          "text": "大创的展板和答辩教室，你只是路过。这不是你的赛道，没关系。"
+          "name_key": "title.innovation_bystander.name",
+          "subtitle_key": "title.innovation_bystander.subtitle",
+          "text_key": "title.innovation_bystander.text"
         }
-      ]
+      ],
+      "group_key": "title_group.innovation.name"
     },
     {
-      "group": "日常积累组",
       "titles": [
         {
           "id": "daily_morning_runner",
-          "name": "早八冲刺王",
-          "subtitle": "冲刺救场",
           "conditions": [
-            { "kind": "stat", "stat": "lateCount", "op": ">=", "value": 5 }
+            {
+              "kind": "stat",
+              "stat": "lateCount",
+              "op": ">=",
+              "value": 5
+            }
           ],
           "require": "all",
-          "text": "你用脚步声证明了自己还想上课。老师可能不完全满意，但至少看见了你冲进教室的残影。"
+          "name_key": "title.daily_morning_runner.name",
+          "subtitle_key": "title.daily_morning_runner.subtitle",
+          "text_key": "title.daily_morning_runner.text"
         },
         {
           "id": "daily_library_dweller",
-          "name": "图书馆钉子户",
-          "subtitle": "常驻图书馆",
           "conditions": [
-            { "kind": "stat", "stat": "libraryVisitCount", "op": ">=", "value": 10 }
+            {
+              "kind": "stat",
+              "stat": "libraryVisitCount",
+              "op": ">=",
+              "value": 10
+            }
           ],
           "require": "all",
-          "text": "图书馆的某个角落几乎成了你的专属工位。管理员开始对你点头了。"
+          "name_key": "title.daily_library_dweller.name",
+          "subtitle_key": "title.daily_library_dweller.subtitle",
+          "text_key": "title.daily_library_dweller.text"
         },
         {
           "id": "daily_cafeteria_resident",
-          "name": "食堂常驻居民",
-          "subtitle": "按时吃饭",
           "conditions": [
-            { "kind": "stat", "stat": "mealCount", "op": ">=", "value": 20 }
+            {
+              "kind": "stat",
+              "stat": "mealCount",
+              "op": ">=",
+              "value": 20
+            }
           ],
           "require": "all",
-          "text": "你把食堂当成了家的延伸。每一顿饭都没有落下。"
+          "name_key": "title.daily_cafeteria_resident.name",
+          "subtitle_key": "title.daily_cafeteria_resident.subtitle",
+          "text_key": "title.daily_cafeteria_resident.text"
         },
         {
           "id": "daily_night_shift_champion",
-          "name": "夜班战神",
-          "subtitle": "深夜兼职",
           "conditions": [
-            { "kind": "stat", "stat": "storeNightShiftCount", "op": ">=", "value": 5 }
+            {
+              "kind": "stat",
+              "stat": "storeNightShiftCount",
+              "op": ">=",
+              "value": 5
+            }
           ],
           "require": "all",
-          "text": "当校园沉入黑暗，你的工作才刚刚开始。便利店夜班是你最熟悉的战场。"
+          "name_key": "title.daily_night_shift_champion.name",
+          "subtitle_key": "title.daily_night_shift_champion.subtitle",
+          "text_key": "title.daily_night_shift_champion.text"
         }
-      ]
+      ],
+      "group_key": "title_group.daily.name"
     }
   ]
 }

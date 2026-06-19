@@ -149,7 +149,7 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
     window.draw(subtitle);
 
     const bool ready = transition.canContinue();
-    sf::Text hint = cls::makeText(font, ready ? "Press Enter to enter" : "Entering...", 13);
+    sf::Text hint = cls::makeText(font, ready ? cls::text("ui.enter_to_enter") : cls::text("ui.entering"), 13);
     hint.setFillColor(ready ? sf::Color(210, 210, 190, 180) : sf::Color(210, 210, 190, 110));
     hint.setPosition({190.0f, 444.0f});
     window.draw(hint);
@@ -162,6 +162,7 @@ void renderSceneTransition(sf::RenderWindow& window, sf::Font& font,
 // ──────────────────────────────────────────────────────────────
 int main() {
     constexpr const char* kSettingsPath = "assets/config/settings.json";
+    cls::loadDefaultLocales();
     cls::GameSettings gameSettings = cls::loadSettings(kSettingsPath);
 #ifdef CLS_LANG_CHINESE
     if (!std::filesystem::exists(cls::resolveAssetPath(kSettingsPath))) {
@@ -182,30 +183,36 @@ int main() {
     sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
     window.setView(gameView);
 
-    // ── 字体（编译期检测平台，选择对应系统字体）─────────────
+    // ── 字体：优先使用项目内开源 CJK 字体，避免不同电脑中文乱码 ─────
     sf::Font font;
     bool fontOk = false;
-#if defined(_WIN32)
     const std::vector<std::string> fontCandidates = {
+        "assets/fonts/NotoSansCJKsc-Regular.otf",
+#if defined(_WIN32)
         "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/msyh.ttf",
         "C:/Windows/Fonts/simhei.ttf",
         "C:/Windows/Fonts/arial.ttf",
+#elif defined(__APPLE__)
+        "/System/Library/Fonts/PingFang.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+#elif defined(__linux__)
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+#endif
     };
     for (const auto& path : fontCandidates) {
-        if (font.openFromFile(path)) {
-            std::cout << "[Font] Loaded: " << path << std::endl;
+        const std::string resolved = cls::resolveAssetPath(path);
+        if (font.openFromFile(resolved)) {
+            std::cout << "[Font] Loaded: " << resolved << std::endl;
             fontOk = true; break;
         } else {
-            std::cout << "[Font] Failed: " << path << std::endl;
+            std::cout << "[Font] Failed: " << resolved << std::endl;
         }
     }
-#elif defined(__APPLE__)
-    fontOk = font.openFromFile("/System/Library/Fonts/Supplemental/Arial.ttf")
-          || font.openFromFile("/System/Library/Fonts/PingFang.ttc");
-#elif defined(__linux__)
-    fontOk = font.openFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-#endif
     if (!fontOk) {
         std::cerr << "ERROR: Failed to load font!" << std::endl;
     }
@@ -425,7 +432,7 @@ int main() {
     // ── 核心回调（handler 通过 ctx 调用）───────────────────────
     auto showTimedResult = [&ctx](const std::string& title, const std::string& body) {
         std::ostringstream message;
-        message << body << "\nCurrent time: " << ctx.timeSystem.clockText();
+        message << body << "\n" << cls::text("time.current") << ": " << ctx.timeSystem.clockText();
         ctx.activityNotice.show(title, message.str());
     };
 
@@ -438,19 +445,22 @@ int main() {
     auto buildSettlementBody = [&](const SettlementResult& result, int page) {
         std::ostringstream body;
         if (page == 0) {
-            body << result.ending.name;
-            if (!result.ending.tagline.empty()) body << "\n" << result.ending.tagline;
-            body << "\n\n" << result.ending.description;
+            body << (result.ending.nameKey.empty() ? result.ending.name : cls::text(result.ending.nameKey));
+            const std::string tagline = result.ending.taglineKey.empty() ? result.ending.tagline : cls::text(result.ending.taglineKey);
+            if (!tagline.empty()) body << "\n" << tagline;
+            body << "\n\n" << (result.ending.descriptionKey.empty() ? result.ending.description : cls::text(result.ending.descriptionKey));
             body << "\n\n" << cls::text("quest.return_title");
             return body.str();
         }
         if (page == 1) {
             if (result.titles.empty()) {
-                body << "无额外称号。";
+                body << cls::text("settlement.no_extra_titles");
             } else {
                 for (const auto& title : result.titles) {
-                    body << "- " << title.name;
-                    if (!title.subtitle.empty()) body << "（" << title.subtitle << "）";
+                    const std::string titleName = title.nameKey.empty() ? title.name : cls::text(title.nameKey);
+                    const std::string subtitle = title.subtitleKey.empty() ? title.subtitle : cls::text(title.subtitleKey);
+                    body << "- " << titleName;
+                    if (!subtitle.empty()) body << "（" << subtitle << "）";
                     body << "\n";
                 }
             }
@@ -561,10 +571,10 @@ int main() {
 
     auto handleInteraction = [&ctx, &eventRunner](const InteractionPoint& ip) {
         if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
-        if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.label)) return;
+        if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.displayLabel())) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
         if (RegularInteraction::handle(ctx, ip)) return;
-        ctx.activityNotice.show(ip.label, ip.description);
+        ctx.activityNotice.show(ip.displayLabel(), ip.displayDescription());
     };
 
     // ── 主循环 ───────────────────────────────────────────────
@@ -935,7 +945,7 @@ int main() {
                                     cls::text("quest.return_title"));
             } else {
                 modalBox.setContent(activityNotice.title, activityNotice.body,
-                                    "Press Enter to continue");
+                                    cls::text("ui.press_enter_continue"));
             }
             modalBox.render(window);
         }
@@ -947,7 +957,7 @@ int main() {
             if (!mealChoicePrompt.third.empty())
                 body << "\n[3] " << mealChoicePrompt.third;
             modalBox.setContent(mealChoicePrompt.title, body.str(),
-                                mealChoicePrompt.third.empty() ? "Press 1 or 2" : "Press 1, 2, or 3");
+                                mealChoicePrompt.third.empty() ? cls::text("prompt.choice12") : cls::text("prompt.choice123"));
             modalBox.render(window);
         }
 

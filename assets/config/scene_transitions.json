@@ -2,33 +2,33 @@
   "pages": {
     "ENTITY": {
       "background": "Dormitory",
-      "title": "Dormitory",
-      "subtitle": "A quiet room gives you a moment to gather yourself before the day begins."
+      "title_key": "scene_transition.entity.title",
+      "subtitle_key": "scene_transition.entity.subtitle"
     },
     "SIMPLE_QUEST": {
       "background": "Cafeteria",
-      "title": "Cafeteria Break",
-      "subtitle": "Warm lights, crowded tables, and one small choice after another."
+      "title_key": "scene_transition.simple_quest.title",
+      "subtitle_key": "scene_transition.simple_quest.subtitle"
     },
     "MIDTERM_EXAM": {
       "background": "Classroom",
-      "title": "Classroom Bell",
-      "subtitle": "The midterm is close; every page reviewed now may matter later."
+      "title_key": "scene_transition.midterm_exam.title",
+      "subtitle_key": "scene_transition.midterm_exam.subtitle"
     },
     "FINAL_EXAM": {
       "background": "Classroom",
-      "title": "Final Classroom",
-      "subtitle": "The semester narrows to one room, one paper, and one last deep breath."
+      "title_key": "scene_transition.final_exam.title",
+      "subtitle_key": "scene_transition.final_exam.subtitle"
     },
     "QUEST_MANAGER": {
       "background": "Library",
-      "title": "Library Route",
-      "subtitle": "Plans, deadlines, and future quests gather between the shelves."
+      "title_key": "scene_transition.quest_manager.title",
+      "subtitle_key": "scene_transition.quest_manager.subtitle"
     },
     "HELP": {
       "background": "Library",
-      "title": "Campus Guide",
-      "subtitle": "Before moving on, check the rules and controls of campus life."
+      "title_key": "scene_transition.help.title",
+      "subtitle_key": "scene_transition.help.subtitle"
     }
   }
 }

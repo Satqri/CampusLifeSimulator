@@ -4,120 +4,169 @@
       "type": "orientation",
       "threshold": 0,
       "id": "orientation",
-      "name": "Freshman Orientation",
-      "description": "You've just stepped onto the university campus. Everything is new. Take a deep breath and begin your college adventure!",
       "choices": [
         {
-          "text": "Explore the campus and get familiar with the surroundings",
-          "delta": { "social": 10, "energy": -5 }
+          "delta": {
+            "social": 10,
+            "energy": -5
+          },
+          "text_key": "quest_chain.orientation.choice1"
         }
       ],
-      "reward": { "social": 5 }
+      "reward": {
+        "social": 5
+      },
+      "name_key": "quest_chain.orientation.name",
+      "description_key": "quest_chain.orientation.description"
     },
     {
       "type": "course_selection",
       "threshold": 3,
       "id": "course_selection",
-      "name": "Course Selection Week",
-      "description": "It's course selection week. You need to decide your academic direction for this semester. Different choices will affect your academics and social life.",
       "choices": [
         {
-          "text": "Pick hardcore courses (high difficulty, high reward)",
-          "delta": { "academic": 15, "energy": -20, "social": -5 }
+          "delta": {
+            "academic": 15,
+            "energy": -20,
+            "social": -5
+          },
+          "text_key": "quest_chain.course_selection.choice1"
         },
         {
-          "text": "Pick balanced courses (steady progress)",
-          "delta": { "academic": 8, "social": 5 }
+          "delta": {
+            "academic": 8,
+            "social": 5
+          },
+          "text_key": "quest_chain.course_selection.choice2"
         },
         {
-          "text": "Pick easy courses (social priority)",
-          "delta": { "social": 10, "academic": -5 }
+          "delta": {
+            "social": 10,
+            "academic": -5
+          },
+          "text_key": "quest_chain.course_selection.choice3"
         }
       ],
-      "reward": { "academic": 5 }
+      "reward": {
+        "academic": 5
+      },
+      "name_key": "quest_chain.course_selection.name",
+      "description_key": "quest_chain.course_selection.description"
     },
     {
       "type": "club_activity",
       "threshold": 6,
       "id": "club_signing",
-      "name": "Club Recruitment",
-      "description": "Club fair! Every club on campus is recruiting new members. Joining a club expands your social circle, but also requires commitment.",
       "choices": [
         {
-          "text": "Join a sports club (basketball/soccer)",
-          "delta": { "energy": 15, "social": 5 }
+          "delta": {
+            "energy": 15,
+            "social": 5
+          },
+          "text_key": "quest_chain.club_signing.choice1"
         },
         {
-          "text": "Join an academic club (competition/research)",
-          "delta": { "academic": 10, "social": 5 }
+          "delta": {
+            "academic": 10,
+            "social": 5
+          },
+          "text_key": "quest_chain.club_signing.choice2"
         },
         {
-          "text": "Join an arts club (music/painting)",
-          "delta": { "social": 15, "energy": -5 }
+          "delta": {
+            "social": 15,
+            "energy": -5
+          },
+          "text_key": "quest_chain.club_signing.choice3"
         }
       ],
-      "reward": { "social": 5 }
+      "reward": {
+        "social": 5
+      },
+      "name_key": "quest_chain.club_signing.name",
+      "description_key": "quest_chain.club_signing.description"
     },
     {
       "type": "midterm_exam",
       "threshold": 10,
-      "name": "Midterm Exam",
-      "description": "Half the semester has passed, and midterms have arrived. You feel a bit nervous, but this is also a chance to test what you've learned.",
       "subject": "Core Subjects",
       "dc": 14,
       "totalRounds": 5,
       "requiredPasses": 3,
       "reviewEnergyCost": 20,
       "reviewBonus": 3,
-      "reward": { "energy": -5, "academic": 10 }
+      "reward": {
+        "energy": -5,
+        "academic": 10
+      },
+      "name_key": "quest_chain.midterm_exam.name",
+      "description_key": "quest_chain.midterm_exam.description",
+      "subject_key": "quest_chain.midterm_exam.subject"
     },
     {
       "type": "club_activity",
       "threshold": 13,
       "id": "club_advanced",
-      "name": "Advanced Club Activities",
-      "description": "After midterms, club activities enter a deeper phase. You're now a core member of your club.",
       "choices": [
         {
-          "text": "Compete in a club tournament for glory",
-          "delta": { "social": 10, "energy": -15, "academic": 5 }
+          "delta": {
+            "social": 10,
+            "energy": -15,
+            "academic": 5
+          },
+          "text_key": "quest_chain.club_advanced.choice1"
         },
         {
-          "text": "Organize a major club event",
-          "delta": { "social": 15, "energy": -10 }
+          "delta": {
+            "social": 15,
+            "energy": -10
+          },
+          "text_key": "quest_chain.club_advanced.choice2"
         },
         {
-          "text": "Focus on internal club development",
-          "delta": { "social": 5, "energy": 5 }
+          "delta": {
+            "social": 5,
+            "energy": 5
+          },
+          "text_key": "quest_chain.club_advanced.choice3"
         }
       ],
-      "reward": { "social": 10 }
+      "reward": {
+        "social": 10
+      },
+      "name_key": "quest_chain.club_advanced.name",
+      "description_key": "quest_chain.club_advanced.description"
     },
     {
       "type": "final_exam",
       "threshold": 17,
-      "name": "Final Exam",
-      "description": "End of the semester -- the most critical final exam is here! All your hard work comes down to this moment. Take a deep breath and focus.",
       "subject": "Major Comprehensive",
       "dc": 16,
       "totalRounds": 7,
       "requiredPasses": 4,
       "reviewEnergyCost": 30,
       "reviewBonus": 4,
-      "reward": { "energy": -10, "academic": 20, "social": 5 }
+      "reward": {
+        "energy": -10,
+        "academic": 20,
+        "social": 5
+      },
+      "name_key": "quest_chain.final_exam.name",
+      "description_key": "quest_chain.final_exam.description",
+      "subject_key": "quest_chain.final_exam.subject"
     },
     {
       "type": "graduation",
       "threshold": 20,
       "id": "graduation",
-      "name": "Graduation Ceremony",
-      "description": "Four years of college have flown by. Standing on the graduation stage, looking back, you see a path full of growth. Your efforts, your choices, your laughter and tears -- they all made you who you are today.",
       "choices": [
         {
-          "text": "Step forward with confidence into a new journey!"
+          "text_key": "quest_chain.graduation.choice1"
         }
       ],
-      "reward": {}
+      "reward": {},
+      "name_key": "quest_chain.graduation.name",
+      "description_key": "quest_chain.graduation.description"
     }
   ]
 }

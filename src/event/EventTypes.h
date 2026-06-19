@@ -43,6 +43,7 @@ struct Condition {
 /** @brief CHOICE 节点的单条选项 */
 struct ChoiceOption {
     std::string text;     ///< 选项显示文本
+    std::string textKey;  ///< 选项本地化 key
     std::string nextNode; ///< 跳转目标节点 ID
 };
 
@@ -66,8 +67,11 @@ struct EventNode {
 
     /// 通用显示字段
     std::string title;
+    std::string titleKey;
     std::string body;
+    std::string bodyKey;
     std::string footer;
+    std::string footerKey;
 
     /// CHOICE 节点
     std::vector<ChoiceOption> options;
@@ -90,6 +94,7 @@ struct EventNode {
     nlohmann::json hiddenDelta;           ///< 隐藏变量变化（所有节点类型通用）
     int timeAdvanceMinutes = 0;
     std::string flashText;
+    std::string flashKey;
 };
 
 /** @brief 一个完整的事件定义 */

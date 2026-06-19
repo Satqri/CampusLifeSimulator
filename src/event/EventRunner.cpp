@@ -3,6 +3,7 @@
 #include "core/GameContext.h"
 #include "core/TimeSystem.h"
 #include "core/CharacterState.h"
+#include "core/Localization.h"
 #include "entity/Player.h"
 #include "ui/ModalBox.h"
 #include <SFML/Graphics.hpp>
@@ -129,6 +130,12 @@ static Condition parseCondition(const json& c) {
 
 // ─── JSON 加载 ───────────────────────────────────────────────────────────────
 
+
+static std::string localizedValue(const std::string& key, const std::string& fallback) {
+    if (!key.empty()) return cls::text(key);
+    return fallback;
+}
+
 bool EventRunner::loadEvents(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
@@ -174,14 +181,19 @@ bool EventRunner::loadEvents(const std::string& filepath) {
             const auto& n = it.value();
             node.type    = parseNodeType(n.value("type", ""));
             node.title   = n.value("title", "");
+            node.titleKey = n.value("title_key", "");
             node.body    = n.value("body", "");
+            node.bodyKey = n.value("body_key", "");
             node.footer  = n.value("footer", "");
+            node.footerKey = n.value("footer_key", "");
 
             switch (node.type) {
             case EventNodeType::CHOICE:
                 for (const auto& opt : n["options"]) {
                     node.options.push_back({
-                        opt.value("text", ""), opt.value("then", "")
+                        opt.value("text", ""),
+                        opt.value("text_key", ""),
+                        opt.value("then", "")
                     });
                 }
                 break;
@@ -196,6 +208,7 @@ bool EventRunner::loadEvents(const std::string& filepath) {
                 node.failureNode        = n.value("failure", "");
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
+                node.flashKey           = n.value("flash_key", "");
                 if (n.contains("delta")) {
                     const auto& d = n["delta"];
                     if (!d.is_null()) {
@@ -222,6 +235,7 @@ bool EventRunner::loadEvents(const std::string& filepath) {
                 node.elseNode = n.value("else", "");
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
+                node.flashKey           = n.value("flash_key", "");
                 if (n.contains("delta")) {
                     const auto& d = n["delta"];
                     if (!d.is_null()) {
@@ -255,6 +269,7 @@ bool EventRunner::loadEvents(const std::string& filepath) {
                 }
                 node.timeAdvanceMinutes = n.value("time_advance", 0);
                 node.flashText          = n.value("flash", "");
+                node.flashKey           = n.value("flash_key", "");
                 if (n.contains("hidden_delta"))
                     node.hiddenDelta = n["hidden_delta"];
                 break;
@@ -315,7 +330,7 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
     const EventNode& node = it->second;
 
     // 带 title 的 RANDOM_CHECK/CHECK：先展示文字，等待 Enter 后再解析
-    if (!node.title.empty() &&
+    if ((!node.title.empty() || !node.titleKey.empty()) &&
         (node.type == EventNodeType::RANDOM_CHECK ||
          node.type == EventNodeType::CHECK)) {
         mWaitingForEnter = true;
@@ -357,11 +372,13 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
     case EventNodeType::OUTCOME:
         applyEffects(node, ctx);
         markEventTriggered(mCurrentEventId, ctx);
-        if (!node.title.empty() || !node.body.empty()) {
+        const std::string title = localizedValue(node.titleKey, node.title);
+        const std::string bodyText = localizedValue(node.bodyKey, node.body);
+        if (!title.empty() || !bodyText.empty()) {
             std::ostringstream body;
-            body << node.body;
-            body << "\nCurrent time: " << ctx.timeSystem.clockText();
-            ctx.activityNotice.show(node.title, body.str());
+            body << bodyText;
+            body << "\n" << cls::text("time.current") << ": " << ctx.timeSystem.clockText();
+            ctx.activityNotice.show(title, body.str());
         }
         clear();
         return;
@@ -445,33 +462,34 @@ void EventRunner::render(sf::RenderWindow& window, ModalBox& modalBox) {
     if (it == mCurrentEvent->steps.end()) return;
 
     const EventNode& node = it->second;
-    if (node.title.empty() && node.body.empty()) return;
+    std::string title   = localizedValue(node.titleKey, node.title);
+    std::string body    = localizedValue(node.bodyKey, node.body);
+    std::string footer  = localizedValue(node.footerKey, node.footer);
 
-    std::string title   = node.title;
-    std::string body    = node.body;
-    std::string footer  = node.footer;
+    if (title.empty() && body.empty()) return;
 
     switch (node.type) {
     case EventNodeType::CHOICE: {
         std::ostringstream oss;
-        if (!node.body.empty()) oss << node.body << "\n\n";
+        if (!body.empty()) oss << body << "\n\n";
         for (size_t i = 0; i < node.options.size(); ++i) {
-            oss << "[" << (i + 1) << "] " << node.options[i].text;
+            oss << "[" << (i + 1) << "] "
+                << localizedValue(node.options[i].textKey, node.options[i].text);
             if (i + 1 < node.options.size()) oss << '\n';
         }
         body = oss.str();
         if (footer.empty()) {
-            if (node.options.size() >= 4) footer = "Press 1, 2, 3, or 4";
-            else footer = (node.options.size() >= 3 ? "Press 1, 2, or 3" : "Press 1 or 2");
+            if (node.options.size() >= 4) footer = cls::text("prompt.choice1234");
+            else footer = (node.options.size() >= 3 ? cls::text("prompt.choice123") : cls::text("prompt.choice12"));
         }
         break;
     }
     case EventNodeType::DISPLAY:
-        if (footer.empty()) footer = "Press Enter to continue";
+        if (footer.empty()) footer = cls::text("ui.press_enter_continue");
         break;
     default:
         if (mWaitingForEnter && footer.empty())
-            footer = "Press Enter to continue";
+            footer = cls::text("ui.press_enter_continue");
         break;
     }
 
@@ -691,6 +709,7 @@ void EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
     if (!node.hiddenDelta.is_null()) {
         mergeHidden(ctx.player.getHidden(), node.hiddenDelta);
     }
-    if (!node.flashText.empty())
-        ctx.timeSkipFlash.start(node.flashText);
+    const std::string flash = localizedValue(node.flashKey, node.flashText);
+    if (!flash.empty())
+        ctx.timeSkipFlash.start(flash);
 }

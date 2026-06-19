@@ -86,7 +86,9 @@ std::vector<InteractionPoint> BuildingInterior::loadInteractionsFromJson(const s
         );
         point.actionId = ip.value("actionId", "");
         point.label = ip.value("label", "");
+        point.labelKey = ip.value("label_key", "");
         point.description = ip.value("description", "");
+        point.descriptionKey = ip.value("description_key", "");
         result.push_back(point);
     }
     return result;

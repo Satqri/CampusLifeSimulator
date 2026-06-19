@@ -1,34 +1,59 @@
 {
   "interactions": [
     {
-      "area": { "x": 170.0, "y": 146.0, "w": 156.0, "h": 68.0 },
+      "area": {
+        "x": 170.0,
+        "y": 146.0,
+        "w": 156.0,
+        "h": 68.0
+      },
       "actionId": "store_shelf",
-      "label": "Buy Quick Food",
-      "description": "Convenience food fills the shelf. It is not as healthy as the cafeteria, but it is fast and reliable."
+      "label_key": "interaction.store_shelf.label",
+      "description_key": "interaction.store_shelf.description"
     },
     {
-      "area": { "x": 590.0, "y": 146.0, "w": 156.0, "h": 68.0 },
+      "area": {
+        "x": 590.0,
+        "y": 146.0,
+        "w": 156.0,
+        "h": 68.0
+      },
       "actionId": "store_drink_fridge",
-      "label": "Buy Drink",
-      "description": "Cold drinks line the fridge. A quick boost now might cost you later."
+      "label_key": "interaction.store_drink_fridge.label",
+      "description_key": "interaction.store_drink_fridge.description"
     },
     {
-      "area": { "x": 180.0, "y": 346.0, "w": 84.0, "h": 84.0 },
+      "area": {
+        "x": 180.0,
+        "y": 346.0,
+        "w": 84.0,
+        "h": 84.0
+      },
       "actionId": "store_hot_water",
-      "label": "Heat Instant Noodles",
-      "description": "Steam rises from the hot water station. Deep-night comfort is only one cup away."
+      "label_key": "interaction.store_hot_water.label",
+      "description_key": "interaction.store_hot_water.description"
     },
     {
-      "area": { "x": 640.0, "y": 346.0, "w": 210.0, "h": 84.0 },
+      "area": {
+        "x": 640.0,
+        "y": 346.0,
+        "w": 210.0,
+        "h": 84.0
+      },
       "actionId": "store_counter",
-      "label": "Shop Counter",
-      "description": "The cashier counter handles checkouts, shift work, and awkward late-night encounters."
+      "label_key": "interaction.store_counter.label",
+      "description_key": "interaction.store_counter.description"
     },
     {
-      "area": { "x": 710.0, "y": 430.0, "w": 120.0, "h": 40.0 },
+      "area": {
+        "x": 710.0,
+        "y": 430.0,
+        "w": 120.0,
+        "h": 40.0
+      },
       "actionId": "store_night_shift",
-      "label": "Take Night Shift",
-      "description": "A spare apron hangs nearby. Working the late shift pays well, but drains you fast."
+      "label_key": "interaction.store_night_shift.label",
+      "description_key": "interaction.store_night_shift.description"
     }
   ]
 }

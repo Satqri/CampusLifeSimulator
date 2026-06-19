@@ -46,3 +46,9 @@ target_link_libraries(CampusLifeSimulator PRIVATE
 )
 
 target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4 /utf-8,-Wall -Wextra>)
+
+add_custom_command(TARGET CampusLifeSimulator POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:CampusLifeSimulator>/assets"
+)

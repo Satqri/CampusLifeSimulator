@@ -1,46 +1,81 @@
 {
   "interactions": [
     {
-      "area": { "x": 128.0, "y": 118.0, "w": 190.0, "h": 76.0 },
+      "area": {
+        "x": 128.0,
+        "y": 118.0,
+        "w": 190.0,
+        "h": 76.0
+      },
       "actionId": "gym_treadmill_0",
-      "label": "Run on Treadmill",
-      "description": "A treadmill by the wall. A focused run could improve energy and clear your head."
+      "label_key": "interaction.gym_treadmill_0.label",
+      "description_key": "interaction.gym_treadmill_0.description"
     },
     {
-      "area": { "x": 610.0, "y": 118.0, "w": 190.0, "h": 76.0 },
+      "area": {
+        "x": 610.0,
+        "y": 118.0,
+        "w": 190.0,
+        "h": 76.0
+      },
       "actionId": "gym_treadmill_1",
-      "label": "Run on Treadmill",
-      "description": "A treadmill facing the room. Keep pace and turn stress into motion."
+      "label_key": "interaction.gym_treadmill_1.label",
+      "description_key": "interaction.gym_treadmill_1.description"
     },
     {
-      "area": { "x": 168.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "area": {
+        "x": 168.0,
+        "y": 315.0,
+        "w": 108.0,
+        "h": 58.0
+      },
       "actionId": "gym_barbell_0",
-      "label": "Lift Barbell",
-      "description": "A barbell station. Good timing and control could turn effort into strength."
+      "label_key": "interaction.gym_barbell_0.label",
+      "description_key": "interaction.gym_barbell_0.description"
     },
     {
-      "area": { "x": 338.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "area": {
+        "x": 338.0,
+        "y": 315.0,
+        "w": 108.0,
+        "h": 58.0
+      },
       "actionId": "gym_barbell_1",
-      "label": "Lift Barbell",
-      "description": "A barbell station. Good timing and control could turn effort into strength."
+      "label_key": "interaction.gym_barbell_1.label",
+      "description_key": "interaction.gym_barbell_1.description"
     },
     {
-      "area": { "x": 508.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "area": {
+        "x": 508.0,
+        "y": 315.0,
+        "w": 108.0,
+        "h": 58.0
+      },
       "actionId": "gym_barbell_2",
-      "label": "Lift Barbell",
-      "description": "A barbell station. Good timing and control could turn effort into strength."
+      "label_key": "interaction.gym_barbell_2.label",
+      "description_key": "interaction.gym_barbell_2.description"
     },
     {
-      "area": { "x": 678.0, "y": 315.0, "w": 108.0, "h": 58.0 },
+      "area": {
+        "x": 678.0,
+        "y": 315.0,
+        "w": 108.0,
+        "h": 58.0
+      },
       "actionId": "gym_barbell_3",
-      "label": "Lift Barbell",
-      "description": "A barbell station. Good timing and control could turn effort into strength."
+      "label_key": "interaction.gym_barbell_3.label",
+      "description_key": "interaction.gym_barbell_3.description"
     },
     {
-      "area": { "x": 392.0, "y": 100.0, "w": 176.0, "h": 64.0 },
+      "area": {
+        "x": 392.0,
+        "y": 100.0,
+        "w": 176.0,
+        "h": 64.0
+      },
       "actionId": "gym_front_desk",
-      "label": "Front Desk Shift",
-      "description": "The front desk handles registration and equipment logs. Evening shifts pay modestly."
+      "label_key": "interaction.gym_front_desk.label",
+      "description_key": "interaction.gym_front_desk.description"
     }
   ]
 }

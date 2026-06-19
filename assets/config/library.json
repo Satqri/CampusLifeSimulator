@@ -1,24 +1,52 @@
 {
   "books": [
     {
-      "name": "Reference Methods",
       "skill": "Research",
-      "delta": { "san": -3, "energy": -6, "academic": 4, "social": 0, "gold": 0 }
+      "delta": {
+        "san": -3,
+        "energy": -6,
+        "academic": 4,
+        "social": 0,
+        "gold": 0
+      },
+      "name_key": "book.reference_methods.name",
+      "skill_key": "book.reference_methods.skill"
     },
     {
-      "name": "Literature Notes",
       "skill": "Reflection",
-      "delta": { "san": 2, "energy": -5, "academic": 0, "social": 3, "gold": 0 }
+      "delta": {
+        "san": 2,
+        "energy": -5,
+        "academic": 0,
+        "social": 3,
+        "gold": 0
+      },
+      "name_key": "book.literature_notes.name",
+      "skill_key": "book.literature_notes.skill"
     },
     {
-      "name": "Science Primer",
       "skill": "Logic",
-      "delta": { "san": -4, "energy": -7, "academic": 6, "social": 0, "gold": 0 }
+      "delta": {
+        "san": -4,
+        "energy": -7,
+        "academic": 6,
+        "social": 0,
+        "gold": 0
+      },
+      "name_key": "book.science_primer.name",
+      "skill_key": "book.science_primer.skill"
     },
     {
-      "name": "Campus History",
       "skill": "Context",
-      "delta": { "san": -2, "energy": -5, "academic": 2, "social": 4, "gold": 0 }
+      "delta": {
+        "san": -2,
+        "energy": -5,
+        "academic": 2,
+        "social": 4,
+        "gold": 0
+      },
+      "name_key": "book.campus_history.name",
+      "skill_key": "book.campus_history.skill"
     }
   ]
 }

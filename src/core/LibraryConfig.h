@@ -2,6 +2,7 @@
 #define CLS_CORE_LIBRARYCONFIG_H
 
 #include "core/Types.h"
+#include "core/Localization.h"
 #include <string>
 #include <vector>
 #include <fstream>
@@ -13,8 +14,18 @@
  */
 struct LibraryBook {
     std::string name;
+    std::string nameKey;
     std::string skill;
+    std::string skillKey;
     Attributes delta;
+
+    std::string displayName() const {
+        return nameKey.empty() ? name : cls::text(nameKey);
+    }
+
+    std::string displaySkill() const {
+        return skillKey.empty() ? skill : cls::text(skillKey);
+    }
 };
 
 /**
@@ -30,7 +41,9 @@ inline std::vector<LibraryBook> loadLibraryConfig(const std::string& path) {
     for (const auto& b : data["books"]) {
         LibraryBook book;
         book.name = b.value("name", "");
+        book.nameKey = b.value("name_key", "");
         book.skill = b.value("skill", "");
+        book.skillKey = b.value("skill_key", "");
         const auto& d = b["delta"];
         book.delta = Attributes{
             .energy = d.value("energy", 0),

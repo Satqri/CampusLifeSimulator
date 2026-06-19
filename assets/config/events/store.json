@@ -9,10 +9,24 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
-          ] }
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "night"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -20,26 +34,48 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "便利店遇到老师",
-          "body": "你正在便利店挑选零食，一转身发现你的老师正站在旁边。你们的目光在货架之间相遇了。老师的购物篮里放着几盒方便面和一些零食，看起来像是准备熬夜批改作业。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.store_meet_teacher.intro.title",
+          "body_key": "event.store_meet_teacher.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "遇到老师",
-          "body": "你会怎么做？",
           "options": [
-            { "text": "大方打招呼", "then": "greet_check" },
-            { "text": "假装普通顾客", "then": "pretend_check" },
-            { "text": "趁机问学习问题", "then": "ask_question_check" },
-            { "text": "躲到货架后", "then": "hide" }
-          ]
+            {
+              "then": "greet_check",
+              "text_key": "event.store_meet_teacher.decide.option1"
+            },
+            {
+              "then": "pretend_check",
+              "text_key": "event.store_meet_teacher.decide.option2"
+            },
+            {
+              "then": "ask_question_check",
+              "text_key": "event.store_meet_teacher.decide.option3"
+            },
+            {
+              "then": "hide",
+              "text_key": "event.store_meet_teacher.decide.option4"
+            }
+          ],
+          "title_key": "event.store_meet_teacher.decide.title",
+          "body_key": "event.store_meet_teacher.decide.body"
         },
         "greet_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 },
-            { "kind": "stat", "stat": "san", "op": "<", "value": 60 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            },
+            {
+              "kind": "stat",
+              "stat": "san",
+              "op": "<",
+              "value": 60
+            }
           ],
           "require": "all",
           "then": "greet_success",
@@ -47,21 +83,33 @@
         },
         "greet_success": {
           "type": "outcome",
-          "title": "大方打招呼",
-          "body": "你微笑着点了点头：'老师好，您也来买东西啊。' 老师愣了一下，然后也笑了：'是啊，今晚要熬夜判卷子。' 简单的对话让气氛轻松了许多。",
-          "delta": { "social": 3, "san": -3 },
-          "hidden_delta": { "teacherTrust": 2 }
+          "delta": {
+            "social": 3,
+            "san": -3
+          },
+          "hidden_delta": {
+            "teacherTrust": 2
+          },
+          "title_key": "event.store_meet_teacher.greet_success.title",
+          "body_key": "event.store_meet_teacher.greet_success.body"
         },
         "greet_fail": {
           "type": "outcome",
-          "title": "打招呼失败",
-          "body": "你准备开口，但老师正好低头在看手机，错过了你的招呼。你尴尬地收回手。",
-          "delta": { "san": 3 }
+          "delta": {
+            "san": 3
+          },
+          "title_key": "event.store_meet_teacher.greet_fail.title",
+          "body_key": "event.store_meet_teacher.greet_fail.body"
         },
         "pretend_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "san", "op": "<", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "san",
+              "op": "<",
+              "value": 50
+            }
           ],
           "require": "all",
           "then": "pretend_success",
@@ -69,21 +117,35 @@
         },
         "pretend_success": {
           "type": "outcome",
-          "title": "假装普通顾客",
-          "body": "你自然地移开目光，继续对比手里的薯片口味。老师也没有注意到你。你们像两个普通的便利店顾客，相安无事。",
-          "delta": { "san": 3 }
+          "delta": {
+            "san": 3
+          },
+          "title_key": "event.store_meet_teacher.pretend_success.title",
+          "body_key": "event.store_meet_teacher.pretend_success.body"
         },
         "pretend_fail": {
           "type": "outcome",
-          "title": "被认出来了",
-          "body": "你想假装没看见，但老师正好抬起头：'哎呀，是你啊。' 你只好挤出一个笑容。",
-          "delta": { "san": 5 }
+          "delta": {
+            "san": 5
+          },
+          "title_key": "event.store_meet_teacher.pretend_fail.title",
+          "body_key": "event.store_meet_teacher.pretend_fail.body"
         },
         "ask_question_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 40 },
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 40
+            },
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "ask_question_success",
@@ -91,23 +153,36 @@
         },
         "ask_question_success": {
           "type": "outcome",
-          "title": "趁机请教",
-          "body": "你拿起一瓶饮料，自然地走到老师旁边：'老师，正好碰到您——我最近在琢磨一个问题...' 老师饶有兴趣地听完了你的提问，在便利店给你讲了五分钟。这可能是这学期最值的一次偶遇。",
-          "delta": { "academic": 5, "social": 2, "san": -2 },
-          "hidden_delta": { "teacherTrust": 3 }
+          "delta": {
+            "academic": 5,
+            "social": 2,
+            "san": -2
+          },
+          "hidden_delta": {
+            "teacherTrust": 3
+          },
+          "title_key": "event.store_meet_teacher.ask_question_success.title",
+          "body_key": "event.store_meet_teacher.ask_question_success.body"
         },
         "ask_question_fail": {
           "type": "outcome",
-          "title": "问不出口",
-          "body": "你想问，但这些内容似乎不太适合在便利店里讨论。你最终什么也没说。",
-          "delta": { "san": 3 }
+          "delta": {
+            "san": 3
+          },
+          "title_key": "event.store_meet_teacher.ask_question_fail.title",
+          "body_key": "event.store_meet_teacher.ask_question_fail.body"
         },
         "hide": {
           "type": "outcome",
-          "title": "躲到货架后",
-          "body": "你慌慌张张地闪到货架后面，心跳加速。还好老师没注意到你，但你自己都觉得好笑——又不是做了什么坏事。",
-          "delta": { "san": 8 },
-          "hidden_delta": { "teacherTrust": -2, "socialAwkwardCount": 1 }
+          "delta": {
+            "san": 8
+          },
+          "hidden_delta": {
+            "teacherTrust": -2,
+            "socialAwkwardCount": 1
+          },
+          "title_key": "event.store_meet_teacher.hide.title",
+          "body_key": "event.store_meet_teacher.hide.body"
         }
       }
     },
@@ -120,10 +195,24 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
-          ] }
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "night"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -131,25 +220,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "临时加班",
-          "body": "你值完夜班正准备打卡走人，店长叫住了你：'今晚来了批货，人手不够。你能不能再多留两个小时帮忙？当然，加班费另算。' 现在已经是晚上10点半，你看了看表。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.store_overtime.intro.title",
+          "body_key": "event.store_overtime.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "临时加班",
-          "body": "怎么回应？",
           "options": [
-            { "text": "接受加班", "then": "accept_check" },
-            { "text": "婉拒", "then": "decline_check" },
-            { "text": "讨价还价", "then": "bargain_check" },
-            { "text": "直接溜走", "then": "sneak_away" }
-          ]
+            {
+              "then": "accept_check",
+              "text_key": "event.store_overtime.decide.option1"
+            },
+            {
+              "then": "decline_check",
+              "text_key": "event.store_overtime.decide.option2"
+            },
+            {
+              "then": "bargain_check",
+              "text_key": "event.store_overtime.decide.option3"
+            },
+            {
+              "then": "sneak_away",
+              "text_key": "event.store_overtime.decide.option4"
+            }
+          ],
+          "title_key": "event.store_overtime.decide.title",
+          "body_key": "event.store_overtime.decide.body"
         },
         "accept_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "accept_success",
@@ -157,21 +263,38 @@
         },
         "accept_success": {
           "type": "outcome",
-          "title": "接受加班",
-          "body": "你点了点头，又穿回了工作服。搬货、理货、对账——忙了两个多小时。凌晨一点走出店门时浑身酸疼，但钱包鼓了不少。店长拍了拍你的肩膀：'辛苦，下次还靠你。'",
-          "delta": { "gold": 50, "energy": -25, "san": 8 },
-          "hidden_delta": { "partTimeCount": 1, "storeNightShiftCount": 1, "lateNightLevel": 3, "healthIndex": -2, "storeTrust": 1 }
+          "delta": {
+            "gold": 50,
+            "energy": -25,
+            "san": 8
+          },
+          "hidden_delta": {
+            "partTimeCount": 1,
+            "storeNightShiftCount": 1,
+            "lateNightLevel": 3,
+            "healthIndex": -2,
+            "storeTrust": 1
+          },
+          "title_key": "event.store_overtime.accept_success.title",
+          "body_key": "event.store_overtime.accept_success.body"
         },
         "accept_fail": {
           "type": "outcome",
-          "title": "体力不够",
-          "body": "你想答应，但身体已经发出了抗议。你看了一眼手表，还是摇了摇头。",
-          "delta": { "san": 2 }
+          "delta": {
+            "san": 2
+          },
+          "title_key": "event.store_overtime.accept_fail.title",
+          "body_key": "event.store_overtime.accept_fail.body"
         },
         "decline_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "decline_success",
@@ -179,22 +302,37 @@
         },
         "decline_success": {
           "type": "outcome",
-          "title": "婉拒",
-          "body": "你礼貌地说：'不好意思，今晚实在有点累了。明天如果有需要我可以早来。' 店长虽然有点失望，但还是理解地点了点头。",
-          "delta": { "san": -2, "social": -1 },
-          "hidden_delta": { "storeTrust": -1 }
+          "delta": {
+            "san": -2,
+            "social": -1
+          },
+          "hidden_delta": {
+            "storeTrust": -1
+          },
+          "title_key": "event.store_overtime.decline_success.title",
+          "body_key": "event.store_overtime.decline_success.body"
         },
         "decline_fail": {
           "type": "outcome",
-          "title": "拒绝得不好",
-          "body": "你直接说'不行'，语气有些生硬。店长明显不太高兴。",
-          "delta": { "san": 2, "social": -3 },
-          "hidden_delta": { "storeTrust": -1 }
+          "delta": {
+            "san": 2,
+            "social": -3
+          },
+          "hidden_delta": {
+            "storeTrust": -1
+          },
+          "title_key": "event.store_overtime.decline_fail.title",
+          "body_key": "event.store_overtime.decline_fail.body"
         },
         "bargain_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 60 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 60
+            }
           ],
           "require": "all",
           "then": "bargain_success",
@@ -202,24 +340,44 @@
         },
         "bargain_success": {
           "type": "outcome",
-          "title": "讨价还价成功",
-          "body": "你笑了笑：'两个多小时的话，加班费能不能再加点？毕竟已经这么晚了。' 店长犹豫了一下，但确实缺人手，答应了。你多赚了一笔，不过店长对你的印象也打了一点折扣。",
-          "delta": { "gold": 80, "energy": -25, "san": 10, "social": -5 },
-          "hidden_delta": { "partTimeCount": 1, "storeNightShiftCount": 1, "healthIndex": -3, "storeTrust": -1 }
+          "delta": {
+            "gold": 80,
+            "energy": -25,
+            "san": 10,
+            "social": -5
+          },
+          "hidden_delta": {
+            "partTimeCount": 1,
+            "storeNightShiftCount": 1,
+            "healthIndex": -3,
+            "storeTrust": -1
+          },
+          "title_key": "event.store_overtime.bargain_success.title",
+          "body_key": "event.store_overtime.bargain_success.body"
         },
         "bargain_fail": {
           "type": "outcome",
-          "title": "谈崩了",
-          "body": "你的还价让店长不太高兴。'算了，我找别人吧。' 店长摆了摆手。",
-          "delta": { "san": 5, "social": -5 },
-          "hidden_delta": { "storeTrust": -3 }
+          "delta": {
+            "san": 5,
+            "social": -5
+          },
+          "hidden_delta": {
+            "storeTrust": -3
+          },
+          "title_key": "event.store_overtime.bargain_fail.title",
+          "body_key": "event.store_overtime.bargain_fail.body"
         },
         "sneak_away": {
           "type": "outcome",
-          "title": "直接溜走",
-          "body": "你趁店长转身的功夫，迅速地溜出了店门。虽然避免了加班，但你知道下次排班可能会少很多。",
-          "delta": { "san": -5, "social": -5 },
-          "hidden_delta": { "storeTrust": -5 }
+          "delta": {
+            "san": -5,
+            "social": -5
+          },
+          "hidden_delta": {
+            "storeTrust": -5
+          },
+          "title_key": "event.store_overtime.sneak_away.title",
+          "body_key": "event.store_overtime.sneak_away.body"
         }
       }
     },
@@ -232,7 +390,12 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          {
+            "kind": "time",
+            "stat": "phase",
+            "op": "eq",
+            "value": "night"
+          }
         ],
         "require": "all"
       },
@@ -240,25 +403,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "夜宵售罄",
-          "body": "晚上十点，你饿着肚子来到便利店。但走到冷藏柜前你傻眼了——最爱的夜宵全部卖完了。只剩零星几样东西孤零零地躺在货架上。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.store_snack_sold_out.intro.title",
+          "body_key": "event.store_snack_sold_out.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "夜宵售罄",
-          "body": "怎么办？",
           "options": [
-            { "text": "买剩下的临期面包", "then": "stale_bread_check" },
-            { "text": "泡一桶方便面", "then": "instant_noodle" },
-            { "text": "去食堂碰碰运气", "then": "go_cafeteria_check" },
-            { "text": "放弃夜宵", "then": "skip_night_snack" }
-          ]
+            {
+              "then": "stale_bread_check",
+              "text_key": "event.store_snack_sold_out.decide.option1"
+            },
+            {
+              "then": "instant_noodle",
+              "text_key": "event.store_snack_sold_out.decide.option2"
+            },
+            {
+              "then": "go_cafeteria_check",
+              "text_key": "event.store_snack_sold_out.decide.option3"
+            },
+            {
+              "then": "skip_night_snack",
+              "text_key": "event.store_snack_sold_out.decide.option4"
+            }
+          ],
+          "title_key": "event.store_snack_sold_out.decide.title",
+          "body_key": "event.store_snack_sold_out.decide.body"
         },
         "stale_bread_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "gold", "op": ">=", "value": 8 }
+            {
+              "kind": "stat",
+              "stat": "gold",
+              "op": ">=",
+              "value": 8
+            }
           ],
           "require": "all",
           "then": "stale_bread_success",
@@ -266,53 +446,83 @@
         },
         "stale_bread_success": {
           "type": "outcome",
-          "title": "临期面包",
-          "body": "你买了一份临期打折的面包。虽然有点干，但至少填了肚子。你安慰自己：'健康饮食。'",
-          "delta": { "gold": -8, "energy": 8, "san": -2 },
-          "hidden_delta": { "healthIndex": -4 }
+          "delta": {
+            "gold": -8,
+            "energy": 8,
+            "san": -2
+          },
+          "hidden_delta": {
+            "healthIndex": -4
+          },
+          "title_key": "event.store_snack_sold_out.stale_bread_success.title",
+          "body_key": "event.store_snack_sold_out.stale_bread_success.body"
         },
         "stale_bread_fail": {
           "type": "outcome",
-          "title": "钱不够",
-          "body": "你发现连打折面包都买不起。只好空手离开。",
-          "delta": { "san": 5 }
+          "delta": {
+            "san": 5
+          },
+          "title_key": "event.store_snack_sold_out.stale_bread_fail.title",
+          "body_key": "event.store_snack_sold_out.stale_bread_fail.body"
         },
         "instant_noodle": {
           "type": "outcome",
-          "title": "泡一桶方便面",
-          "body": "你麻利地撕开包装，倒入热水。三分钟后，泡面的香气弥漫了整间便利店。这是深夜最廉价的幸福。",
-          "delta": { "gold": -10, "energy": 10, "san": -8 },
-          "hidden_delta": { "healthIndex": -5, "lateNightLevel": 1 }
+          "delta": {
+            "gold": -10,
+            "energy": 10,
+            "san": -8
+          },
+          "hidden_delta": {
+            "healthIndex": -5,
+            "lateNightLevel": 1
+          },
+          "title_key": "event.store_snack_sold_out.instant_noodle.title",
+          "body_key": "event.store_snack_sold_out.instant_noodle.body"
         },
         "go_cafeteria_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 35 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 35
+            }
           ],
           "require": "all",
-          "title": "去食堂",
-          "body": "你决定走一段路去食堂碰碰运气...",
           "then": "cafeteria_open",
-          "else": "go_cafeteria_fail"
+          "else": "go_cafeteria_fail",
+          "title_key": "event.store_snack_sold_out.go_cafeteria_check.title",
+          "body_key": "event.store_snack_sold_out.go_cafeteria_check.body"
         },
         "cafeteria_open": {
           "type": "outcome",
-          "title": "食堂还开着",
-          "body": "食堂竟然还有剩菜。你打了一份饭，虽然不算热，但比面包好多了。",
-          "delta": { "energy": -8, "san": 3 }
+          "delta": {
+            "energy": -8,
+            "san": 3
+          },
+          "title_key": "event.store_snack_sold_out.cafeteria_open.title",
+          "body_key": "event.store_snack_sold_out.cafeteria_open.body"
         },
         "go_cafeteria_fail": {
           "type": "outcome",
-          "title": "体力不够",
-          "body": "你实在没力气多走一段路了。只好作罢。",
-          "delta": { "san": 5 }
+          "delta": {
+            "san": 5
+          },
+          "title_key": "event.store_snack_sold_out.go_cafeteria_fail.title",
+          "body_key": "event.store_snack_sold_out.go_cafeteria_fail.body"
         },
         "skip_night_snack": {
           "type": "outcome",
-          "title": "放弃夜宵",
-          "body": "你深吸一口气，转身离开了便利店。'也不是很饿。' 虽然肚子在抗议，但至少省了钱又省了时间。健康生活，从忍住不吃夜宵开始。",
-          "delta": { "san": 5, "energy": 5 },
-          "hidden_delta": { "healthIndex": 1 }
+          "delta": {
+            "san": 5,
+            "energy": 5
+          },
+          "hidden_delta": {
+            "healthIndex": 1
+          },
+          "title_key": "event.store_snack_sold_out.skip_night_snack.title",
+          "body_key": "event.store_snack_sold_out.skip_night_snack.body"
         }
       }
     },
@@ -325,11 +535,30 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "stat", "stat": "storeNightShiftCount", "op": ">=", "value": 1 },
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
-          ] }
+          {
+            "kind": "stat",
+            "stat": "storeNightShiftCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "night"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -337,25 +566,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "顾客投诉",
-          "body": "你正在收银，一位顾客拿着小票回来，语气有些冲：'刚才找钱找错了！你们怎么总是出错？' 周围的人开始看过来。你的手心出了点汗。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.store_customer_complaint.intro.title",
+          "body_key": "event.store_customer_complaint.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "顾客投诉",
-          "body": "怎么处理？",
           "options": [
-            { "text": "冷静核对小票", "then": "verify_check" },
-            { "text": "礼貌安抚顾客", "then": "soothe_check" },
-            { "text": "直接赔差价", "then": "pay_difference_check" },
-            { "text": "慌乱处理", "then": "panic" }
-          ]
+            {
+              "then": "verify_check",
+              "text_key": "event.store_customer_complaint.decide.option1"
+            },
+            {
+              "then": "soothe_check",
+              "text_key": "event.store_customer_complaint.decide.option2"
+            },
+            {
+              "then": "pay_difference_check",
+              "text_key": "event.store_customer_complaint.decide.option3"
+            },
+            {
+              "then": "panic",
+              "text_key": "event.store_customer_complaint.decide.option4"
+            }
+          ],
+          "title_key": "event.store_customer_complaint.decide.title",
+          "body_key": "event.store_customer_complaint.decide.body"
         },
         "verify_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "any",
           "then": "verify_success",
@@ -363,22 +609,38 @@
         },
         "verify_success": {
           "type": "outcome",
-          "title": "条理清晰",
-          "body": "你不慌不忙地拿过小票，一项一项和顾客核对。最后发现是顾客自己看错了促销标签。对方有点不好意思地说了声谢谢就走了。",
-          "delta": { "academic": 2, "san": 5, "energy": -5 },
-          "hidden_delta": { "storeTrust": 2 }
+          "delta": {
+            "academic": 2,
+            "san": 5,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "storeTrust": 2
+          },
+          "title_key": "event.store_customer_complaint.verify_success.title",
+          "body_key": "event.store_customer_complaint.verify_success.body"
         },
         "verify_fail": {
           "type": "outcome",
-          "title": "越核越乱",
-          "body": "你试着核对小票，但数字越算越乱，顾客更加不耐烦了。",
-          "delta": { "san": 12, "energy": -5 },
-          "hidden_delta": { "storeTrust": -2 }
+          "delta": {
+            "san": 12,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "storeTrust": -2
+          },
+          "title_key": "event.store_customer_complaint.verify_fail.title",
+          "body_key": "event.store_customer_complaint.verify_fail.body"
         },
         "soothe_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "soothe_success",
@@ -386,22 +648,38 @@
         },
         "soothe_success": {
           "type": "outcome",
-          "title": "安抚成功",
-          "body": "你先道歉安抚了对方的情绪：'不好意思让您着急了。我马上帮您看一下。' 顾客的态度明显缓和了下来，最终顺利解决了。",
-          "delta": { "social": 3, "san": 3, "energy": -3 },
-          "hidden_delta": { "storeTrust": 2 }
+          "delta": {
+            "social": 3,
+            "san": 3,
+            "energy": -3
+          },
+          "hidden_delta": {
+            "storeTrust": 2
+          },
+          "title_key": "event.store_customer_complaint.soothe_success.title",
+          "body_key": "event.store_customer_complaint.soothe_success.body"
         },
         "soothe_fail": {
           "type": "outcome",
-          "title": "安抚无效",
-          "body": "你试图安抚，但顾客根本不听。'叫你们老板来！'",
-          "delta": { "san": 10, "energy": -3 },
-          "hidden_delta": { "storeTrust": -2 }
+          "delta": {
+            "san": 10,
+            "energy": -3
+          },
+          "hidden_delta": {
+            "storeTrust": -2
+          },
+          "title_key": "event.store_customer_complaint.soothe_fail.title",
+          "body_key": "event.store_customer_complaint.soothe_fail.body"
         },
         "pay_difference_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "gold", "op": ">=", "value": 20 }
+            {
+              "kind": "stat",
+              "stat": "gold",
+              "op": ">=",
+              "value": 20
+            }
           ],
           "require": "all",
           "then": "pay_difference_success",
@@ -409,24 +687,39 @@
         },
         "pay_difference_success": {
           "type": "outcome",
-          "title": "赔差价",
-          "body": "你没有多废话，直接从自己的钱包里拿出钱补上了差价。顾客拿了钱走了。虽然花了钱，但风波平息了。",
-          "delta": { "gold": -20, "san": -2 },
-          "hidden_delta": { "storeTrust": 1 }
+          "delta": {
+            "gold": -20,
+            "san": -2
+          },
+          "hidden_delta": {
+            "storeTrust": 1
+          },
+          "title_key": "event.store_customer_complaint.pay_difference_success.title",
+          "body_key": "event.store_customer_complaint.pay_difference_success.body"
         },
         "pay_difference_fail": {
           "type": "outcome",
-          "title": "钱不够",
-          "body": "你翻了翻口袋，发现钱不够。场面更加尴尬了。",
-          "delta": { "san": 10 },
-          "hidden_delta": { "storeTrust": -2 }
+          "delta": {
+            "san": 10
+          },
+          "hidden_delta": {
+            "storeTrust": -2
+          },
+          "title_key": "event.store_customer_complaint.pay_difference_fail.title",
+          "body_key": "event.store_customer_complaint.pay_difference_fail.body"
         },
         "panic": {
           "type": "outcome",
-          "title": "慌乱处理",
-          "body": "你一紧张，手忙脚乱地说了一堆逻辑不通的道歉。顾客翻了个白眼，你的脸彻底红了。",
-          "delta": { "san": 12, "energy": -5 },
-          "hidden_delta": { "storeTrust": -3, "socialAwkwardCount": 1 }
+          "delta": {
+            "san": 12,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "storeTrust": -3,
+            "socialAwkwardCount": 1
+          },
+          "title_key": "event.store_customer_complaint.panic.title",
+          "body_key": "event.store_customer_complaint.panic.body"
         }
       }
     }

@@ -22,6 +22,21 @@ enum class Language {
 void setLanguage(Language language);
 
 /**
+ * @brief 从 JSON 文件加载指定语言文本表
+ * @param language 目标语言
+ * @param relativePath 相对资源路径或绝对路径
+ * @return true 读取成功，false 读取失败
+ */
+bool loadLocaleFile(Language language, const std::string& relativePath);
+
+/**
+ * @brief 加载默认语言文件 assets/locales/en.json 与 assets/locales/zh.json
+ *
+ * 失败时仍会保留内置文本表作为兜底。
+ */
+void loadDefaultLocales();
+
+/**
  * @brief 获取当前语言
  * @return 当前语言枚举值
  */

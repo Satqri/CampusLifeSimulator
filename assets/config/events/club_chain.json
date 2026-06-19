@@ -2,9 +2,17 @@
   "events": [
     {
       "id": "club_recruitment",
-      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+      "trigger": {
+        "type": "interaction",
+        "action_id": "campus_square",
+        "once": true,
         "conditions": [
-          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 0 }
+          {
+            "kind": "stat",
+            "stat": "clubStage",
+            "op": "eq",
+            "value": 0
+          }
         ],
         "require": "all"
       },
@@ -12,25 +20,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "社团招新",
-          "body": "开学第一周，校园广场上摆满了各色摊位。学术社团的展板严谨工整，体育社团的学长们在现场做俯卧撑，文艺社团弹着吉他唱着歌。一个学姐热情地递给你一张传单。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.club_recruitment.intro.title",
+          "body_key": "event.club_recruitment.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "社团招新",
-          "body": "你要加入哪个社团？",
           "options": [
-            { "text": "加入学术类社团", "then": "join_academic_check" },
-            { "text": "加入体育类社团", "then": "join_sports_check" },
-            { "text": "加入文艺类社团", "then": "join_arts_check" },
-            { "text": "暂时不加入", "then": "join_none" }
-          ]
+            {
+              "then": "join_academic_check",
+              "text_key": "event.club_recruitment.decide.option1"
+            },
+            {
+              "then": "join_sports_check",
+              "text_key": "event.club_recruitment.decide.option2"
+            },
+            {
+              "then": "join_arts_check",
+              "text_key": "event.club_recruitment.decide.option3"
+            },
+            {
+              "then": "join_none",
+              "text_key": "event.club_recruitment.decide.option4"
+            }
+          ],
+          "title_key": "event.club_recruitment.decide.title",
+          "body_key": "event.club_recruitment.decide.body"
         },
         "join_academic_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 30 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 30
+            }
           ],
           "require": "all",
           "then": "join_academic_success",
@@ -38,22 +63,40 @@
         },
         "join_academic_success": {
           "type": "outcome",
-          "title": "加入学术社团",
-          "body": "你填了报名表。学术社团的学长推了推眼镜：欢迎加入。",
-          "delta": { "academic": 5, "energy": -5 },
-          "hidden_delta": { "clubType": "academic", "clubActivityCount": 1, "clubRelation": 1, "clubStage": 1 }
+          "delta": {
+            "academic": 5,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "clubType": "academic",
+            "clubActivityCount": 1,
+            "clubRelation": 1,
+            "clubStage": 1
+          },
+          "title_key": "event.club_recruitment.join_academic_success.title",
+          "body_key": "event.club_recruitment.join_academic_success.body"
         },
         "join_academic_fail": {
           "type": "outcome",
-          "title": "不够资格",
-          "body": "负责人看了看你的成绩：同学，等你基础再扎实一些再来吧。",
-          "delta": { "san": 3 },
-          "hidden_delta": { "clubType": "none", "clubStage": -1 }
+          "delta": {
+            "san": 3
+          },
+          "hidden_delta": {
+            "clubType": "none",
+            "clubStage": -1
+          },
+          "title_key": "event.club_recruitment.join_academic_fail.title",
+          "body_key": "event.club_recruitment.join_academic_fail.body"
         },
         "join_sports_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 35 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 35
+            }
           ],
           "require": "all",
           "then": "join_sports_success",
@@ -61,22 +104,41 @@
         },
         "join_sports_success": {
           "type": "outcome",
-          "title": "加入体育社团",
-          "body": "体育社团的队长拍了拍你的肩膀：不错，周三来训练。",
-          "delta": { "san": -5, "energy": -10 },
-          "hidden_delta": { "clubType": "sports", "clubActivityCount": 1, "healthIndex": 2, "clubRelation": 1, "clubStage": 1 }
+          "delta": {
+            "san": -5,
+            "energy": -10
+          },
+          "hidden_delta": {
+            "clubType": "sports",
+            "clubActivityCount": 1,
+            "healthIndex": 2,
+            "clubRelation": 1,
+            "clubStage": 1
+          },
+          "title_key": "event.club_recruitment.join_sports_success.title",
+          "body_key": "event.club_recruitment.join_sports_success.body"
         },
         "join_sports_fail": {
           "type": "outcome",
-          "title": "体能不够",
-          "body": "体育社团的队长摇了摇头：你这体能得多练练。",
-          "delta": { "san": 5 },
-          "hidden_delta": { "clubType": "none", "clubStage": -1 }
+          "delta": {
+            "san": 5
+          },
+          "hidden_delta": {
+            "clubType": "none",
+            "clubStage": -1
+          },
+          "title_key": "event.club_recruitment.join_sports_fail.title",
+          "body_key": "event.club_recruitment.join_sports_fail.body"
         },
         "join_arts_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 30 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 30
+            }
           ],
           "require": "all",
           "then": "join_arts_success",
@@ -84,33 +146,64 @@
         },
         "join_arts_success": {
           "type": "outcome",
-          "title": "加入文艺社团",
-          "body": "你在这群热情的艺术青年中感到了一种放松的气息。",
-          "delta": { "social": 5, "energy": -5 },
-          "hidden_delta": { "clubType": "arts", "clubActivityCount": 1, "clubRelation": 1, "clubStage": 1 }
+          "delta": {
+            "social": 5,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "clubType": "arts",
+            "clubActivityCount": 1,
+            "clubRelation": 1,
+            "clubStage": 1
+          },
+          "title_key": "event.club_recruitment.join_arts_success.title",
+          "body_key": "event.club_recruitment.join_arts_success.body"
         },
         "join_arts_fail": {
           "type": "outcome",
-          "title": "不合适",
-          "body": "你感觉和他们格格不入。最后还是默默走开了。",
-          "delta": { "san": 5 },
-          "hidden_delta": { "clubType": "none", "clubStage": -1 }
+          "delta": {
+            "san": 5
+          },
+          "hidden_delta": {
+            "clubType": "none",
+            "clubStage": -1
+          },
+          "title_key": "event.club_recruitment.join_arts_fail.title",
+          "body_key": "event.club_recruitment.join_arts_fail.body"
         },
         "join_none": {
           "type": "outcome",
-          "title": "不加入",
-          "body": "你自由自在地穿过了热闹的广场。有时候，不做选择也是一种选择。",
-          "delta": { "san": -3 },
-          "hidden_delta": { "clubType": "none", "clubStage": -1 }
+          "delta": {
+            "san": -3
+          },
+          "hidden_delta": {
+            "clubType": "none",
+            "clubStage": -1
+          },
+          "title_key": "event.club_recruitment.join_none.title",
+          "body_key": "event.club_recruitment.join_none.body"
         }
       }
     },
     {
       "id": "club_first_task",
-      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+      "trigger": {
+        "type": "interaction",
+        "action_id": "campus_square",
+        "once": true,
         "conditions": [
-          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 1 },
-          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+          {
+            "kind": "stat",
+            "stat": "clubStage",
+            "op": "eq",
+            "value": 1
+          },
+          {
+            "kind": "stat",
+            "stat": "clubType",
+            "op": "neq",
+            "value": "none"
+          }
         ],
         "require": "all"
       },
@@ -118,25 +211,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "第一次社团任务",
-          "body": "社团群里发了一条消息：第一次任务来了，需要有人做核心部分。谁愿意负责？",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.club_first_task.intro.title",
+          "body_key": "event.club_first_task.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "第一次社团任务",
-          "body": "你打算怎么做？",
           "options": [
-            { "text": "主动承担核心任务", "then": "core_task_check" },
-            { "text": "只完成自己的部分", "then": "own_part" },
-            { "text": "找同学一起做", "then": "team_up_check" },
-            { "text": "临时缺席", "then": "skip_task" }
-          ]
+            {
+              "then": "core_task_check",
+              "text_key": "event.club_first_task.decide.option1"
+            },
+            {
+              "then": "own_part",
+              "text_key": "event.club_first_task.decide.option2"
+            },
+            {
+              "then": "team_up_check",
+              "text_key": "event.club_first_task.decide.option3"
+            },
+            {
+              "then": "skip_task",
+              "text_key": "event.club_first_task.decide.option4"
+            }
+          ],
+          "title_key": "event.club_first_task.decide.title",
+          "body_key": "event.club_first_task.decide.body"
         },
         "core_task_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 35 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 35
+            }
           ],
           "require": "all",
           "then": "core_task_success",
@@ -144,28 +254,51 @@
         },
         "core_task_success": {
           "type": "outcome",
-          "title": "承担核心任务",
-          "body": "你在群里回复：我可以负责。任务比预想的复杂，但你硬啃了下来。大家都知道你是能扛事的人。",
-          "delta": { "academic": 3, "social": 3, "san": 5, "energy": -10 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 3, "clubRelation": 1, "clubStage": 2 }
+          "delta": {
+            "academic": 3,
+            "social": 3,
+            "san": 5,
+            "energy": -10
+          },
+          "hidden_delta": {
+            "clubActivityCount": 1,
+            "clubContribution": 3,
+            "clubRelation": 1,
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.core_task_success.title",
+          "body_key": "event.club_first_task.core_task_success.body"
         },
         "core_task_fail": {
           "type": "outcome",
-          "title": "体力不够",
-          "body": "你想担下这个任务，但看了看自己今天的状态，实在没信心能做好。",
-          "hidden_delta": { "clubStage": 2 }
+          "hidden_delta": {
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.core_task_fail.title",
+          "body_key": "event.club_first_task.core_task_fail.body"
         },
         "own_part": {
           "type": "outcome",
-          "title": "完成自己的部分",
-          "body": "你领了一个不大不小的任务模块，按部就班地完成了。不好不坏，但至少没有拖后腿。",
-          "delta": { "energy": -5 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1, "clubStage": 2 }
+          "delta": {
+            "energy": -5
+          },
+          "hidden_delta": {
+            "clubActivityCount": 1,
+            "clubContribution": 1,
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.own_part.title",
+          "body_key": "event.club_first_task.own_part.body"
         },
         "team_up_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "team_up_success",
@@ -173,33 +306,68 @@
         },
         "team_up_success": {
           "type": "outcome",
-          "title": "组队完成",
-          "body": "你在群里@了几个同学。很快有人响应了。任务完成得出色，关系也拉近了不少。",
-          "delta": { "social": 5, "energy": -6 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 2, "clubRelation": 2, "friendBond": 1, "clubStage": 2 }
+          "delta": {
+            "social": 5,
+            "energy": -6
+          },
+          "hidden_delta": {
+            "clubActivityCount": 1,
+            "clubContribution": 2,
+            "clubRelation": 2,
+            "friendBond": 1,
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.team_up_success.title",
+          "body_key": "event.club_first_task.team_up_success.body"
         },
         "team_up_fail": {
           "type": "outcome",
-          "title": "没人响应",
-          "body": "你在群里发了半天，没人回复。最后你还是一个人做完了自己的部分。",
-          "delta": { "san": 3, "energy": -6 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1, "clubStage": 2 }
+          "delta": {
+            "san": 3,
+            "energy": -6
+          },
+          "hidden_delta": {
+            "clubActivityCount": 1,
+            "clubContribution": 1,
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.team_up_fail.title",
+          "body_key": "event.club_first_task.team_up_fail.body"
         },
         "skip_task": {
           "type": "outcome",
-          "title": "临时缺席",
-          "body": "你找了个借口说有事，没有参加这次任务。次数多了，大家就不会再叫你了。",
-          "delta": { "san": -5 },
-          "hidden_delta": { "clubRelation": -2, "clubContribution": -1, "clubStage": 2 }
+          "delta": {
+            "san": -5
+          },
+          "hidden_delta": {
+            "clubRelation": -2,
+            "clubContribution": -1,
+            "clubStage": 2
+          },
+          "title_key": "event.club_first_task.skip_task.title",
+          "body_key": "event.club_first_task.skip_task.body"
         }
       }
     },
     {
       "id": "club_conflict",
-      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+      "trigger": {
+        "type": "interaction",
+        "action_id": "campus_square",
+        "once": true,
         "conditions": [
-          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 2 },
-          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+          {
+            "kind": "stat",
+            "stat": "clubStage",
+            "op": "eq",
+            "value": 2
+          },
+          {
+            "kind": "stat",
+            "stat": "clubType",
+            "op": "neq",
+            "value": "none"
+          }
         ],
         "require": "all"
       },
@@ -207,25 +375,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "社团分歧",
-          "body": "社团内部出现了分歧。一派想做一个高目标的大方案，另一派觉得时间不够应该保守一点。群里争论了整整一个下午。大家的眼睛都看向了你。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.club_conflict.intro.title",
+          "body_key": "event.club_conflict.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "社团分歧",
-          "body": "你支持哪边？",
           "options": [
-            { "text": "推动高目标方案", "then": "push_high_goal_check" },
-            { "text": "协调折中方案", "then": "mediate_check" },
-            { "text": "只做自己的部分", "then": "stay_neutral" },
-            { "text": "退出核心任务", "then": "quit_core" }
-          ]
+            {
+              "then": "push_high_goal_check",
+              "text_key": "event.club_conflict.decide.option1"
+            },
+            {
+              "then": "mediate_check",
+              "text_key": "event.club_conflict.decide.option2"
+            },
+            {
+              "then": "stay_neutral",
+              "text_key": "event.club_conflict.decide.option3"
+            },
+            {
+              "then": "quit_core",
+              "text_key": "event.club_conflict.decide.option4"
+            }
+          ],
+          "title_key": "event.club_conflict.decide.title",
+          "body_key": "event.club_conflict.decide.body"
         },
         "push_high_goal_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 45 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 45
+            }
           ],
           "require": "any",
           "then": "push_high_goal_success",
@@ -233,21 +418,36 @@
         },
         "push_high_goal_success": {
           "type": "outcome",
-          "title": "推动高目标",
-          "body": "你坚定地站在了大方案一边：我们可以做到。你的分析有理有据，最终说服了大多数人。",
-          "delta": { "academic": 5, "san": 10, "energy": -10 },
-          "hidden_delta": { "clubContribution": 3, "clubRelation": -1, "clubStage": 3 }
+          "delta": {
+            "academic": 5,
+            "san": 10,
+            "energy": -10
+          },
+          "hidden_delta": {
+            "clubContribution": 3,
+            "clubRelation": -1,
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.push_high_goal_success.title",
+          "body_key": "event.club_conflict.push_high_goal_success.body"
         },
         "push_high_goal_fail": {
           "type": "outcome",
-          "title": "推不动",
-          "body": "你试图推动大方案，但大部分人并不支持。",
-          "hidden_delta": { "clubStage": 3 }
+          "hidden_delta": {
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.push_high_goal_fail.title",
+          "body_key": "event.club_conflict.push_high_goal_fail.body"
         },
         "mediate_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 45 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 45
+            }
           ],
           "require": "all",
           "then": "mediate_success",
@@ -255,39 +455,74 @@
         },
         "mediate_success": {
           "type": "outcome",
-          "title": "折中方案",
-          "body": "你听完双方意见后提出了一个取长补短的方案。两边都接受了。你在社团里的声望明显上升了。",
-          "delta": { "social": 8, "energy": -5 },
-          "hidden_delta": { "clubRelation": 3, "clubContribution": 1, "friendBond": 2, "clubStage": 3 }
+          "delta": {
+            "social": 8,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "clubRelation": 3,
+            "clubContribution": 1,
+            "friendBond": 2,
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.mediate_success.title",
+          "body_key": "event.club_conflict.mediate_success.body"
         },
         "mediate_fail": {
           "type": "outcome",
-          "title": "协调失败",
-          "body": "你试图调解，但两边的情绪太大了。最后分歧不了了之。",
-          "hidden_delta": { "clubStage": 3 }
+          "hidden_delta": {
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.mediate_fail.title",
+          "body_key": "event.club_conflict.mediate_fail.body"
         },
         "stay_neutral": {
           "type": "outcome",
-          "title": "做好自己的",
-          "body": "你没有参与这场争论。你避免了矛盾，但也失去了在社团里更进一步的机会。",
-          "delta": { "energy": -3 },
-          "hidden_delta": { "clubContribution": 1, "clubStage": 3 }
+          "delta": {
+            "energy": -3
+          },
+          "hidden_delta": {
+            "clubContribution": 1,
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.stay_neutral.title",
+          "body_key": "event.club_conflict.stay_neutral.body"
         },
         "quit_core": {
           "type": "outcome",
-          "title": "退出了",
-          "body": "你觉得太累了，直接退出了核心任务。压力瞬间小了很多。",
-          "delta": { "san": -15, "social": -5 },
-          "hidden_delta": { "clubRelation": -3, "clubContribution": -2, "clubStage": 3 }
+          "delta": {
+            "san": -15,
+            "social": -5
+          },
+          "hidden_delta": {
+            "clubRelation": -3,
+            "clubContribution": -2,
+            "clubStage": 3
+          },
+          "title_key": "event.club_conflict.quit_core.title",
+          "body_key": "event.club_conflict.quit_core.body"
         }
       }
     },
     {
       "id": "club_showcase",
-      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+      "trigger": {
+        "type": "interaction",
+        "action_id": "campus_square",
+        "once": true,
         "conditions": [
-          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 3 },
-          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+          {
+            "kind": "stat",
+            "stat": "clubStage",
+            "op": "eq",
+            "value": 3
+          },
+          {
+            "kind": "stat",
+            "stat": "clubType",
+            "op": "neq",
+            "value": "none"
+          }
         ],
         "require": "all"
       },
@@ -295,25 +530,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "社团展示",
-          "body": "期末社团展示日到了。这是你在社团耕耘一学期后最终的亮相。台下坐满了观众，还有一些老师和校外嘉宾。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.club_showcase.intro.title",
+          "body_key": "event.club_showcase.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "社团展示",
-          "body": "你准备怎么展示？",
           "options": [
-            { "text": "上台展示成果", "then": "showcase_stage_check" },
-            { "text": "用专业内容撑场", "then": "showcase_content_check" },
-            { "text": "帮忙做幕后统筹", "then": "backstage_check" },
-            { "text": "低调划水", "then": "showcase_skip" }
-          ]
+            {
+              "then": "showcase_stage_check",
+              "text_key": "event.club_showcase.decide.option1"
+            },
+            {
+              "then": "showcase_content_check",
+              "text_key": "event.club_showcase.decide.option2"
+            },
+            {
+              "then": "backstage_check",
+              "text_key": "event.club_showcase.decide.option3"
+            },
+            {
+              "then": "showcase_skip",
+              "text_key": "event.club_showcase.decide.option4"
+            }
+          ],
+          "title_key": "event.club_showcase.decide.title",
+          "body_key": "event.club_showcase.decide.body"
         },
         "showcase_stage_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 50
+            }
           ],
           "require": "any",
           "then": "showcase_stage_success",
@@ -321,21 +573,37 @@
         },
         "showcase_stage_success": {
           "type": "outcome",
-          "title": "台上展示",
-          "body": "你站到台上，灯光照在脸上的那一刻反而镇定了下来。台下响起了好几次掌声。",
-          "delta": { "social": 8, "san": -5, "energy": -8 },
-          "hidden_delta": { "clubShowcaseScore": 20, "clubContribution": 2, "clubShowcaseSuccess": true, "clubStage": 4 }
+          "delta": {
+            "social": 8,
+            "san": -5,
+            "energy": -8
+          },
+          "hidden_delta": {
+            "clubShowcaseScore": 20,
+            "clubContribution": 2,
+            "clubShowcaseSuccess": true,
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.showcase_stage_success.title",
+          "body_key": "event.club_showcase.showcase_stage_success.body"
         },
         "showcase_stage_fail": {
           "type": "outcome",
-          "title": "台上紧张",
-          "body": "你一上台就忘词了。好在队友及时帮了你一把。",
-          "hidden_delta": { "clubStage": 4 }
+          "hidden_delta": {
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.showcase_stage_fail.title",
+          "body_key": "event.club_showcase.showcase_stage_fail.body"
         },
         "showcase_content_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 50
+            }
           ],
           "require": "any",
           "then": "showcase_content_success",
@@ -343,21 +611,36 @@
         },
         "showcase_content_success": {
           "type": "outcome",
-          "title": "专业撑场",
-          "body": "你用数据和逻辑征服了台下的评委。甚至有老师专门来找你交流技术细节。",
-          "delta": { "academic": 8, "san": 3, "energy": -8 },
-          "hidden_delta": { "clubShowcaseScore": 18, "clubContribution": 2, "clubStage": 4 }
+          "delta": {
+            "academic": 8,
+            "san": 3,
+            "energy": -8
+          },
+          "hidden_delta": {
+            "clubShowcaseScore": 18,
+            "clubContribution": 2,
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.showcase_content_success.title",
+          "body_key": "event.club_showcase.showcase_content_success.body"
         },
         "showcase_content_fail": {
           "type": "outcome",
-          "title": "内容不够",
-          "body": "你想用专业内容撑场，但准备不够充分。台下的反馈平平。",
-          "hidden_delta": { "clubStage": 4 }
+          "hidden_delta": {
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.showcase_content_fail.title",
+          "body_key": "event.club_showcase.showcase_content_fail.body"
         },
         "backstage_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "backstage_success",
@@ -365,23 +648,38 @@
         },
         "backstage_success": {
           "type": "outcome",
-          "title": "幕后统筹",
-          "body": "你在幕后忙前忙后——调试设备、协调流程。整场展示丝滑顺畅，大家都知道幕后有你的一份力。",
-          "delta": { "social": 3, "energy": -10 },
-          "hidden_delta": { "clubShowcaseScore": 10, "clubRelation": 2, "clubStage": 4 }
+          "delta": {
+            "social": 3,
+            "energy": -10
+          },
+          "hidden_delta": {
+            "clubShowcaseScore": 10,
+            "clubRelation": 2,
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.backstage_success.title",
+          "body_key": "event.club_showcase.backstage_success.body"
         },
         "backstage_fail": {
           "type": "outcome",
-          "title": "体力不支",
-          "body": "幕后工作比想象的累得多。你忙到一半就撑不住了。",
-          "hidden_delta": { "clubStage": 4 }
+          "hidden_delta": {
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.backstage_fail.title",
+          "body_key": "event.club_showcase.backstage_fail.body"
         },
         "showcase_skip": {
           "type": "outcome",
-          "title": "低调划水",
-          "body": "你坐在观众席的后排，偶尔跟着鼓鼓掌。这学期你在社团里并没有真正投入什么。",
-          "delta": { "san": -5 },
-          "hidden_delta": { "clubShowcaseScore": -5, "clubContribution": -1, "clubStage": 4 }
+          "delta": {
+            "san": -5
+          },
+          "hidden_delta": {
+            "clubShowcaseScore": -5,
+            "clubContribution": -1,
+            "clubStage": 4
+          },
+          "title_key": "event.club_showcase.showcase_skip.title",
+          "body_key": "event.club_showcase.showcase_skip.body"
         }
       }
     }

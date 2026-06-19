@@ -11,7 +11,7 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
         } else {
             ctx.runTimedActivity(30, Attributes{.energy = 15, .san = 5},
                 cls::text("notice.quiet_moment"),
-                "你在床上躺了一会儿，疲惫稍微缓解，但白天也悄悄过去了。 ");
+                cls::text("activity.dormitory_bed.rest"));
         }
         return true;
     }

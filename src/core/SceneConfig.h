@@ -2,6 +2,7 @@
 #define CLS_CORE_SCENECONFIG_H
 
 #include "ui/SceneBackground.h"
+#include "core/Localization.h"
 #include <string>
 #include <unordered_map>
 #include <fstream>
@@ -35,8 +36,10 @@ inline std::unordered_map<std::string, ScenePageConfig> loadSceneConfig(const st
         else if (bgName == "Library")     cfg.background = SceneBackgroundType::Library;
         else if (bgName == "Classroom")   cfg.background = SceneBackgroundType::Classroom;
         else if (bgName == "Cafeteria")   cfg.background = SceneBackgroundType::Cafeteria;
-        cfg.title = val.value("title", "");
-        cfg.subtitle = val.value("subtitle", "");
+        const std::string titleKey = val.value("title_key", "");
+        const std::string subtitleKey = val.value("subtitle_key", "");
+        cfg.title = titleKey.empty() ? val.value("title", "") : cls::text(titleKey);
+        cfg.subtitle = subtitleKey.empty() ? val.value("subtitle", "") : cls::text(subtitleKey);
         configs[key] = cfg;
     }
     return configs;

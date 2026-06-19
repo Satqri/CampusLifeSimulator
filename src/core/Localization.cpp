@@ -1,11 +1,18 @@
 #include "core/Localization.h"
 
+#include "core/AssetPath.h"
+
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
 #include <unordered_map>
 
 namespace cls {
 namespace {
 
 Language gCurrentLanguage = Language::English;
+std::unordered_map<std::string, std::string> gEnglishTexts;
+std::unordered_map<std::string, std::string> gChineseTexts;
 
 const std::unordered_map<std::string, std::pair<std::string, std::string>> kTexts = {
     {"title.name", {"Campus Life", "校园人生"}},
@@ -112,6 +119,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"quest.prompt.completed", {"[Quest completed -- press 2/3/4 to restart]", "[任务已完成——按 2/3/4 重新开始]"}},
     {"prompt.choice12", {"Press 1 or 2", "按 1 或 2"}},
     {"prompt.choice123", {"Press 1, 2, or 3", "按 1、2 或 3"}},
+    {"prompt.choice1234", {"Press 1, 2, 3, or 4", "按 1、2、3 或 4"}},
     {"time.current", {"Current time", "当前时间"}},
     {"time.passes", {"Time passes...", "时间流逝中……"}},
     {"time.class_passes", {"Class time passes...", "上课时间流逝中……"}},
@@ -227,10 +235,59 @@ std::string applyReplacements(std::string text,
     return text;
 }
 
+const std::string* findExternalText(Language language, const std::string& key) {
+    const auto& table = language == Language::Chinese ? gChineseTexts : gEnglishTexts;
+    const auto it = table.find(key);
+    if (it == table.end() || it->second.empty()) return nullptr;
+    return &it->second;
+}
+
+const std::string* findBuiltinText(Language language, const std::string& key) {
+    const auto it = kTexts.find(key);
+    if (it == kTexts.end()) return nullptr;
+    return language == Language::Chinese ? &it->second.second : &it->second.first;
+}
+
 } // namespace
 
 void setLanguage(Language language) {
     gCurrentLanguage = language;
+}
+
+bool loadLocaleFile(Language language, const std::string& relativePath) {
+    const std::string resolved = resolveAssetPath(relativePath);
+    std::ifstream file(resolved);
+    if (!file.is_open()) {
+        std::cerr << "[Locale] Cannot open: " << resolved << std::endl;
+        return false;
+    }
+
+    nlohmann::json data;
+    try {
+        file >> data;
+    } catch (const nlohmann::json::parse_error& e) {
+        std::cerr << "[Locale] JSON parse error in " << resolved << ": " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!data.is_object()) {
+        std::cerr << "[Locale] Expected object: " << resolved << std::endl;
+        return false;
+    }
+
+    auto& table = language == Language::Chinese ? gChineseTexts : gEnglishTexts;
+    for (auto it = data.begin(); it != data.end(); ++it) {
+        if (it.value().is_string()) {
+            table[it.key()] = it.value().get<std::string>();
+        }
+    }
+    std::cout << "[Locale] Loaded " << table.size() << " entries from " << resolved << std::endl;
+    return true;
+}
+
+void loadDefaultLocales() {
+    loadLocaleFile(Language::English, "assets/locales/en.json");
+    loadLocaleFile(Language::Chinese, "assets/locales/zh.json");
 }
 
 Language currentLanguage() {
@@ -238,9 +295,16 @@ Language currentLanguage() {
 }
 
 std::string text(const std::string& key) {
-    const auto it = kTexts.find(key);
-    if (it == kTexts.end()) return key;
-    return gCurrentLanguage == Language::Chinese ? it->second.second : it->second.first;
+    if (const auto* value = findExternalText(gCurrentLanguage, key)) return *value;
+    if (const auto* value = findBuiltinText(gCurrentLanguage, key)) return *value;
+
+    const Language fallbackLanguage = gCurrentLanguage == Language::Chinese
+        ? Language::English
+        : Language::Chinese;
+    if (const auto* value = findExternalText(fallbackLanguage, key)) return *value;
+    if (const auto* value = findBuiltinText(fallbackLanguage, key)) return *value;
+
+    return key;
 }
 
 std::string format(const std::string& key,

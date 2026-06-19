@@ -1,40 +1,70 @@
 {
   "interactions": [
     {
-      "area": { "x": 100.0, "y": 94.0, "w": 760.0, "h": 70.0 },
+      "area": {
+        "x": 100.0,
+        "y": 94.0,
+        "w": 760.0,
+        "h": 70.0
+      },
       "actionId": "cafeteria_counter",
-      "label": "Get Food",
-      "description": "The counter is lined with hot dishes. A good meal could restore your energy."
+      "label_key": "interaction.cafeteria_counter.label",
+      "description_key": "interaction.cafeteria_counter.description"
     },
     {
-      "area": { "x": 130.0, "y": 278.0, "w": 84.0, "h": 58.0 },
+      "area": {
+        "x": 130.0,
+        "y": 278.0,
+        "w": 84.0,
+        "h": 58.0
+      },
       "actionId": "cafeteria_table_0",
-      "label": "Eat at Table",
-      "description": "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
+      "label_key": "interaction.cafeteria_table_0.label",
+      "description_key": "interaction.cafeteria_table_0.description"
     },
     {
-      "area": { "x": 290.0, "y": 278.0, "w": 84.0, "h": 58.0 },
+      "area": {
+        "x": 290.0,
+        "y": 278.0,
+        "w": 84.0,
+        "h": 58.0
+      },
       "actionId": "cafeteria_table_1",
-      "label": "Eat at Table",
-      "description": "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
+      "label_key": "interaction.cafeteria_table_1.label",
+      "description_key": "interaction.cafeteria_table_1.description"
     },
     {
-      "area": { "x": 450.0, "y": 278.0, "w": 84.0, "h": 58.0 },
+      "area": {
+        "x": 450.0,
+        "y": 278.0,
+        "w": 84.0,
+        "h": 58.0
+      },
       "actionId": "cafeteria_table_2",
-      "label": "Eat at Table",
-      "description": "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
+      "label_key": "interaction.cafeteria_table_2.label",
+      "description_key": "interaction.cafeteria_table_2.description"
     },
     {
-      "area": { "x": 610.0, "y": 278.0, "w": 84.0, "h": 58.0 },
+      "area": {
+        "x": 610.0,
+        "y": 278.0,
+        "w": 84.0,
+        "h": 58.0
+      },
       "actionId": "cafeteria_table_3",
-      "label": "Eat at Table",
-      "description": "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
+      "label_key": "interaction.cafeteria_table_3.label",
+      "description_key": "interaction.cafeteria_table_3.description"
     },
     {
-      "area": { "x": 770.0, "y": 278.0, "w": 84.0, "h": 58.0 },
+      "area": {
+        "x": 770.0,
+        "y": 278.0,
+        "w": 84.0,
+        "h": 58.0
+      },
       "actionId": "cafeteria_table_4",
-      "label": "Eat at Table",
-      "description": "A table in the cafeteria. A great place to eat, relax, and maybe chat with friends."
+      "label_key": "interaction.cafeteria_table_4.label",
+      "description_key": "interaction.cafeteria_table_4.description"
     }
   ]
 }

@@ -9,7 +9,12 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "time", "stat": "meal_time", "op": "eq", "value": true }
+          {
+            "kind": "time",
+            "stat": "meal_time",
+            "op": "eq",
+            "value": true
+          }
         ],
         "require": "all"
       },
@@ -17,25 +22,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "最后一份鸡腿",
-          "body": "午饭时间，食堂排了很长的队。你排在队伍里，眼看就要轮到你时，前面的同学点了最后一份鸡腿。现在只剩最后一份了，你和他几乎同时开口。空气安静了一秒。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.cafeteria_last_chicken.intro.title",
+          "body_key": "event.cafeteria_last_chicken.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "最后一份鸡腿",
-          "body": "你想怎么办？",
           "options": [
-            { "text": "迅速下单拿下", "then": "snatch_check" },
-            { "text": "礼貌协商一人一半", "then": "share_check" },
-            { "text": "加钱换豪华套餐", "then": "luxury_check" },
-            { "text": "默默选择青菜", "then": "veggie" }
-          ]
+            {
+              "then": "snatch_check",
+              "text_key": "event.cafeteria_last_chicken.decide.option1"
+            },
+            {
+              "then": "share_check",
+              "text_key": "event.cafeteria_last_chicken.decide.option2"
+            },
+            {
+              "then": "luxury_check",
+              "text_key": "event.cafeteria_last_chicken.decide.option3"
+            },
+            {
+              "then": "veggie",
+              "text_key": "event.cafeteria_last_chicken.decide.option4"
+            }
+          ],
+          "title_key": "event.cafeteria_last_chicken.decide.title",
+          "body_key": "event.cafeteria_last_chicken.decide.body"
         },
         "snatch_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 50
+            }
           ],
           "require": "all",
           "then": "snatch_success",
@@ -43,20 +65,31 @@
         },
         "snatch_success": {
           "type": "outcome",
-          "title": "手快有手慢无",
-          "body": "你眼疾手快，抢在对方开口前对阿姨说：'一份鸡腿饭！' 阿姨利落地打好了菜。你端着盘子，心里暗爽。",
-          "delta": { "energy": 10, "san": -5 }
+          "delta": {
+            "energy": 10,
+            "san": -5
+          },
+          "title_key": "event.cafeteria_last_chicken.snatch_success.title",
+          "body_key": "event.cafeteria_last_chicken.snatch_success.body"
         },
         "snatch_fail": {
           "type": "outcome",
-          "title": "没抢过",
-          "body": "你犹豫了一瞬间，对方已经说了出来。你只好点了一份青菜。",
-          "delta": { "energy": 2, "san": 2 }
+          "delta": {
+            "energy": 2,
+            "san": 2
+          },
+          "title_key": "event.cafeteria_last_chicken.snatch_fail.title",
+          "body_key": "event.cafeteria_last_chicken.snatch_fail.body"
         },
         "share_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "share_success",
@@ -64,21 +97,35 @@
         },
         "share_success": {
           "type": "outcome",
-          "title": "一人一半",
-          "body": "你主动提议：'要不一人一半？' 对方愣了一下，然后笑起来：'好主意。' 阿姨帮忙分了两份。你们都吃到了鸡腿，还顺便聊了几句。",
-          "delta": { "energy": 5, "social": 5 },
-          "hidden_delta": { "friendBond": 1, "mealCount": 1 }
+          "delta": {
+            "energy": 5,
+            "social": 5
+          },
+          "hidden_delta": {
+            "friendBond": 1,
+            "mealCount": 1
+          },
+          "title_key": "event.cafeteria_last_chicken.share_success.title",
+          "body_key": "event.cafeteria_last_chicken.share_success.body"
         },
         "share_fail": {
           "type": "outcome",
-          "title": "提议被拒",
-          "body": "你的提议被对方婉拒了。气氛有些尴尬，你最后点了一份青菜。",
-          "delta": { "energy": 2, "san": 2 }
+          "delta": {
+            "energy": 2,
+            "san": 2
+          },
+          "title_key": "event.cafeteria_last_chicken.share_fail.title",
+          "body_key": "event.cafeteria_last_chicken.share_fail.body"
         },
         "luxury_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "gold", "op": ">=", "value": 30 }
+            {
+              "kind": "stat",
+              "stat": "gold",
+              "op": ">=",
+              "value": 30
+            }
           ],
           "require": "all",
           "then": "luxury_success",
@@ -86,21 +133,31 @@
         },
         "luxury_success": {
           "type": "outcome",
-          "title": "豪华套餐",
-          "body": "你直接对阿姨说：'加钱，换豪华套餐。' 一份分量十足的套餐摆在了你面前，鸡腿不够还有肉片和煎蛋。这顿饭让你特别满足。",
-          "delta": { "gold": -30, "energy": 15, "san": -10 }
+          "delta": {
+            "gold": -30,
+            "energy": 15,
+            "san": -10
+          },
+          "title_key": "event.cafeteria_last_chicken.luxury_success.title",
+          "body_key": "event.cafeteria_last_chicken.luxury_success.body"
         },
         "luxury_fail": {
           "type": "outcome",
-          "title": "钱不够",
-          "body": "你翻了翻口袋，发现钱不够豪华套餐。只好点了一份青菜。",
-          "delta": { "energy": 2, "san": 2 }
+          "delta": {
+            "energy": 2,
+            "san": 2
+          },
+          "title_key": "event.cafeteria_last_chicken.luxury_fail.title",
+          "body_key": "event.cafeteria_last_chicken.luxury_fail.body"
         },
         "veggie": {
           "type": "outcome",
-          "title": "青菜也挺好",
-          "body": "你默默点了一份青菜。虽然清淡，但至少省事。校园生活本来就是这样——不可能每次都能抢到最后一份鸡腿。",
-          "delta": { "energy": 2, "san": 2 }
+          "delta": {
+            "energy": 2,
+            "san": 2
+          },
+          "title_key": "event.cafeteria_last_chicken.veggie.title",
+          "body_key": "event.cafeteria_last_chicken.veggie.body"
         }
       }
     }

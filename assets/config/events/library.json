@@ -9,10 +9,24 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "afternoon" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" }
-          ] }
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "afternoon"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -20,25 +34,42 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "座位争夺战",
-          "body": "期中考前一周，图书馆一座难求。你在书架间转了一圈，终于发现一个空位——同时另一个同学也看到了它。你们的眼神在空气中交汇。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.library_seat_battle.intro.title",
+          "body_key": "event.library_seat_battle.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "抢座位",
-          "body": "怎么办？",
           "options": [
-            { "text": "快步抢先坐下", "then": "rush_check" },
-            { "text": "礼貌询问拼桌", "then": "polite_check" },
-            { "text": "去冷门角落", "then": "corner_check" },
-            { "text": "放弃回宿舍", "then": "give_up" }
-          ]
+            {
+              "then": "rush_check",
+              "text_key": "event.library_seat_battle.decide.option1"
+            },
+            {
+              "then": "polite_check",
+              "text_key": "event.library_seat_battle.decide.option2"
+            },
+            {
+              "then": "corner_check",
+              "text_key": "event.library_seat_battle.decide.option3"
+            },
+            {
+              "then": "give_up",
+              "text_key": "event.library_seat_battle.decide.option4"
+            }
+          ],
+          "title_key": "event.library_seat_battle.decide.title",
+          "body_key": "event.library_seat_battle.decide.body"
         },
         "rush_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "energy", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "energy",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "rush_success",
@@ -46,20 +77,33 @@
         },
         "rush_success": {
           "type": "outcome",
-          "title": "抢到座位",
-          "body": "你一个箭步冲过去，啪地把书包放到桌上。对方看着你，无奈地转身走了。你坐了下来，但心里有点不踏实。",
-          "delta": { "academic": 5, "san": 2, "energy": -5, "social": -5 }
+          "delta": {
+            "academic": 5,
+            "san": 2,
+            "energy": -5,
+            "social": -5
+          },
+          "title_key": "event.library_seat_battle.rush_success.title",
+          "body_key": "event.library_seat_battle.rush_success.body"
         },
         "rush_fail": {
           "type": "outcome",
-          "title": "没抢过",
-          "body": "你想冲过去，但晚了一步。对方已经占住了座位。你只好默默走开。",
-          "delta": { "san": 5, "energy": -3 }
+          "delta": {
+            "san": 5,
+            "energy": -3
+          },
+          "title_key": "event.library_seat_battle.rush_fail.title",
+          "body_key": "event.library_seat_battle.rush_fail.body"
         },
         "polite_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
           "then": "polite_success",
@@ -67,21 +111,35 @@
         },
         "polite_success": {
           "type": "outcome",
-          "title": "拼桌成功",
-          "body": "你微笑着说：'要不一起坐？桌子够大。' 对方点头同意了。你们各自安静地学习，偶尔交换一个默契的眼神。",
-          "delta": { "academic": 5, "social": 5, "energy": -2 },
-          "hidden_delta": { "friendBond": 1 }
+          "delta": {
+            "academic": 5,
+            "social": 5,
+            "energy": -2
+          },
+          "hidden_delta": {
+            "friendBond": 1
+          },
+          "title_key": "event.library_seat_battle.polite_success.title",
+          "body_key": "event.library_seat_battle.polite_success.body"
         },
         "polite_fail": {
           "type": "outcome",
-          "title": "被拒绝了",
-          "body": "对方礼貌地拒绝了你。你只好另找地方。",
-          "delta": { "san": 5, "energy": -3 }
+          "delta": {
+            "san": 5,
+            "energy": -3
+          },
+          "title_key": "event.library_seat_battle.polite_fail.title",
+          "body_key": "event.library_seat_battle.polite_fail.body"
         },
         "corner_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 30 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 30
+            }
           ],
           "require": "all",
           "then": "corner_success",
@@ -89,21 +147,28 @@
         },
         "corner_success": {
           "type": "outcome",
-          "title": "冷门角落",
-          "body": "你果断转身走向了冷门的角落区。虽然光线一般，但安静得几乎只有翻书声。你意外地高效学了一下午。",
-          "delta": { "academic": 8, "energy": -5 }
+          "delta": {
+            "academic": 8,
+            "energy": -5
+          },
+          "title_key": "event.library_seat_battle.corner_success.title",
+          "body_key": "event.library_seat_battle.corner_success.body"
         },
         "corner_fail": {
           "type": "outcome",
-          "title": "找不到地方",
-          "body": "你转了一圈也没找到安静的角落。最后还是放弃回宿舍了。",
-          "delta": { "san": 5 }
+          "delta": {
+            "san": 5
+          },
+          "title_key": "event.library_seat_battle.corner_fail.title",
+          "body_key": "event.library_seat_battle.corner_fail.body"
         },
         "give_up": {
           "type": "outcome",
-          "title": "回宿舍",
-          "body": "你叹了口气，转身离开了图书馆。'算了，在宿舍也能学。' 虽然你自己也不太信这句话。",
-          "delta": { "san": 5 }
+          "delta": {
+            "san": 5
+          },
+          "title_key": "event.library_seat_battle.give_up.title",
+          "body_key": "event.library_seat_battle.give_up.body"
         }
       }
     }

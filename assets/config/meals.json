@@ -1,22 +1,40 @@
 {
   "meals": [
     {
-      "name": "Meal A",
       "cost": 8,
-      "reward": { "san": 3, "energy": 12, "academic": 0, "social": 1, "gold": 0 },
-      "description": "Meal A: Gold -8, SAN +3, Energy +12, Social +1"
+      "reward": {
+        "san": 3,
+        "energy": 12,
+        "academic": 0,
+        "social": 1,
+        "gold": 0
+      },
+      "name_key": "meal.meal_a.name",
+      "description_key": "meal.meal_a.description"
     },
     {
-      "name": "Meal B",
       "cost": 15,
-      "reward": { "san": 6, "energy": 20, "academic": 0, "social": 2, "gold": 0 },
-      "description": "Meal B: Gold -15, SAN +6, Energy +20, Social +2"
+      "reward": {
+        "san": 6,
+        "energy": 20,
+        "academic": 0,
+        "social": 2,
+        "gold": 0
+      },
+      "name_key": "meal.meal_b.name",
+      "description_key": "meal.meal_b.description"
     },
     {
-      "name": "Meal C",
       "cost": 28,
-      "reward": { "san": 10, "energy": 30, "academic": 2, "social": 4, "gold": 0 },
-      "description": "Meal C: Gold -28, SAN +10, Energy +30, Academic +2, Social +4"
+      "reward": {
+        "san": 10,
+        "energy": 30,
+        "academic": 2,
+        "social": 4,
+        "gold": 0
+      },
+      "name_key": "meal.meal_c.name",
+      "description_key": "meal.meal_c.description"
     }
   ]
 }

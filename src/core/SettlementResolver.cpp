@@ -1,6 +1,7 @@
 #include "core/SettlementResolver.h"
 
 #include "entity/Player.h"
+#include "core/Localization.h"
 #include "core/Types.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -26,6 +27,11 @@ int getVisibleStat(const Player& player, const std::string& key, bool& found) {
 }
 
 bool evaluateConditionJson(const json& cond, const Player& player);
+
+std::string localizedValue(const std::string& key, const std::string& fallback) {
+    if (!key.empty()) return cls::text(key);
+    return fallback;
+}
 
 bool compareJsonValues(const json& actual, const std::string& op, const json& expected) {
     if (actual.is_number() && expected.is_number()) {
@@ -108,8 +114,11 @@ bool SettlementResolver::load(const std::string& endingsPath, const std::string&
         def.priority = item.value("priority", 0);
         def.id = item.value("id", "");
         def.name = item.value("name", "");
+        def.nameKey = item.value("name_key", "");
         def.tagline = item.value("tagline", "");
+        def.taglineKey = item.value("tagline_key", "");
         def.description = item.value("description", "");
+        def.descriptionKey = item.value("description_key", "");
         def.type = item.value("type", "");
         def.trigger = item.value("trigger", "");
         mEndings.push_back(def);
@@ -121,13 +130,18 @@ bool SettlementResolver::load(const std::string& endingsPath, const std::string&
     titlesFile >> titlesJson;
     for (const auto& group : titlesJson["groups"]) {
         const std::string groupName = group.value("group", "");
+        const std::string groupKey = group.value("group_key", "");
         for (const auto& item : group["titles"]) {
             EarnedTitle title;
             title.group = groupName;
+            title.groupKey = groupKey;
             title.id = item.value("id", "");
             title.name = item.value("name", "");
+            title.nameKey = item.value("name_key", "");
             title.subtitle = item.value("subtitle", "");
+            title.subtitleKey = item.value("subtitle_key", "");
             title.text = item.value("text", "");
+            title.textKey = item.value("text_key", "");
             mTitleDefs.push_back(title);
         }
     }
@@ -232,14 +246,18 @@ SettlementResult SettlementResolver::resolveFinal(const Player& player) const {
 
 std::string SettlementResolver::buildSummary(const Player& player, const SettlementResult& result) const {
     std::ostringstream summary;
-    summary << result.ending.name;
-    if (!result.ending.tagline.empty()) summary << " - " << result.ending.tagline;
-    summary << "\n\n" << result.ending.description;
-    summary << "\n\n最终属性："
-            << " Energy " << player.getAttributes().energy
-            << " / Gold " << player.getAttributes().gold
-            << " / SAN " << player.getAttributes().san
-            << " / Academic " << player.getAttributes().academic
-            << " / Social " << player.getAttributes().social;
+    const std::string endingName = localizedValue(result.ending.nameKey, result.ending.name);
+    const std::string endingTagline = localizedValue(result.ending.taglineKey, result.ending.tagline);
+    const std::string endingDescription = localizedValue(result.ending.descriptionKey, result.ending.description);
+
+    summary << endingName;
+    if (!endingTagline.empty()) summary << " - " << endingTagline;
+    summary << "\n\n" << endingDescription;
+    summary << "\n\n" << cls::text("settlement.final_stats") << ": "
+            << cls::text("hud.energy") << " " << player.getAttributes().energy
+            << " / " << cls::text("hud.gold") << " " << player.getAttributes().gold
+            << " / " << cls::text("hud.san") << " " << player.getAttributes().san
+            << " / " << cls::text("hud.academic") << " " << player.getAttributes().academic
+            << " / " << cls::text("hud.social") << " " << player.getAttributes().social;
     return summary.str();
 }

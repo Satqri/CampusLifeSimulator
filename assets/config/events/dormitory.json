@@ -9,10 +9,24 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
-          ] }
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "night"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -20,96 +34,148 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "宿舍断网",
-          "body": "你正刷着手机，屏幕上的加载圈转了又转。'草，又断网了。' 室友哀嚎了一声。整个宿舍陷入一片哀嚎。现在是晚上8点，今晚怎么办？",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.dormitory_network_outage.intro.title",
+          "body_key": "event.dormitory_network_outage.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "断网怎么办",
-          "body": "网络没了，你打算做什么？",
           "options": [
-            { "text": "尝试修路由器", "then": "fix_router_check" },
-            { "text": "组织线下聊天", "then": "social_chat_check" },
-            { "text": "趁机离线学习", "then": "study_check" },
-            { "text": "崩溃刷新网络", "then": "rage_refresh" }
-          ]
+            {
+              "then": "fix_router_check",
+              "text_key": "event.dormitory_network_outage.decide.option1"
+            },
+            {
+              "then": "social_chat_check",
+              "text_key": "event.dormitory_network_outage.decide.option2"
+            },
+            {
+              "then": "study_check",
+              "text_key": "event.dormitory_network_outage.decide.option3"
+            },
+            {
+              "then": "rage_refresh",
+              "text_key": "event.dormitory_network_outage.decide.option4"
+            }
+          ],
+          "title_key": "event.dormitory_network_outage.decide.title",
+          "body_key": "event.dormitory_network_outage.decide.body"
         },
         "fix_router_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "academic", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
-          "title": "修理路由器",
-          "body": "你蹲到路由器旁边，开始检查线路和设置...",
           "then": "fix_success",
-          "else": "fix_fail"
+          "else": "fix_fail",
+          "title_key": "event.dormitory_network_outage.fix_router_check.title",
+          "body_key": "event.dormitory_network_outage.fix_router_check.body"
         },
         "fix_success": {
           "type": "outcome",
-          "title": "修好了！",
-          "body": "你捣鼓了一会儿，灯终于亮了。舍友们欢呼起来：'大腿！' 你不仅恢复了网络，还收获了不少佩服的眼光。",
-          "delta": { "academic": 5, "san": -5, "energy": -5 }
+          "delta": {
+            "academic": 5,
+            "san": -5,
+            "energy": -5
+          },
+          "title_key": "event.dormitory_network_outage.fix_success.title",
+          "body_key": "event.dormitory_network_outage.fix_success.body"
         },
         "fix_fail": {
           "type": "outcome",
-          "title": "修不好",
-          "body": "你折腾了半天，路由器还是没反应。室友们放弃了等待，各自散去了。",
-          "delta": { "san": 5, "energy": -5 }
+          "delta": {
+            "san": 5,
+            "energy": -5
+          },
+          "title_key": "event.dormitory_network_outage.fix_fail.title",
+          "body_key": "event.dormitory_network_outage.fix_fail.body"
         },
         "social_chat_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            }
           ],
           "require": "all",
-          "title": "线下聊天",
-          "body": "你提议：'既然没网，不如大家聊聊天？'",
           "then": "chat_success",
-          "else": "chat_fail"
+          "else": "chat_fail",
+          "title_key": "event.dormitory_network_outage.social_chat_check.title",
+          "body_key": "event.dormitory_network_outage.social_chat_check.body"
         },
         "chat_success": {
           "type": "outcome",
-          "title": "围炉夜话",
-          "body": "大家围坐在一起，聊起了各自的家乡和高中趣事。笑声代替了刷手机的声音。这个断电的夜晚，反而成了这学期最温暖的记忆之一。",
-          "delta": { "social": 8, "san": -10, "energy": -2 },
-          "hidden_delta": { "friendBond": 1 }
+          "delta": {
+            "social": 8,
+            "san": -10,
+            "energy": -2
+          },
+          "hidden_delta": {
+            "friendBond": 1
+          },
+          "title_key": "event.dormitory_network_outage.chat_success.title",
+          "body_key": "event.dormitory_network_outage.chat_success.body"
         },
         "chat_fail": {
           "type": "outcome",
-          "title": "没人响应",
-          "body": "你的提议没得到响应，大家各自闷头做自己的事。气氛有些冷。",
-          "delta": { "san": 3, "energy": -2 }
+          "delta": {
+            "san": 3,
+            "energy": -2
+          },
+          "title_key": "event.dormitory_network_outage.chat_fail.title",
+          "body_key": "event.dormitory_network_outage.chat_fail.body"
         },
         "study_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "san", "op": "<", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "san",
+              "op": "<",
+              "value": 50
+            }
           ],
           "require": "all",
-          "title": "离线学习",
-          "body": "你拿出课本，心想正好没网络可以专注学习...",
           "then": "study_success",
-          "else": "study_fail"
+          "else": "study_fail",
+          "title_key": "event.dormitory_network_outage.study_check.title",
+          "body_key": "event.dormitory_network_outage.study_check.body"
         },
         "study_success": {
           "type": "outcome",
-          "title": "无网专注",
-          "body": "没有网络干扰，你一口气复习了两章。室友们看着你埋头苦读，默默放轻了动作。",
-          "delta": { "academic": 10, "energy": -8 }
+          "delta": {
+            "academic": 10,
+            "energy": -8
+          },
+          "title_key": "event.dormitory_network_outage.study_success.title",
+          "body_key": "event.dormitory_network_outage.study_success.body"
         },
         "study_fail": {
           "type": "outcome",
-          "title": "静不下心",
-          "body": "你翻开书但根本看不进去，满脑子想的都是没网怎么办。最后还是放弃了。",
-          "delta": { "energy": -3, "san": 5 }
+          "delta": {
+            "energy": -3,
+            "san": 5
+          },
+          "title_key": "event.dormitory_network_outage.study_fail.title",
+          "body_key": "event.dormitory_network_outage.study_fail.body"
         },
         "rage_refresh": {
           "type": "outcome",
-          "title": "崩溃刷新",
-          "body": "你疯狂地点着刷新按钮，看着加载条缓慢蠕动。结果什么也没刷出来，反而更焦虑了。",
-          "delta": { "energy": -3, "san": 10 }
+          "delta": {
+            "energy": -3,
+            "san": 10
+          },
+          "title_key": "event.dormitory_network_outage.rage_refresh.title",
+          "body_key": "event.dormitory_network_outage.rage_refresh.body"
         }
       }
     },
@@ -122,10 +188,24 @@
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
-          { "kind": "group", "require": "any", "conditions": [
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
-            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
-          ] }
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "evening"
+              },
+              {
+                "kind": "time",
+                "stat": "phase",
+                "op": "eq",
+                "value": "night"
+              }
+            ]
+          }
         ],
         "require": "all"
       },
@@ -133,103 +213,172 @@
       "steps": {
         "intro": {
           "type": "display",
-          "title": "社死朋友圈",
-          "body": "你刚发了一条朋友圈，然后突然发现——你把本来要私发的内容误发到了公开朋友圈。手机震动了一下，已经有人点赞了。你的心脏停跳了一拍。",
-          "then": "decide"
+          "then": "decide",
+          "title_key": "event.dormitory_social_death.intro.title",
+          "body_key": "event.dormitory_social_death.intro.body"
         },
         "decide": {
           "type": "choice",
-          "title": "社死现场",
-          "body": "怎么办？",
           "options": [
-            { "text": "立刻删除并装死", "then": "delete_check" },
-            { "text": "用玩笑圆回来", "then": "joke_check" },
-            { "text": "私聊相关同学解释", "then": "explain_check" },
-            { "text": "假装没看见", "then": "ignore" }
-          ]
+            {
+              "then": "delete_check",
+              "text_key": "event.dormitory_social_death.decide.option1"
+            },
+            {
+              "then": "joke_check",
+              "text_key": "event.dormitory_social_death.decide.option2"
+            },
+            {
+              "then": "explain_check",
+              "text_key": "event.dormitory_social_death.decide.option3"
+            },
+            {
+              "then": "ignore",
+              "text_key": "event.dormitory_social_death.decide.option4"
+            }
+          ],
+          "title_key": "event.dormitory_social_death.decide.title",
+          "body_key": "event.dormitory_social_death.decide.body"
         },
         "delete_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "san", "op": "<", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "san",
+              "op": "<",
+              "value": 50
+            }
           ],
           "require": "all",
-          "title": "删除朋友圈",
-          "body": "你赶紧删掉了那条朋友圈...",
           "then": "delete_success",
-          "else": "delete_fail"
+          "else": "delete_fail",
+          "title_key": "event.dormitory_social_death.delete_check.title",
+          "body_key": "event.dormitory_social_death.delete_check.body"
         },
         "delete_success": {
           "type": "outcome",
-          "title": "删了",
-          "body": "你秒删了那条朋友圈。虽然已经有几个人看到了，但至少不会继续扩散。你默默祈祷他们没截图。",
-          "delta": { "san": 3, "energy": -2 },
-          "hidden_delta": { "socialAwkwardCount": 1 }
+          "delta": {
+            "san": 3,
+            "energy": -2
+          },
+          "hidden_delta": {
+            "socialAwkwardCount": 1
+          },
+          "title_key": "event.dormitory_social_death.delete_success.title",
+          "body_key": "event.dormitory_social_death.delete_success.body"
         },
         "delete_fail": {
           "type": "outcome",
-          "title": "手抖删不掉",
-          "body": "你太紧张了，手抖着点到了编辑而不是删除。更多人看到了。",
-          "delta": { "san": 10, "energy": -2 },
-          "hidden_delta": { "socialAwkwardCount": 1 }
+          "delta": {
+            "san": 10,
+            "energy": -2
+          },
+          "hidden_delta": {
+            "socialAwkwardCount": 1
+          },
+          "title_key": "event.dormitory_social_death.delete_fail.title",
+          "body_key": "event.dormitory_social_death.delete_fail.body"
         },
         "joke_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 50 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 50
+            }
           ],
           "require": "any",
-          "title": "幽默化解",
-          "body": "你在评论区打了一串哈哈哈哈...",
           "then": "joke_success",
-          "else": "joke_fail"
+          "else": "joke_fail",
+          "title_key": "event.dormitory_social_death.joke_check.title",
+          "body_key": "event.dormitory_social_death.joke_check.body"
         },
         "joke_success": {
           "type": "outcome",
-          "title": "玩笑化解",
-          "body": "你在评论区补了一个自嘲的段子，大家笑成一片。有人回：'哈哈哈哈你这比原博好笑。' 尴尬变成了一个梗。",
-          "delta": { "social": 5, "san": -5, "energy": -3 },
-          "hidden_delta": { "friendBond": 1 }
+          "delta": {
+            "social": 5,
+            "san": -5,
+            "energy": -3
+          },
+          "hidden_delta": {
+            "friendBond": 1
+          },
+          "title_key": "event.dormitory_social_death.joke_success.title",
+          "body_key": "event.dormitory_social_death.joke_success.body"
         },
         "joke_fail": {
           "type": "outcome",
-          "title": "玩笑翻车",
-          "body": "你的玩笑没达到效果，反而让事情变得更尴尬了。评论区一片沉默。",
-          "delta": { "san": 8, "energy": -3 },
-          "hidden_delta": { "socialAwkwardCount": 1 }
+          "delta": {
+            "san": 8,
+            "energy": -3
+          },
+          "hidden_delta": {
+            "socialAwkwardCount": 1
+          },
+          "title_key": "event.dormitory_social_death.joke_fail.title",
+          "body_key": "event.dormitory_social_death.joke_fail.body"
         },
         "explain_check": {
           "type": "check",
           "conditions": [
-            { "kind": "stat", "stat": "social", "op": ">=", "value": 40 },
-            { "kind": "stat", "stat": "san", "op": "<", "value": 60 }
+            {
+              "kind": "stat",
+              "stat": "social",
+              "op": ">=",
+              "value": 40
+            },
+            {
+              "kind": "stat",
+              "stat": "san",
+              "op": "<",
+              "value": 60
+            }
           ],
           "require": "all",
-          "title": "私聊解释",
-          "body": "你赶紧给相关同学发了私信解释...",
           "then": "explain_success",
-          "else": "explain_fail"
+          "else": "explain_fail",
+          "title_key": "event.dormitory_social_death.explain_check.title",
+          "body_key": "event.dormitory_social_death.explain_check.body"
         },
         "explain_success": {
           "type": "outcome",
-          "title": "解释清楚",
-          "body": "你逐条私聊了相关同学，诚恳地解释了情况。对方表示理解，还反过来安慰你。这件事算是过去了。",
-          "delta": { "social": 3, "san": -8, "energy": -5 },
-          "hidden_delta": { "friendBond": 1 }
+          "delta": {
+            "social": 3,
+            "san": -8,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "friendBond": 1
+          },
+          "title_key": "event.dormitory_social_death.explain_success.title",
+          "body_key": "event.dormitory_social_death.explain_success.body"
         },
         "explain_fail": {
           "type": "outcome",
-          "title": "越描越黑",
-          "body": "你的解释被截图了，反而引起了更多议论。",
-          "delta": { "san": 15, "energy": -5 },
-          "hidden_delta": { "socialAwkwardCount": 2 }
+          "delta": {
+            "san": 15,
+            "energy": -5
+          },
+          "hidden_delta": {
+            "socialAwkwardCount": 2
+          },
+          "title_key": "event.dormitory_social_death.explain_fail.title",
+          "body_key": "event.dormitory_social_death.explain_fail.body"
         },
         "ignore": {
           "type": "outcome",
-          "title": "假装没发生",
-          "body": "你把手机翻了个面，假装什么都没发生。但你知道那条朋友圈还挂在上面。每一次手机震动都让你心惊。",
-          "delta": { "san": 15 },
-          "hidden_delta": { "socialAwkwardCount": 2, "friendBond": -1 }
+          "delta": {
+            "san": 15
+          },
+          "hidden_delta": {
+            "socialAwkwardCount": 2,
+            "friendBond": -1
+          },
+          "title_key": "event.dormitory_social_death.ignore.title",
+          "body_key": "event.dormitory_social_death.ignore.body"
         }
       }
     }

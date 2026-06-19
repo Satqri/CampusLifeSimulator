@@ -4,6 +4,7 @@
 #include "quest/ExamQuest.h"
 #include "quest/MidtermExamQuest.h"
 #include "quest/FinalExamQuest.h"
+#include "core/Localization.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -62,13 +63,16 @@ bool QuestManager::loadQuestChain(const std::string& filepath) {
 
         def.eventThreshold = q.value("threshold", 0);
         def.customId = q.value("id", "");
-        def.displayName = q.value("name", "");
-        def.description = q.value("description", "");
+        const std::string nameKey = q.value("name_key", "");
+        const std::string descriptionKey = q.value("description_key", "");
+        def.displayName = nameKey.empty() ? q.value("name", "") : cls::text(nameKey);
+        def.description = descriptionKey.empty() ? q.value("description", "") : cls::text(descriptionKey);
 
         // Choices (for SimpleQuest types)
         if (q.contains("choices")) {
             for (const auto& c : q["choices"]) {
-                std::string text = c.value("text", "");
+                const std::string textKey = c.value("text_key", "");
+                std::string text = textKey.empty() ? c.value("text", "") : cls::text(textKey);
                 Attributes delta;
                 if (c.contains("delta")) {
                     const auto& d = c["delta"];
@@ -93,7 +97,8 @@ bool QuestManager::loadQuestChain(const std::string& filepath) {
         }
 
         // ExamQuest params
-        def.subject           = q.value("subject", "");
+        const std::string subjectKey = q.value("subject_key", "");
+        def.subject           = subjectKey.empty() ? q.value("subject", "") : cls::text(subjectKey);
         def.dc                = q.value("dc", 14);
         def.totalRounds       = q.value("totalRounds", 5);
         def.requiredPasses    = q.value("requiredPasses", 3);

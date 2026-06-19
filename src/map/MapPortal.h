@@ -52,7 +52,18 @@ struct InteractionPoint {
     sf::FloatRect area;
     std::string actionId;
     std::string label;
+    std::string labelKey;
     std::string description;
+
+    std::string descriptionKey;
+
+    std::string displayLabel() const {
+        return labelKey.empty() ? label : cls::text(labelKey);
+    }
+
+    std::string displayDescription() const {
+        return descriptionKey.empty() ? description : cls::text(descriptionKey);
+    }
 };
 
 /**

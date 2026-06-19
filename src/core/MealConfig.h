@@ -2,6 +2,7 @@
 #define CLS_CORE_MEALCONFIG_H
 
 #include "core/Types.h"
+#include "core/Localization.h"
 #include <string>
 #include <vector>
 #include <fstream>
@@ -13,9 +14,19 @@
  */
 struct MealOption {
     std::string name;
+    std::string nameKey;
     int cost;
     Attributes reward;
     std::string description;
+    std::string descriptionKey;
+
+    std::string displayName() const {
+        return nameKey.empty() ? name : cls::text(nameKey);
+    }
+
+    std::string displayDescription() const {
+        return descriptionKey.empty() ? description : cls::text(descriptionKey);
+    }
 };
 
 /**
@@ -32,6 +43,7 @@ inline std::vector<MealOption> loadMealConfig(const std::string& path) {
     for (const auto& m : data["meals"]) {
         MealOption opt;
         opt.name = m.value("name", "");
+        opt.nameKey = m.value("name_key", "");
         opt.cost = m.value("cost", 0);
         const auto& r = m["reward"];
         opt.reward = Attributes{
@@ -42,6 +54,7 @@ inline std::vector<MealOption> loadMealConfig(const std::string& path) {
             .social = r.value("social", 0)
         };
         opt.description = m.value("description", "");
+        opt.descriptionKey = m.value("description_key", "");
         meals.push_back(opt);
     }
     return meals;
