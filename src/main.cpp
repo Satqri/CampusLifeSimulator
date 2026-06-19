@@ -488,6 +488,16 @@ int main() {
                 continue;
             }
 
+            if (screen == GameScreen::GAME && !mealChoicePrompt.active && !activityNotice.active) {
+                if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseEv->button == sf::Mouse::Button::Left) {
+                        const sf::Vector2f target = window.mapPixelToCoords(mouseEv->position, gameView);
+                        player.setMoveTarget(target);
+                    }
+                    continue;
+                }
+            }
+
             if (mealChoicePrompt.active) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) {
@@ -554,13 +564,18 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)
                 || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) dx = 1.0f;
 
-            if (dx != 0.0f && dy != 0.0f) {
-                float inv = 1.0f / std::sqrt(2.0f);
-                dx *= inv;
-                dy *= inv;
+            const bool hasKeyboardMove = dx != 0.0f || dy != 0.0f;
+            if (hasKeyboardMove) {
+                player.clearMoveTarget();
+                if (dx != 0.0f && dy != 0.0f) {
+                    float inv = 1.0f / std::sqrt(2.0f);
+                    dx *= inv;
+                    dy *= inv;
+                }
+                player.move(dx, dy, dt);
+            } else {
+                player.moveToTarget(dt);
             }
-
-            player.move(dx, dy, dt);
 
             // 按键 C = 压力事件（降低 SAN，触发敌人出现）
             if (justPressed(sf::Keyboard::Key::C)) {

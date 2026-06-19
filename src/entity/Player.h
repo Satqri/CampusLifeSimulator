@@ -108,6 +108,24 @@ public:
     /** @brief 获取低健康持续天数（用于 UI 提示） */
     int getLowHealthDays() const { return lowHealthDays; }
 
+    /** @brief 是否存在鼠标点击移动目标 */
+    bool hasMoveTarget() const { return moveTargetActive; }
+
+    /**
+     * @brief 设置鼠标点击移动目标
+     * @param target 目标坐标
+     */
+    void setMoveTarget(sf::Vector2f target);
+
+    /** @brief 清除鼠标点击移动目标 */
+    void clearMoveTarget();
+
+    /**
+     * @brief 朝鼠标点击目标自动移动
+     * @param deltaTime 帧间隔时间（秒）
+     */
+    void moveToTarget(float deltaTime);
+
 private:
     sf::Vector2f velocity;      ///< 当前移动速度
     float acceleration;         ///< 按住方向键时的加速度
@@ -117,6 +135,8 @@ private:
     sf::RectangleShape sprite;  ///< 简易像素精灵方块
     int lowEnergyDays = 0;      ///< 连续低体力天数（>=2 触发扣健康）
     int lowHealthDays = 0;      ///< 连续低健康天数（>=2 触发扣压力/知识/社交）
+    bool moveTargetActive = false; ///< 鼠标点击移动目标是否有效
+    sf::Vector2f moveTarget;    ///< 鼠标点击移动目标坐标
 };
 
 #endif // CLS_ENTITY_PLAYER_H

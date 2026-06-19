@@ -7,9 +7,23 @@ constexpr float kDefaultMoveSpeed = 210.0f;
 constexpr float kDefaultAcceleration = 900.0f;
 constexpr float kDefaultDeceleration = 1200.0f;
 constexpr float kDefaultStopThreshold = 8.0f;
+constexpr float kMoveTargetArrivalRadius = 10.0f;
 
 float vectorLength(const sf::Vector2f& value) {
     return std::sqrt(value.x * value.x + value.y * value.y);
+}
+
+void applyVelocityTowardsTarget(sf::Vector2f& velocity, sf::Vector2f targetVelocity,
+                                float acceleration, float deltaTime) {
+    float accelStep = acceleration * deltaTime;
+    sf::Vector2f velocityDelta(targetVelocity.x - velocity.x, targetVelocity.y - velocity.y);
+    float velocityDeltaLength = vectorLength(velocityDelta);
+    if (velocityDeltaLength <= accelStep || velocityDeltaLength == 0.0f) {
+        velocity = targetVelocity;
+    } else {
+        velocity.x += velocityDelta.x / velocityDeltaLength * accelStep;
+        velocity.y += velocityDelta.y / velocityDeltaLength * accelStep;
+    }
 }
 }
 
@@ -61,16 +75,7 @@ void Player::move(float directionX, float directionY, float deltaTime) {
             inputDirection.y /= inputLength;
         }
         targetVelocity = {inputDirection.x * moveSpeed, inputDirection.y * moveSpeed};
-
-        float accelStep = acceleration * deltaTime;
-        sf::Vector2f velocityDelta(targetVelocity.x - velocity.x, targetVelocity.y - velocity.y);
-        float velocityDeltaLength = vectorLength(velocityDelta);
-        if (velocityDeltaLength <= accelStep || velocityDeltaLength == 0.0f) {
-            velocity = targetVelocity;
-        } else {
-            velocity.x += velocityDelta.x / velocityDeltaLength * accelStep;
-            velocity.y += velocityDelta.y / velocityDeltaLength * accelStep;
-        }
+        applyVelocityTowardsTarget(velocity, targetVelocity, acceleration, deltaTime);
     } else {
         float currentSpeed = vectorLength(velocity);
         if (currentSpeed > 0.0f) {
@@ -95,6 +100,44 @@ void Player::move(float directionX, float directionY, float deltaTime) {
 
     posX += velocity.x * deltaTime;
     posY += velocity.y * deltaTime;
+}
+
+void Player::setMoveTarget(sf::Vector2f target) {
+    moveTarget = target;
+    moveTargetActive = true;
+}
+
+void Player::clearMoveTarget() {
+    moveTargetActive = false;
+}
+
+void Player::moveToTarget(float deltaTime) {
+    if (!moveTargetActive) {
+        move(0.0f, 0.0f, deltaTime);
+        return;
+    }
+
+    const sf::Vector2f currentPos(posX, posY);
+    sf::Vector2f toTarget(moveTarget.x - currentPos.x, moveTarget.y - currentPos.y);
+    const float distance = vectorLength(toTarget);
+    if (distance <= kMoveTargetArrivalRadius) {
+        clearMoveTarget();
+        stopMovement();
+        return;
+    }
+
+    if (distance > 0.0f) {
+        toTarget.x /= distance;
+        toTarget.y /= distance;
+    }
+    move(toTarget.x, toTarget.y, deltaTime);
+
+    const sf::Vector2f newPos(posX, posY);
+    const sf::Vector2f remaining(moveTarget.x - newPos.x, moveTarget.y - newPos.y);
+    if (vectorLength(remaining) <= kMoveTargetArrivalRadius) {
+        clearMoveTarget();
+        stopMovement();
+    }
 }
 
 void Player::modifyAttributes(const Attributes& delta) {
@@ -169,4 +212,5 @@ void Player::clearBuffs() {
 
 void Player::stopMovement() {
     velocity = {0.0f, 0.0f};
+    clearMoveTarget();
 }
