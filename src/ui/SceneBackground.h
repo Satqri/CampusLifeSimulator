@@ -12,7 +12,8 @@ enum class SceneBackgroundType {
     Gym,
     Library,
     Classroom,
-    Cafeteria
+    Cafeteria,
+    Store
 };
 
 class SceneBackground : public UIComponent {
@@ -24,8 +25,8 @@ public:
     void render(sf::RenderWindow& window, SceneBackgroundType type, sf::Color tint = sf::Color(0, 0, 0, 0));
 
 private:
-    std::array<sf::Texture, 5> textures;
-    std::array<std::unique_ptr<sf::Sprite>, 5> sprites;
+    std::array<sf::Texture, 6> textures;
+    std::array<std::unique_ptr<sf::Sprite>, 6> sprites;
     float elapsedTime = 0.0f;
 
     void load(SceneBackgroundType type, const std::string& relativePath);

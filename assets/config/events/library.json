@@ -2,7 +2,20 @@
   "events": [
     {
       "id": "library_seat_battle",
-      "trigger": { "type": "interaction", "action_id": "library_desk" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "library_desk",
+        "chance": 20,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "afternoon" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

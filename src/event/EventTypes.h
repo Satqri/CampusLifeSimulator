@@ -20,17 +20,24 @@ enum class EventNodeType {
 enum class ConditionKind {
     LOCATION,
     STAT,
-    FLAG
+    FLAG,
+    GROUP,
+    META,
+    ENUM,
+    TIME
 };
 
 /** @brief 单条条件 — 用于 CHECK 节点 */
 struct Condition {
     ConditionKind kind = ConditionKind::LOCATION;
-    std::string place;   ///< LOCATION: classroom/dormitory/cafeteria/gym/library/campus
-    std::string stat;    ///< STAT: energy/health/gold/san/academic/social
-    std::string op;      ///< STAT: ">=" 或 "<"
-    int value = 0;       ///< STAT: 阈值
+    std::string place;   ///< LOCATION: classroom/dormitory/cafeteria/gym/library/campus/store
+    std::string stat;    ///< STAT/ENUM: visible attr or hidden key; TIME: phase/day/minute/meal_time
+    std::string op;      ///< >= <= < > eq neq
+    int value = 0;       ///< 兼容旧整数阈值
     std::string flag;    ///< FLAG: "is_midterm_day" 等
+    std::string requireMode;              ///< GROUP: all/any
+    std::vector<Condition> conditions;    ///< GROUP: 嵌套条件
+    nlohmann::json valueJson;             ///< 原始比较值（int/bool/string）
 };
 
 /** @brief CHOICE 节点的单条选项 */
@@ -45,6 +52,12 @@ struct EventTrigger {
     Type type = NONE;
     std::string method;   ///< TIME_SCHEDULE: "crossed_class_time"
     std::string actionId; ///< INTERACTION: 匹配 actionId
+    std::vector<Condition> conditions; ///< 触发前置条件
+    std::string requireMode = "all";
+    int chance = 100;              ///< 触发概率，0-100，默认必定触发
+    bool once = false;             ///< true 时每局只触发一次
+    int cooldownDays = 0;          ///< 成功触发后隔几天才能再次触发
+    bool fallbackToRegular = false;///< 不中概率/冷却时允许常规交互继续执行
 };
 
 /** @brief 事件图中的一个节点 */

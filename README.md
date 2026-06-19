@@ -4,6 +4,39 @@
 
 ## 构建 & 运行
 
+### 推荐路线
+
+Windows 默认使用项目自带脚本：
+
+```powershell
+.\run-game.bat mingw
+```
+
+该脚本会自动配置、编译并启动游戏。只有在明确需要 Visual Studio 生成器时，才使用：
+
+```powershell
+.\run-game.bat vs
+```
+
+跨平台或干净环境优先使用 vcpkg。**不要默认使用 MSYS2 UCRT64 shell 构建；MSYS2 只是最后兜底路线。**
+
+推荐优先级：
+
+1. Windows 本机开发：`.\run-game.bat mingw`
+2. Windows + Visual Studio：`.\run-game.bat vs`
+3. 跨平台/CI/新机器：vcpkg preset
+4. macOS：Homebrew preset
+5. MSYS2 UCRT64：仅当前面路线不可用，或用户明确要求 MSYS2 时使用
+
+### Windows 一键运行（首选）
+
+```powershell
+cd C:\Users\ASUS\Desktop\demo2
+.\run-game.bat mingw
+```
+
+脚本内部使用 `build-local` 目录，不需要手动进入 MSYS2 shell。
+
 ### vcpkg（推荐，跨平台）
 
 ```bash
@@ -23,7 +56,15 @@ cmake --preset vcpkg -S . -B build -DCLS_LANG_CHINESE=ON
 ./build/Debug/CampusLifeSimulator.exe
 ```
 
-### MSYS2 UCRT64（Windows 备选）
+### MSYS2 UCRT64（最后兜底）
+
+仅在以下情况使用本路线：
+
+- `run-game.bat mingw` / `run-game.bat vs` 不可用
+- vcpkg preset 不可用
+- 用户明确要求使用 MSYS2
+
+不要把 MSYS2 作为 Windows 默认构建方式。
 
 ```bash
 # 首次：安装依赖

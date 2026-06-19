@@ -2,7 +2,15 @@
   "events": [
     {
       "id": "friend_help_start",
-      "trigger": { "type": "interaction", "action_id": "library_desk" },
+      "trigger": { "type": "interaction", "action_id": "library_desk", "once": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "stat", "stat": "friendStage", "op": "eq", "value": 0 },
+            { "kind": "stat", "stat": "friendStage", "op": "eq", "value": false }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -39,13 +47,14 @@
           "title": "讲懂了",
           "body": "你花了不少时间把思路讲清楚。对方明显松了一口气，也认真记住了你这次帮忙。",
           "delta": { "academic": 2, "social": 5, "energy": -8 },
-          "hidden_delta": { "friendBond": 2, "friendHelpCount": 1 }
+          "hidden_delta": { "friendBond": 2, "friendHelpCount": 1, "friendStage": 1 }
         },
         "patient_fail": {
           "type": "outcome",
           "title": "讲不明白",
           "body": "你试着讲了几次，但对方还是不太明白。气氛有点尴尬。",
-          "delta": { "san": 5, "energy": -8 }
+          "delta": { "san": 5, "energy": -8 },
+          "hidden_delta": { "friendBond": -1, "friendHelpCount": 1, "friendStage": 1 }
         },
         "hint_check": {
           "type": "check",
@@ -63,33 +72,40 @@
           "title": "点到为止",
           "body": "你没有直接给答案，而是点出关键思路。对方想了一会儿，终于有点明白了。",
           "delta": { "academic": 1, "social": 3, "energy": -3 },
-          "hidden_delta": { "friendBond": 1, "friendHelpCount": 1 }
+          "hidden_delta": { "friendBond": 1, "friendHelpCount": 1, "friendStage": 1 }
         },
         "hint_fail": {
           "type": "outcome",
           "title": "提示不够",
           "body": "你的提示太简略了，对方听完还是一脸茫然。",
-          "delta": { "san": 2, "energy": -3 }
+          "delta": { "san": 2, "energy": -3 },
+          "hidden_delta": { "friendHelpCount": 1, "friendStage": 1 }
         },
         "recommend_teacher": {
           "type": "outcome",
           "title": "推荐去问老师",
           "body": "你没有硬讲，而是建议他去问老师。这个做法稳妥，但关系没有明显拉近。",
           "delta": {},
-          "hidden_delta": { "teacherTrust": 1 }
+          "hidden_delta": { "teacherTrust": 1, "friendStage": 1 }
         },
         "refuse": {
           "type": "outcome",
           "title": "说自己很忙",
           "body": "你婉拒了他。对方点点头离开，气氛有一点尴尬。",
           "delta": { "san": -2 },
-          "hidden_delta": { "friendBond": -1, "friendRefuseCount": 1 }
+          "hidden_delta": { "friendBond": -1, "friendRefuseCount": 1, "friendStage": 1 }
         }
       }
     },
     {
       "id": "friend_lunch_return",
-      "trigger": { "type": "interaction", "action_id": "cafeteria_table" },
+      "trigger": { "type": "interaction", "action_id": "cafeteria_table", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "friendStage", "op": "eq", "value": 1 },
+          { "kind": "stat", "stat": "friendHelpCount", "op": ">=", "value": 1 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -123,13 +139,14 @@
           "title": "边吃边聊",
           "body": "你接过饮料，自然地和他聊起了各自的近况。关系自然熟了一点。",
           "delta": { "social": 2, "san": -3, "energy": 5 },
-          "hidden_delta": { "friendBond": 1 }
+          "hidden_delta": { "friendBond": 1, "friendStage": 2 }
         },
         "accept_chat_fail": {
           "type": "outcome",
           "title": "聊天尴尬",
           "body": "你想聊点什么，但话题总是接不上。气氛有些干。",
-          "delta": { "san": 2, "energy": 3 }
+          "delta": { "san": 2, "energy": 3 },
+          "hidden_delta": { "friendStage": 2 }
         },
         "refuse_drink_check": {
           "type": "check",
@@ -145,19 +162,21 @@
           "title": "不收但继续聊",
           "body": "你笑着把饮料推了回去，对方反而觉得你更靠谱了。",
           "delta": { "social": 1, "san": -2 },
-          "hidden_delta": { "friendBond": 1, "owedFavor": true }
+          "hidden_delta": { "friendBond": 1, "owedFavor": true, "friendStage": 2 }
         },
         "refuse_drink_fail": {
           "type": "outcome",
           "title": "推辞过度",
           "body": "你推辞得太坚决，对方有点尴尬地收回了饮料。",
-          "delta": { "san": 3 }
+          "delta": { "san": 3 },
+          "hidden_delta": { "friendStage": 2 }
         },
         "brief_reply": {
           "type": "outcome",
           "title": "简单回应",
           "body": "你礼貌回应了几句，然后继续吃饭。关系没有变差，也没有更近。",
-          "delta": {}
+          "delta": {},
+          "hidden_delta": { "friendStage": 2 }
         },
         "joke_roll_call_check": {
           "type": "check",
@@ -173,19 +192,28 @@
           "title": "开玩笑",
           "body": "你开玩笑道：'那以后老师点名的时候，你帮我应一声呗。' 对方笑了：'行啊，到时候看我发挥。' 这句话也许真的会派上用场。",
           "delta": { "social": 2, "academic": -1 },
-          "hidden_delta": { "friendBond": 1 }
+          "hidden_delta": { "friendBond": 1, "friendStage": 2 }
         },
         "joke_roll_call_fail": {
           "type": "outcome",
           "title": "玩笑没响",
           "body": "你的玩笑没有收获预想的效果。对方只是礼貌地笑了笑。",
-          "delta": { "san": 2 }
+          "delta": { "san": 2 },
+          "hidden_delta": { "friendStage": 2 }
         }
       }
     },
     {
       "id": "friend_roll_call_help",
-      "trigger": { "type": "time_schedule", "method": "crossed_class_time" },
+      "trigger": { "type": "time_schedule", "method": "crossed_class_time", "once": true,
+        "conditions": [
+          { "kind": "location", "place": "classroom", "op": "neq" },
+          { "kind": "stat", "stat": "friendStage", "op": ">=", "value": 2 },
+          { "kind": "stat", "stat": "friendBond", "op": ">=", "value": 2 },
+          { "kind": "stat", "stat": "friendHelpCount", "op": ">=", "value": 1 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -221,14 +249,14 @@
           "title": "救场成功",
           "body": "他帮你应付了过去。你躲过一劫，但这份人情以后肯定要还。",
           "delta": { "san": 5 },
-          "hidden_delta": { "rollCallSavedCount": 1, "friendRollCallHelpCount": 1, "owedFavor": true }
+          "hidden_delta": { "rollCallSavedCount": 1, "friendRollCallHelpCount": 1, "owedFavor": true, "friendStage": 3 }
         },
         "cover_fail": {
           "type": "outcome",
           "title": "救场失败",
           "body": "同学没能帮你圆过去。老师停顿了一下，在名单上做了标记。",
           "delta": { "san": 8 },
-          "hidden_delta": { "absencePenaltyCount": 1, "teacherTrust": -5 }
+          "hidden_delta": { "absencePenaltyCount": 1, "teacherTrust": -5, "friendStage": 3 }
         },
         "rush_back_check2": {
           "type": "check",
@@ -246,14 +274,14 @@
           "title": "自己冲回去",
           "body": "你没有让他冒险，而是自己冲回教室。虽然狼狈，但还算体面。",
           "delta": { "energy": -15, "san": 5 },
-          "hidden_delta": { "lateCount": 1, "returnClassCount": 1, "rollCallSavedCount": 1, "classAttendCount": 1, "teacherTrust": 2 }
+          "hidden_delta": { "lateCount": 1, "returnClassCount": 1, "rollCallSavedCount": 1, "classAttendCount": 1, "teacherTrust": 2, "friendStage": 3 }
         },
         "rush_back_fail2": {
           "type": "outcome",
           "title": "体力不支",
           "body": "你实在没体力跑回教室了。只好回复他不要管了。",
           "delta": { "san": 8 },
-          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5 }
+          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "teacherTrust": -5, "friendStage": 3 }
         },
         "dont_cover_check": {
           "type": "check",
@@ -269,27 +297,33 @@
           "title": "不让他冒险",
           "body": "你回复：'别管了，反正我不会少块肉。' 对方记住了你的分寸。",
           "delta": { "san": 8 },
-          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "friendBond": 1 }
+          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "friendBond": 1, "friendStage": 3 }
         },
         "dont_cover_fail": {
           "type": "outcome",
           "title": "心态崩了",
           "body": "你想回复让他别管，但手指一直在发抖。没等你想好，老师已经记了缺勤。",
           "delta": { "san": 12 },
-          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1 }
+          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "friendStage": 3 }
         },
         "ignore_message": {
           "type": "outcome",
           "title": "已读不回",
           "body": "你看着消息，没有回复。老师记了你缺勤，同学也不知道你到底怎么想。",
           "delta": { "san": 2 },
-          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "friendBond": -1, "friendRefuseCount": 1 }
+          "hidden_delta": { "skipClassCount": 1, "absencePenaltyCount": 1, "friendBond": -1, "friendRefuseCount": 1, "friendStage": 3 }
         }
       }
     },
     {
       "id": "friend_exam_review",
-      "trigger": { "type": "interaction", "action_id": "library_desk" },
+      "trigger": { "type": "interaction", "action_id": "library_desk", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "friendStage", "op": ">=", "value": 2 },
+          { "kind": "stat", "stat": "friendBond", "op": ">=", "value": 3 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -323,13 +357,14 @@
           "title": "一起复习",
           "body": "你们把重点过了一遍。很多零散知识终于串起来了。",
           "delta": { "academic": 10, "san": -5, "energy": -10 },
-          "hidden_delta": { "sharedNotes": true, "friendReviewCount": 1, "friendHelpCount": 1 }
+          "hidden_delta": { "sharedNotes": true, "friendReviewCount": 1, "friendHelpCount": 1, "friendStage": 4 }
         },
         "review_together_fail": {
           "type": "outcome",
           "title": "跟不上",
           "body": "你试着跟上他的节奏，但很多地方你都听不懂。",
-          "delta": { "san": 3, "energy": -8 }
+          "delta": { "san": 3, "energy": -8 },
+          "hidden_delta": { "friendReviewCount": 1, "friendStage": 4 }
         },
         "let_him_teach_check": {
           "type": "check",
@@ -345,13 +380,14 @@
           "title": "他讲你听",
           "body": "他把几个难点讲得很细，你突然理解了之前一直卡住的内容。",
           "delta": { "academic": 8, "social": 5, "energy": -8 },
-          "hidden_delta": { "friendBond": 1, "friendReviewCount": 1 }
+          "hidden_delta": { "friendBond": 1, "friendReviewCount": 1, "friendStage": 4 }
         },
         "let_him_teach_fail": {
           "type": "outcome",
           "title": "讲不清楚",
           "body": "他试着讲，但有些地方他自己也讲不太清楚。",
-          "delta": { "san": 3, "energy": -8 }
+          "delta": { "san": 3, "energy": -8 },
+          "hidden_delta": { "friendReviewCount": 1, "friendStage": 4 }
         },
         "share_notes_check": {
           "type": "check",
@@ -367,20 +403,21 @@
           "title": "交换笔记",
           "body": "你们交换了笔记，像临时组成了一个考前互助小组。",
           "delta": { "academic": 5, "social": 3, "energy": -5 },
-          "hidden_delta": { "sharedNotes": true, "friendBond": 1, "friendReviewCount": 1 }
+          "hidden_delta": { "sharedNotes": true, "friendBond": 1, "friendReviewCount": 1, "friendStage": 4 }
         },
         "share_notes_fail": {
           "type": "outcome",
           "title": "笔记太乱",
           "body": "你翻了翻自己的笔记，发现记得太乱，不好意思发给他。",
-          "delta": { "san": 2 }
+          "delta": { "san": 2 },
+          "hidden_delta": { "friendReviewCount": 1, "friendStage": 4 }
         },
         "refuse_review": {
           "type": "outcome",
           "title": "自己复习",
           "body": "你决定按自己的节奏复习。安静是安静，但少了一份帮助。",
           "delta": { "academic": 5, "energy": -5 },
-          "hidden_delta": { "friendRefuseCount": 1 }
+          "hidden_delta": { "friendRefuseCount": 1, "friendStage": 4 }
         }
       }
     }

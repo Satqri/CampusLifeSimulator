@@ -1,0 +1,34 @@
+{
+  "interactions": [
+    {
+      "area": { "x": 170.0, "y": 146.0, "w": 156.0, "h": 68.0 },
+      "actionId": "store_shelf",
+      "label": "Buy Quick Food",
+      "description": "Convenience food fills the shelf. It is not as healthy as the cafeteria, but it is fast and reliable."
+    },
+    {
+      "area": { "x": 590.0, "y": 146.0, "w": 156.0, "h": 68.0 },
+      "actionId": "store_drink_fridge",
+      "label": "Buy Drink",
+      "description": "Cold drinks line the fridge. A quick boost now might cost you later."
+    },
+    {
+      "area": { "x": 180.0, "y": 346.0, "w": 84.0, "h": 84.0 },
+      "actionId": "store_hot_water",
+      "label": "Heat Instant Noodles",
+      "description": "Steam rises from the hot water station. Deep-night comfort is only one cup away."
+    },
+    {
+      "area": { "x": 640.0, "y": 346.0, "w": 210.0, "h": 84.0 },
+      "actionId": "store_counter",
+      "label": "Shop Counter",
+      "description": "The cashier counter handles checkouts, shift work, and awkward late-night encounters."
+    },
+    {
+      "area": { "x": 710.0, "y": 430.0, "w": 120.0, "h": 40.0 },
+      "actionId": "store_night_shift",
+      "label": "Take Night Shift",
+      "description": "A spare apron hangs nearby. Working the late shift pays well, but drains you fast."
+    }
+  ]
+}

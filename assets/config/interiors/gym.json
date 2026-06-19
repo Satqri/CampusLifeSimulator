@@ -35,6 +35,12 @@
       "actionId": "gym_barbell_3",
       "label": "Lift Barbell",
       "description": "A barbell station. Good timing and control could turn effort into strength."
+    },
+    {
+      "area": { "x": 392.0, "y": 100.0, "w": 176.0, "h": 64.0 },
+      "actionId": "gym_front_desk",
+      "label": "Front Desk Shift",
+      "description": "The front desk handles registration and equipment logs. Evening shifts pay modestly."
     }
   ]
 }

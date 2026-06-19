@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace sf { class RenderWindow; }
 class ModalBox;
@@ -57,6 +58,7 @@ private:
     bool evaluateCondition(const Condition& cond, GameContext& ctx);
 
     std::unordered_map<std::string, EventDefinition> mEvents;
+    std::vector<std::string> mEventOrder;
     EventDefinition* mCurrentEvent = nullptr;
     std::string mCurrentEventId;
     std::string mCurrentNodeId;

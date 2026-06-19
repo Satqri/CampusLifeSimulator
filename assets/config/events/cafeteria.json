@@ -2,7 +2,17 @@
   "events": [
     {
       "id": "cafeteria_last_chicken",
-      "trigger": { "type": "interaction", "action_id": "cafeteria_counter" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "cafeteria_counter",
+        "chance": 25,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "time", "stat": "meal_time", "op": "eq", "value": true }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

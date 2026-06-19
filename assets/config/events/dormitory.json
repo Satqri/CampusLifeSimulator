@@ -2,7 +2,20 @@
   "events": [
     {
       "id": "dormitory_network_outage",
-      "trigger": { "type": "interaction", "action_id": "dormitory_room" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "dormitory_rug",
+        "chance": 25,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -102,7 +115,20 @@
     },
     {
       "id": "dormitory_social_death",
-      "trigger": { "type": "interaction", "action_id": "dormitory_phone" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "dormitory_games",
+        "chance": 22,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

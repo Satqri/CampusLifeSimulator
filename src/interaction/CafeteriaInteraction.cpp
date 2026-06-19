@@ -1,6 +1,8 @@
 #include "interaction/CafeteriaInteraction.h"
 #include "core/GameContext.h"
+#include "core/CharacterState.h"
 #include "core/MealConfig.h"
+#include "core/Localization.h"
 #include <sstream>
 
 namespace CafeteriaInteraction {
@@ -21,19 +23,30 @@ bool handleInteraction(GameContext& ctx, const std::string& actionId,
             return true;
         }
 
-        std::ostringstream body;
-        body << label << "\n\n"
-             << "[1] " << ctx.mealOptions[0].description << "\n"
-             << "[2] " << ctx.mealOptions[1].description << "\n"
-             << "[3] " << ctx.mealOptions[2].description;
-        ctx.mealChoicePrompt.show("Pick a Meal", body.str(),
-                                  "Meal A", "Meal B", "Meal C");
+        ctx.lastMealPickupSlot = slotId;
+        ctx.activityNotice.show(label,
+            "你在窗口打好当前时段的餐食。具体吃什么已经不重要，重要的是这顿饭终于有着落了。去餐桌坐下吃完它。");
         return true;
     }
 
     if (actionId.rfind("cafeteria_table_", 0) == 0) {
-        ctx.activityNotice.show("Cafeteria Table",
-            "A clean table. Grab a meal at the counter first.");
+        const int slotId = ctx.timeSystem.mealSlotId();
+        if (!ctx.timeSystem.isMealTime()) {
+            ctx.activityNotice.show("Meal Time Closed",
+                "现在不是饭点。餐桌很干净，但你没有什么能吃的。");
+            return true;
+        }
+        if (slotId != ctx.lastMealPickupSlot) {
+            ctx.activityNotice.show("Cafeteria Table",
+                "餐桌空着。先去窗口打好饭，再坐下来吃。");
+            return true;
+        }
+
+        Attributes reward{.energy = 18, .san = -6, .social = 1};
+        ctx.runTimedActivity(25, reward, cls::text("notice.meal_complete"),
+            "你坐下来吃完了这顿饭。身体恢复了一些，时间也悄悄过去了。");
+        mergeHidden(ctx.player.getHidden(), HiddenMap{{"mealCount", 1}});
+        ctx.lastMealPickupSlot = -1;
         return true;
     }
 

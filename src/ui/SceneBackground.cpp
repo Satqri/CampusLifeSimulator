@@ -2,6 +2,7 @@
 #include "core/AssetPath.h"
 
 #include <cmath>
+#include <filesystem>
 
 SceneBackground::SceneBackground() {
     load(SceneBackgroundType::Dormitory, "assets/backgrounds/dormitory.png");
@@ -9,6 +10,7 @@ SceneBackground::SceneBackground() {
     load(SceneBackgroundType::Library, "assets/backgrounds/library.png");
     load(SceneBackgroundType::Classroom, "assets/backgrounds/classroom.png");
     load(SceneBackgroundType::Cafeteria, "assets/backgrounds/cafeteria.png");
+    load(SceneBackgroundType::Store, "assets/backgrounds/store.png");
 }
 
 void SceneBackground::update(float deltaTime) {
@@ -50,10 +52,12 @@ void SceneBackground::renderFallback(sf::RenderWindow& window, SceneBackgroundTy
     sf::RectangleShape floor({960.0f, 540.0f});
     floor.setFillColor(type == SceneBackgroundType::Gym
         ? sf::Color(86, 96, 90)
-        : sf::Color(30, 40, 45));
+        : type == SceneBackgroundType::Store
+            ? sf::Color(78, 86, 94)
+            : sf::Color(30, 40, 45));
     window.draw(floor);
 
-    if (type != SceneBackgroundType::Gym) return;
+    if (type != SceneBackgroundType::Gym && type != SceneBackgroundType::Store) return;
 
     sf::RectangleShape mat({720.0f, 300.0f});
     mat.setPosition({120.0f, 118.0f});
@@ -93,11 +97,40 @@ void SceneBackground::renderFallback(sf::RenderWindow& window, SceneBackgroundTy
         rightPlate.setFillColor(sf::Color(46, 52, 52));
         window.draw(rightPlate);
     }
+
+    if (type != SceneBackgroundType::Store) return;
+
+    sf::RectangleShape aisle({700.0f, 220.0f});
+    aisle.setPosition({130.0f, 124.0f});
+    aisle.setFillColor(sf::Color(102, 112, 122));
+    aisle.setOutlineColor(sf::Color(168, 182, 194));
+    aisle.setOutlineThickness(3.0f);
+    window.draw(aisle);
+
+    for (int i = 0; i < 3; ++i) {
+        sf::RectangleShape shelf({156.0f, 40.0f});
+        shelf.setPosition({170.0f + i * 210.0f, 160.0f});
+        shelf.setFillColor(sf::Color(188, 170, 118));
+        window.draw(shelf);
+    }
+
+    sf::RectangleShape counter({210.0f, 70.0f});
+    counter.setPosition({640.0f, 360.0f});
+    counter.setFillColor(sf::Color(124, 86, 62));
+    window.draw(counter);
+
+    sf::RectangleShape heater({84.0f, 64.0f});
+    heater.setPosition({180.0f, 356.0f});
+    heater.setFillColor(sf::Color(214, 214, 220));
+    window.draw(heater);
 }
 
 void SceneBackground::load(SceneBackgroundType type, const std::string& relativePath) {
     const int i = index(type);
     const std::string resolvedPath = cls::resolveAssetPath(relativePath);
+    if (!std::filesystem::exists(resolvedPath)) {
+        return;
+    }
     if (textures[i].loadFromFile(resolvedPath)) {
         sprites[i] = std::make_unique<sf::Sprite>(textures[i]);
     }
@@ -110,6 +143,7 @@ int SceneBackground::index(SceneBackgroundType type) const {
         case SceneBackgroundType::Library: return 2;
         case SceneBackgroundType::Classroom: return 3;
         case SceneBackgroundType::Cafeteria: return 4;
+        case SceneBackgroundType::Store: return 5;
     }
     return 0;
 }

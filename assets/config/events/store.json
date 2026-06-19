@@ -2,7 +2,20 @@
   "events": [
     {
       "id": "store_meet_teacher",
-      "trigger": { "type": "interaction", "action_id": "store_counter" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "store_counter",
+        "chance": 18,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -100,7 +113,20 @@
     },
     {
       "id": "store_overtime",
-      "trigger": { "type": "interaction", "action_id": "store_night_shift" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "store_night_shift",
+        "chance": 25,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -199,7 +225,17 @@
     },
     {
       "id": "store_snack_sold_out",
-      "trigger": { "type": "interaction", "action_id": "store_shelf" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "store_shelf",
+        "chance": 20,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -282,7 +318,21 @@
     },
     {
       "id": "store_customer_complaint",
-      "trigger": { "type": "interaction", "action_id": "store_register" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "store_counter",
+        "chance": 15,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "stat", "stat": "storeNightShiftCount", "op": ">=", "value": 1 },
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "night" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

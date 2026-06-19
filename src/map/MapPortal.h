@@ -27,7 +27,8 @@ enum class CampusPlace {
     Gym,
     Library,
     Classroom,
-    Cafeteria
+    Cafeteria,
+    Store
 };
 
 /**
@@ -75,6 +76,7 @@ inline std::string placeName(CampusPlace place) {
         case CampusPlace::Library:   return cls::text("map.library");
         case CampusPlace::Classroom: return cls::text("map.classroom");
         case CampusPlace::Cafeteria: return cls::text("map.cafeteria");
+        case CampusPlace::Store:     return cls::text("map.store");
     }
     return cls::text("map.campus");
 }

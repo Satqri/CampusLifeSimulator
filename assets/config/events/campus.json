@@ -2,7 +2,21 @@
   "events": [
     {
       "id": "campus_roadshow",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "campus_square",
+        "chance": 18,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "noon" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "afternoon" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

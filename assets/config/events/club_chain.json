@@ -2,7 +2,12 @@
   "events": [
     {
       "id": "club_recruitment",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 0 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -36,13 +41,14 @@
           "title": "加入学术社团",
           "body": "你填了报名表。学术社团的学长推了推眼镜：欢迎加入。",
           "delta": { "academic": 5, "energy": -5 },
-          "hidden_delta": { "clubType": "academic", "clubActivityCount": 1, "clubRelation": 1 }
+          "hidden_delta": { "clubType": "academic", "clubActivityCount": 1, "clubRelation": 1, "clubStage": 1 }
         },
         "join_academic_fail": {
           "type": "outcome",
           "title": "不够资格",
           "body": "负责人看了看你的成绩：同学，等你基础再扎实一些再来吧。",
-          "delta": { "san": 3 }
+          "delta": { "san": 3 },
+          "hidden_delta": { "clubType": "none", "clubStage": -1 }
         },
         "join_sports_check": {
           "type": "check",
@@ -58,13 +64,14 @@
           "title": "加入体育社团",
           "body": "体育社团的队长拍了拍你的肩膀：不错，周三来训练。",
           "delta": { "san": -5, "energy": -10 },
-          "hidden_delta": { "clubType": "sports", "clubActivityCount": 1, "healthIndex": 2 }
+          "hidden_delta": { "clubType": "sports", "clubActivityCount": 1, "healthIndex": 2, "clubRelation": 1, "clubStage": 1 }
         },
         "join_sports_fail": {
           "type": "outcome",
           "title": "体能不够",
           "body": "体育社团的队长摇了摇头：你这体能得多练练。",
-          "delta": { "san": 5 }
+          "delta": { "san": 5 },
+          "hidden_delta": { "clubType": "none", "clubStage": -1 }
         },
         "join_arts_check": {
           "type": "check",
@@ -80,26 +87,33 @@
           "title": "加入文艺社团",
           "body": "你在这群热情的艺术青年中感到了一种放松的气息。",
           "delta": { "social": 5, "energy": -5 },
-          "hidden_delta": { "clubType": "arts", "clubActivityCount": 1, "clubRelation": 1 }
+          "hidden_delta": { "clubType": "arts", "clubActivityCount": 1, "clubRelation": 1, "clubStage": 1 }
         },
         "join_arts_fail": {
           "type": "outcome",
           "title": "不合适",
           "body": "你感觉和他们格格不入。最后还是默默走开了。",
-          "delta": { "san": 5 }
+          "delta": { "san": 5 },
+          "hidden_delta": { "clubType": "none", "clubStage": -1 }
         },
         "join_none": {
           "type": "outcome",
           "title": "不加入",
           "body": "你自由自在地穿过了热闹的广场。有时候，不做选择也是一种选择。",
           "delta": { "san": -3 },
-          "hidden_delta": { "clubType": "none" }
+          "hidden_delta": { "clubType": "none", "clubStage": -1 }
         }
       }
     },
     {
       "id": "club_first_task",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 1 },
+          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -133,20 +147,20 @@
           "title": "承担核心任务",
           "body": "你在群里回复：我可以负责。任务比预想的复杂，但你硬啃了下来。大家都知道你是能扛事的人。",
           "delta": { "academic": 3, "social": 3, "san": 5, "energy": -10 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 3, "clubRelation": 1 }
+          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 3, "clubRelation": 1, "clubStage": 2 }
         },
         "core_task_fail": {
           "type": "outcome",
           "title": "体力不够",
           "body": "你想担下这个任务，但看了看自己今天的状态，实在没信心能做好。",
-          "delta": { "san": 2, "energy": -5 }
+          "hidden_delta": { "clubStage": 2 }
         },
         "own_part": {
           "type": "outcome",
           "title": "完成自己的部分",
           "body": "你领了一个不大不小的任务模块，按部就班地完成了。不好不坏，但至少没有拖后腿。",
           "delta": { "energy": -5 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1 }
+          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1, "clubStage": 2 }
         },
         "team_up_check": {
           "type": "check",
@@ -162,27 +176,33 @@
           "title": "组队完成",
           "body": "你在群里@了几个同学。很快有人响应了。任务完成得出色，关系也拉近了不少。",
           "delta": { "social": 5, "energy": -6 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 2, "clubRelation": 2, "friendBond": 1 }
+          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 2, "clubRelation": 2, "friendBond": 1, "clubStage": 2 }
         },
         "team_up_fail": {
           "type": "outcome",
           "title": "没人响应",
           "body": "你在群里发了半天，没人回复。最后你还是一个人做完了自己的部分。",
           "delta": { "san": 3, "energy": -6 },
-          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1 }
+          "hidden_delta": { "clubActivityCount": 1, "clubContribution": 1, "clubStage": 2 }
         },
         "skip_task": {
           "type": "outcome",
           "title": "临时缺席",
           "body": "你找了个借口说有事，没有参加这次任务。次数多了，大家就不会再叫你了。",
           "delta": { "san": -5 },
-          "hidden_delta": { "clubRelation": -2, "clubContribution": -1 }
+          "hidden_delta": { "clubRelation": -2, "clubContribution": -1, "clubStage": 2 }
         }
       }
     },
     {
       "id": "club_conflict",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 2 },
+          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -216,13 +236,13 @@
           "title": "推动高目标",
           "body": "你坚定地站在了大方案一边：我们可以做到。你的分析有理有据，最终说服了大多数人。",
           "delta": { "academic": 5, "san": 10, "energy": -10 },
-          "hidden_delta": { "clubContribution": 3, "clubRelation": -1 }
+          "hidden_delta": { "clubContribution": 3, "clubRelation": -1, "clubStage": 3 }
         },
         "push_high_goal_fail": {
           "type": "outcome",
           "title": "推不动",
           "body": "你试图推动大方案，但大部分人并不支持。",
-          "delta": { "san": 5, "energy": -5 }
+          "hidden_delta": { "clubStage": 3 }
         },
         "mediate_check": {
           "type": "check",
@@ -238,33 +258,39 @@
           "title": "折中方案",
           "body": "你听完双方意见后提出了一个取长补短的方案。两边都接受了。你在社团里的声望明显上升了。",
           "delta": { "social": 8, "energy": -5 },
-          "hidden_delta": { "clubRelation": 3, "clubContribution": 1, "friendBond": 2 }
+          "hidden_delta": { "clubRelation": 3, "clubContribution": 1, "friendBond": 2, "clubStage": 3 }
         },
         "mediate_fail": {
           "type": "outcome",
           "title": "协调失败",
           "body": "你试图调解，但两边的情绪太大了。最后分歧不了了之。",
-          "delta": { "san": 8, "energy": -5 }
+          "hidden_delta": { "clubStage": 3 }
         },
         "stay_neutral": {
           "type": "outcome",
           "title": "做好自己的",
           "body": "你没有参与这场争论。你避免了矛盾，但也失去了在社团里更进一步的机会。",
           "delta": { "energy": -3 },
-          "hidden_delta": { "clubContribution": 1 }
+          "hidden_delta": { "clubContribution": 1, "clubStage": 3 }
         },
         "quit_core": {
           "type": "outcome",
           "title": "退出了",
           "body": "你觉得太累了，直接退出了核心任务。压力瞬间小了很多。",
           "delta": { "san": -15, "social": -5 },
-          "hidden_delta": { "clubRelation": -3, "clubContribution": -2 }
+          "hidden_delta": { "clubRelation": -3, "clubContribution": -2, "clubStage": 3 }
         }
       }
     },
     {
       "id": "club_showcase",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "clubStage", "op": "eq", "value": 3 },
+          { "kind": "stat", "stat": "clubType", "op": "neq", "value": "none" }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -298,13 +324,13 @@
           "title": "台上展示",
           "body": "你站到台上，灯光照在脸上的那一刻反而镇定了下来。台下响起了好几次掌声。",
           "delta": { "social": 8, "san": -5, "energy": -8 },
-          "hidden_delta": { "clubShowcaseScore": 20, "clubContribution": 2, "clubShowcaseSuccess": true }
+          "hidden_delta": { "clubShowcaseScore": 20, "clubContribution": 2, "clubShowcaseSuccess": true, "clubStage": 4 }
         },
         "showcase_stage_fail": {
           "type": "outcome",
           "title": "台上紧张",
           "body": "你一上台就忘词了。好在队友及时帮了你一把。",
-          "delta": { "san": 8, "energy": -8 }
+          "hidden_delta": { "clubStage": 4 }
         },
         "showcase_content_check": {
           "type": "check",
@@ -320,13 +346,13 @@
           "title": "专业撑场",
           "body": "你用数据和逻辑征服了台下的评委。甚至有老师专门来找你交流技术细节。",
           "delta": { "academic": 8, "san": 3, "energy": -8 },
-          "hidden_delta": { "clubShowcaseScore": 18, "clubContribution": 2 }
+          "hidden_delta": { "clubShowcaseScore": 18, "clubContribution": 2, "clubStage": 4 }
         },
         "showcase_content_fail": {
           "type": "outcome",
           "title": "内容不够",
           "body": "你想用专业内容撑场，但准备不够充分。台下的反馈平平。",
-          "delta": { "san": 5, "energy": -8 }
+          "hidden_delta": { "clubStage": 4 }
         },
         "backstage_check": {
           "type": "check",
@@ -342,20 +368,20 @@
           "title": "幕后统筹",
           "body": "你在幕后忙前忙后——调试设备、协调流程。整场展示丝滑顺畅，大家都知道幕后有你的一份力。",
           "delta": { "social": 3, "energy": -10 },
-          "hidden_delta": { "clubShowcaseScore": 10, "clubRelation": 2 }
+          "hidden_delta": { "clubShowcaseScore": 10, "clubRelation": 2, "clubStage": 4 }
         },
         "backstage_fail": {
           "type": "outcome",
           "title": "体力不支",
           "body": "幕后工作比想象的累得多。你忙到一半就撑不住了。",
-          "delta": { "san": 5, "energy": -10 }
+          "hidden_delta": { "clubStage": 4 }
         },
         "showcase_skip": {
           "type": "outcome",
           "title": "低调划水",
           "body": "你坐在观众席的后排，偶尔跟着鼓鼓掌。这学期你在社团里并没有真正投入什么。",
           "delta": { "san": -5 },
-          "hidden_delta": { "clubShowcaseScore": -5, "clubContribution": -1 }
+          "hidden_delta": { "clubShowcaseScore": -5, "clubContribution": -1, "clubStage": 4 }
         }
       }
     }

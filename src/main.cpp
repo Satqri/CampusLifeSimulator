@@ -25,10 +25,12 @@
 #include "core/Types.h"
 #include "core/CombatSystem.h"
 #include "core/GameContext.h"
+#include "core/SettlementResolver.h"
 #include "event/EventRunner.h"
 #include "entity/CombatHelper.h"
 #include "interaction/CafeteriaInteraction.h"
 #include "interaction/DormitoryInteraction.h"
+#include "interaction/RegularInteraction.h"
 #include "ui/ActivityNotice.h"
 #include "ui/ChoicePrompt.h"
 #include "ui/ModalBox.h"
@@ -43,6 +45,7 @@
 #include "map/LibraryInterior.h"
 #include "map/ClassroomInterior.h"
 #include "map/CafeteriaInterior.h"
+#include "map/ConvenienceStoreInterior.h"
 #include "ui/HUD.h"
 #include "ui/TitleScreen.h"
 #include "ui/DifficultyPanel.h"
@@ -202,12 +205,18 @@ int main() {
     ActivityNotice activityNotice;
     ChoicePrompt mealChoicePrompt;
     EventRunner eventRunner;
+    SettlementResolver settlementResolver;
+    settlementResolver.load(cls::resolveAssetPath("assets/config/events/endings.json"),
+                            cls::resolveAssetPath("assets/config/events/titles.json"));
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
+    bool settlementActive = false;
+    int settlementPage = 0;
+    SettlementResult settlementResult;
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
@@ -228,6 +237,7 @@ int main() {
     auto libraryMap    = std::make_unique<LibraryInterior>();
     auto classroomMap  = std::make_unique<ClassroomInterior>();
     auto cafeteriaMap  = std::make_unique<CafeteriaInterior>();
+    auto storeMap      = std::make_unique<ConvenienceStoreInterior>();
 
     // 设置字体
     campusMap->setFont(&font);
@@ -237,6 +247,7 @@ int main() {
     libraryMap->setFont(&font);
     classroomMap->setFont(&font);
     cafeteriaMap->setFont(&font);
+    storeMap->setFont(&font);
 
     BuildingInterior* currentMap = campusMap.get();
 
@@ -248,12 +259,67 @@ int main() {
             case CampusPlace::Library:   return libraryMap.get();
             case CampusPlace::Classroom: return classroomMap.get();
             case CampusPlace::Cafeteria: return cafeteriaMap.get();
+            case CampusPlace::Store:     return storeMap.get();
         }
         return campusMap.get();
     };
 
     Player player(480.0f, 280.0f);
     player.setName("Protagonist");
+    auto initializeHiddenState = [&player]() {
+        auto& hidden = player.getHidden();
+        hidden = HiddenMap::object();
+        hidden["friendStage"] = 0;
+        hidden["innovationStage"] = 0;
+        hidden["clubStage"] = 0;
+        hidden["clubType"] = "none";
+        hidden["innovationResult"] = "none";
+        hidden["innovationTopic"] = "none";
+        hidden["innovationDemoMode"] = "none";
+        hidden["innovationSpeaker"] = "none";
+        hidden["innovationJoined"] = false;
+        hidden["innovationIntel"] = false;
+        hidden["innovationLeader"] = false;
+        hidden["innovationDemoReady"] = false;
+        hidden["sharedNotes"] = false;
+        hidden["owedFavor"] = false;
+        hidden["teacherTrust"] = 0;
+        hidden["friendBond"] = 0;
+        hidden["friendHelpCount"] = 0;
+        hidden["friendReviewCount"] = 0;
+        hidden["friendRefuseCount"] = 0;
+        hidden["friendRollCallHelpCount"] = 0;
+        hidden["classAttendCount"] = 0;
+        hidden["skipClassCount"] = 0;
+        hidden["rollCallSavedCount"] = 0;
+        hidden["absencePenaltyCount"] = 0;
+        hidden["lateCount"] = 0;
+        hidden["returnClassCount"] = 0;
+        hidden["clubActivityCount"] = 0;
+        hidden["clubContribution"] = 0;
+        hidden["clubRelation"] = 0;
+        hidden["clubShowcaseScore"] = 0;
+        hidden["clubShowcaseSuccess"] = false;
+        hidden["innovationProgress"] = 0;
+        hidden["innovationTeamTrust"] = 0;
+        hidden["innovationDefenseScore"] = 0;
+        hidden["innovationCrisisCount"] = 0;
+        hidden["healthIndex"] = 100;
+        hidden["lateNightLevel"] = 0;
+        hidden["exerciseCount"] = 0;
+        hidden["partTimeCount"] = 0;
+        hidden["storeNightShiftCount"] = 0;
+        hidden["mealCount"] = 0;
+        hidden["libraryVisitCount"] = 0;
+        hidden["gameAddiction"] = 0;
+        hidden["storeTrust"] = 0;
+        hidden["socialAwkwardCount"] = 0;
+        hidden["researchUnlocked"] = false;
+        hidden["logicUnlocked"] = false;
+        hidden["expressionUnlocked"] = false;
+        hidden["campusIntelUnlocked"] = false;
+    };
+    initializeHiddenState();
     CampusPlace currentPlace = CampusPlace::Campus;
     CampusPlace pendingPlace = CampusPlace::Campus;
     sf::Vector2f pendingSpawnPosition(480.0f, 276.0f);
@@ -282,7 +348,7 @@ int main() {
     GameContext ctx{
         player, currentPlace, currentMap,
         campusMap.get(), dormitoryMap.get(), gymMap.get(),
-        libraryMap.get(), classroomMap.get(), cafeteriaMap.get(),
+        libraryMap.get(), classroomMap.get(), cafeteriaMap.get(), storeMap.get(),
         timeSystem, combatResult, timeSkipFlash,
         activityNotice, mealChoicePrompt,
         pendingPlace, pendingSpawnPosition, hasPendingMapTransition,
@@ -303,7 +369,54 @@ int main() {
         eventRunner.checkTriggers(ctx, prev);
     };
 
-    auto sleepFromDormitory = [&ctx, &showTimedResult]() {
+    std::function<bool()> maybeFinalizeRun;
+
+    auto buildSettlementBody = [&](const SettlementResult& result, int page) {
+        std::ostringstream body;
+        if (page == 0) {
+            body << result.ending.name;
+            if (!result.ending.tagline.empty()) body << "\n" << result.ending.tagline;
+            body << "\n\n" << result.ending.description;
+            body << "\n\n" << cls::text("quest.return_title");
+            return body.str();
+        }
+        if (page == 1) {
+            if (result.titles.empty()) {
+                body << "无额外称号。";
+            } else {
+                for (const auto& title : result.titles) {
+                    body << "- " << title.name;
+                    if (!title.subtitle.empty()) body << "（" << title.subtitle << "）";
+                    body << "\n";
+                }
+            }
+            body << "\n" << cls::text("quest.return_title");
+            return body.str();
+        }
+        body << result.summary << "\n\n" << cls::text("quest.return_title");
+        return body.str();
+    };
+
+    maybeFinalizeRun = [&]() {
+        if (settlementActive) return true;
+        settlementResult = settlementResolver.resolveImmediate(player);
+        if (settlementResult.resolved) {
+            settlementActive = true;
+            settlementPage = 0;
+            activityNotice.show(cls::text("quest.final_result"), buildSettlementBody(settlementResult, settlementPage));
+            return true;
+        }
+        if (timeSystem.isFinished()) {
+            settlementResult = settlementResolver.resolveFinal(player);
+            settlementActive = true;
+            settlementPage = 0;
+            activityNotice.show(cls::text("quest.final_result"), buildSettlementBody(settlementResult, settlementPage));
+            return true;
+        }
+        return false;
+    };
+
+    auto sleepFromDormitory = [&ctx, &showTimedResult, &maybeFinalizeRun]() {
         if (!ctx.timeSystem.canSleep()) {
             ctx.activityNotice.show("Too Early",
                 "You can choose sleep after 22:30.");
@@ -332,9 +445,10 @@ int main() {
         ctx.timeSkipFlash.start("Sleeping...");
         showTimedResult(ctx.timeSystem.isFinished()
             ? "Fourteen Days Complete" : "New Day", body.str());
+        maybeFinalizeRun();
     };
 
-    auto runTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult](
+    auto runTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun](
             int minutes, const Attributes& delta,
             const std::string& title, const std::string& body) {
         const int prev = ctx.timeSystem.advanceMinutes(minutes);
@@ -342,6 +456,7 @@ int main() {
         ctx.timeSkipFlash.start("Time passes...");
         showTimedResult(title, body);
         checkEventTriggers(prev);
+        maybeFinalizeRun();
     };
 
     ctx.runTimedActivity = runTimedActivity;
@@ -384,6 +499,7 @@ int main() {
         if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
         if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.label)) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
+        if (RegularInteraction::handle(ctx, ip)) return;
         ctx.activityNotice.show(ip.label, ip.description);
     };
 
@@ -446,6 +562,7 @@ int main() {
                     currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
                     timeSystem = TimeSystem();
+                    initializeHiddenState();
                     activityNotice.clear();
                     mealChoicePrompt.clear();
                     lastMealPickupSlot = -1;
@@ -514,7 +631,21 @@ int main() {
             }
 
             if (activityNotice.active) {
-                if (justPressed(sf::Keyboard::Key::Enter)
+                if (settlementActive) {
+                    if (justPressed(sf::Keyboard::Key::Enter)
+                        || justPressed(sf::Keyboard::Key::Escape)) {
+                        if (settlementPage < 2) {
+                            ++settlementPage;
+                            activityNotice.show(
+                                settlementPage == 1 ? cls::text("quest.earned_titles") : cls::text("quest.semester_summary"),
+                                buildSettlementBody(settlementResult, settlementPage));
+                        } else {
+                            settlementActive = false;
+                            screen = GameScreen::TITLE;
+                            activityNotice.clear();
+                        }
+                    }
+                } else if (justPressed(sf::Keyboard::Key::Enter)
                     || justPressed(sf::Keyboard::Key::Escape)) {
                     activityNotice.clear();
                 }
@@ -669,8 +800,16 @@ int main() {
             eventRunner.render(window, modalBox);
         }
         if (activityNotice.active) {
-            modalBox.setContent(activityNotice.title, activityNotice.body,
-                                "Press Enter to continue");
+            if (settlementActive) {
+                const std::string title = settlementPage == 0
+                    ? cls::text("quest.final_result")
+                    : (settlementPage == 1 ? cls::text("quest.earned_titles") : cls::text("quest.semester_summary"));
+                modalBox.setContent(title, buildSettlementBody(settlementResult, settlementPage),
+                                    cls::text("quest.return_title"));
+            } else {
+                modalBox.setContent(activityNotice.title, activityNotice.body,
+                                    "Press Enter to continue");
+            }
             modalBox.render(window);
         }
         if (mealChoicePrompt.active) {

@@ -13,6 +13,13 @@ CampusMap::CampusMap() {
     outdoorTilesLoaded = loadTextureFromCandidates(
         outdoorTiles, "assets/tilesets/pixlab24_topdown_tileset.png");
 
+    interactions = {
+        InteractionPoint{sf::FloatRect({392.0f, 182.0f}, {176.0f, 152.0f}), "campus_square",
+            "Campus Square", "The center square is lively. Clubs, roadshows, and chance encounters gather here."},
+        InteractionPoint{sf::FloatRect({612.0f, 236.0f}, {74.0f, 110.0f}), "campus_bulletin",
+            "Bulletin Board", "Posters and notices overlap on the board. Competitions and club news are updated often."}
+    };
+
     // 添加建筑碰撞体（与 MapPortal area 一致）
     for (const auto& portal : getPortals()) {
         obstacles.push_back(portal.area);
@@ -164,6 +171,7 @@ void CampusMap::render(sf::RenderWindow& window) {
     drawBuilding(window, portals[2], cls::text("map.library"), sf::Color(126, 136, 154), sf::Color(72, 88, 112));
     drawBuilding(window, portals[3], cls::text("map.classroom"), sf::Color(190, 164, 98), sf::Color(134, 86, 54));
     drawBuilding(window, portals[4], cls::text("map.cafeteria"), sf::Color(190, 132, 78), sf::Color(154, 78, 48));
+    drawBuilding(window, portals[5], cls::text("map.store"), sf::Color(112, 132, 184), sf::Color(78, 98, 152));
     drawTimeLighting(window);
 
     const bool lampGlow = timeSystem
@@ -193,6 +201,18 @@ void CampusMap::render(sf::RenderWindow& window) {
         bench.setFillColor(sf::Color(132, 72, 42));
         window.draw(bench);
     }
+
+    sf::RectangleShape bulletin({32.0f, 84.0f});
+    bulletin.setPosition({632.0f, 246.0f});
+    bulletin.setFillColor(sf::Color(108, 78, 50));
+    bulletin.setOutlineColor(sf::Color(238, 228, 186));
+    bulletin.setOutlineThickness(2.0f);
+    window.draw(bulletin);
+
+    sf::RectangleShape poster({22.0f, 58.0f});
+    poster.setPosition({637.0f, 254.0f});
+    poster.setFillColor(sf::Color(242, 228, 176));
+    window.draw(poster);
 
     drawPortalMarkers(window);
 
@@ -225,6 +245,8 @@ std::vector<MapPortal> CampusMap::getPortals() const {
         MapPortal{sf::FloatRect({92.0f, 352.0f}, {176.0f, 104.0f}), CampusPlace::Classroom, SceneBackgroundType::Classroom,
             {480.0f, 448.0f}, cls::text("map.classroom"), cls::text("scene.classroom.subtitle")},
         MapPortal{sf::FloatRect({690.0f, 350.0f}, {182.0f, 106.0f}), CampusPlace::Cafeteria, SceneBackgroundType::Cafeteria,
-            {480.0f, 448.0f}, cls::text("map.cafeteria"), cls::text("scene.cafeteria.subtitle")}
+            {480.0f, 448.0f}, cls::text("map.cafeteria"), cls::text("scene.cafeteria.subtitle")},
+        MapPortal{sf::FloatRect({414.0f, 420.0f}, {132.0f, 72.0f}), CampusPlace::Store, SceneBackgroundType::Store,
+            {480.0f, 448.0f}, cls::text("map.store"), cls::text("scene.store.subtitle")}
     };
 }

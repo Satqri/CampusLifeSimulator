@@ -2,7 +2,20 @@
   "events": [
     {
       "id": "gym_equipment_occupied",
-      "trigger": { "type": "interaction", "action_id": "gym_bench" },
+      "trigger": {
+        "type": "interaction",
+        "action_id": "gym_bench",
+        "chance": 18,
+        "once": true,
+        "fallback_to_regular": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "afternoon" },
+            { "kind": "time", "stat": "phase", "op": "eq", "value": "evening" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {

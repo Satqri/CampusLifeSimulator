@@ -2,11 +2,13 @@
 
 #include "core/GameContext.h"
 #include "core/TimeSystem.h"
+#include "core/CharacterState.h"
 #include "entity/Player.h"
 #include "ui/ModalBox.h"
 #include <SFML/Graphics.hpp>
 #include <nlohmann/json.hpp>
 #include <chrono>
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -34,8 +36,95 @@ static ConditionKind parseConditionKind(const std::string& s) {
     if (s == "location")  return ConditionKind::LOCATION;
     if (s == "stat")      return ConditionKind::STAT;
     if (s == "flag")      return ConditionKind::FLAG;
+    if (s == "group")     return ConditionKind::GROUP;
+    if (s == "meta")      return ConditionKind::META;
+    if (s == "enum")      return ConditionKind::ENUM;
+    if (s == "time")      return ConditionKind::TIME;
     std::cerr << "[Event] Unknown condition kind: " << s << std::endl;
     return ConditionKind::LOCATION;
+}
+
+static std::string normalizeActionId(const std::string& actionId) {
+    if (actionId.rfind("cafeteria_table_", 0) == 0) return "cafeteria_table";
+    if (actionId.rfind("classroom_desk_", 0) == 0) return "classroom_desk";
+    if (actionId.rfind("gym_treadmill_", 0) == 0) return "gym_treadmill";
+    if (actionId.rfind("gym_barbell_", 0) == 0) return "gym_bench";
+    if (actionId.rfind("library_shelf_", 0) == 0) return "library_shelf";
+    if (actionId == "library_table") return "library_desk";
+    return actionId;
+}
+
+static std::string eventCountKey(const std::string& eventId) {
+    return "_event_" + eventId + "_count";
+}
+
+static std::string eventLastDayKey(const std::string& eventId) {
+    return "_event_" + eventId + "_last_day";
+}
+
+static bool passesTriggerGate(const EventDefinition& def, GameContext& ctx,
+                              std::mt19937& rng) {
+    const auto& hidden = ctx.player.getHidden();
+    const std::string countKey = eventCountKey(def.id);
+    const std::string lastDayKey = eventLastDayKey(def.id);
+    const int triggerCount = hidden.value(countKey, 0);
+
+    if (def.trigger.once && triggerCount > 0)
+        return false;
+
+    if (def.trigger.cooldownDays > 0 && hidden.contains(lastDayKey)) {
+        const int lastDay = hidden.value(lastDayKey, -999);
+        if (ctx.timeSystem.getDay() - lastDay <= def.trigger.cooldownDays)
+            return false;
+    }
+
+    if (def.trigger.chance < 100) {
+        const int roll = static_cast<int>(rng() % 100);
+        if (roll >= def.trigger.chance)
+            return false;
+    }
+
+    return true;
+}
+
+static void markEventTriggered(const std::string& eventId, GameContext& ctx) {
+    HiddenMap delta = HiddenMap::object();
+    delta[eventCountKey(eventId)] = 1;
+    delta[eventLastDayKey(eventId)] = ctx.timeSystem.getDay();
+    mergeHidden(ctx.player.getHidden(), delta);
+}
+
+static std::string phaseName(TimePhase phase) {
+    switch (phase) {
+        case TimePhase::EarlyMorning: return "early_morning";
+        case TimePhase::Noon:         return "noon";
+        case TimePhase::Afternoon:    return "afternoon";
+        case TimePhase::Evening:      return "evening";
+        case TimePhase::Night:        return "night";
+    }
+    return "";
+}
+
+static Condition parseCondition(const json& c) {
+    Condition cond;
+    cond.kind = parseConditionKind(c.value("kind", ""));
+    cond.place = c.value("place", "");
+    cond.stat = c.value("stat", "");
+    cond.op = c.value("op", "");
+    cond.flag = c.value("flag", "");
+    cond.requireMode = c.value("require", "all");
+    if (c.contains("value")) {
+        cond.valueJson = c["value"];
+        if (cond.valueJson.is_number_integer()) {
+            cond.value = cond.valueJson.get<int>();
+        }
+    }
+    if (c.contains("conditions") && c["conditions"].is_array()) {
+        for (const auto& nested : c["conditions"]) {
+            cond.conditions.push_back(parseCondition(nested));
+        }
+    }
+    return cond;
 }
 
 // ─── JSON 加载 ───────────────────────────────────────────────────────────────
@@ -66,6 +155,16 @@ bool EventRunner::loadEvents(const std::string& filepath) {
         } else if (trigType == "interaction") {
             def.trigger.type = EventTrigger::INTERACTION;
             def.trigger.actionId = tr.value("action_id", "");
+        }
+        def.trigger.requireMode = tr.value("require", "all");
+        def.trigger.chance = std::clamp(tr.value("chance", 100), 0, 100);
+        def.trigger.once = tr.value("once", false);
+        def.trigger.cooldownDays = std::max(0, tr.value("cooldown_days", 0));
+        def.trigger.fallbackToRegular = tr.value("fallback_to_regular", false);
+        if (tr.contains("conditions") && tr["conditions"].is_array()) {
+            for (const auto& c : tr["conditions"]) {
+                def.trigger.conditions.push_back(parseCondition(c));
+            }
         }
 
         // 解析 steps
@@ -117,14 +216,7 @@ bool EventRunner::loadEvents(const std::string& filepath) {
             case EventNodeType::CHECK:
                 node.requireMode = n.value("require", "all");
                 for (const auto& c : n["conditions"]) {
-                    Condition cond;
-                    cond.kind  = parseConditionKind(c.value("kind", ""));
-                    cond.place = c.value("place", "");
-                    cond.stat  = c.value("stat", "");
-                    cond.op    = c.value("op", "");
-                    cond.value = c.value("value", 0);
-                    cond.flag  = c.value("flag", "");
-                    node.conditions.push_back(cond);
+                    node.conditions.push_back(parseCondition(c));
                 }
                 node.thenNode = n.value("then", "");
                 node.elseNode = n.value("else", "");
@@ -177,6 +269,7 @@ bool EventRunner::loadEvents(const std::string& filepath) {
             continue;
         }
         mEvents[def.id] = def;
+        mEventOrder.push_back(def.id);
         std::cout << "[Event] Loaded: " << def.id << " (" << def.steps.size()
                   << " steps)" << std::endl;
     }
@@ -263,6 +356,7 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
     }
     case EventNodeType::OUTCOME:
         applyEffects(node, ctx);
+        markEventTriggered(mCurrentEventId, ctx);
         if (!node.title.empty() || !node.body.empty()) {
             std::ostringstream body;
             body << node.body;
@@ -287,14 +381,11 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
     const bool isNum1   = (key == sf::Keyboard::Key::Num1 || key == sf::Keyboard::Key::Numpad1);
     const bool isNum2   = (key == sf::Keyboard::Key::Num2 || key == sf::Keyboard::Key::Numpad2);
     const bool isNum3   = (key == sf::Keyboard::Key::Num3 || key == sf::Keyboard::Key::Numpad3);
+    const bool isNum4   = (key == sf::Keyboard::Key::Num4 || key == sf::Keyboard::Key::Numpad4);
 
     // ── 等待 Enter 确认（带 title 的 RANDOM_CHECK/CHECK，或 DISPLAY）──
     if (mWaitingForEnter) {
-        if (isEsc) {
-            clear();
-            return;
-        }
-        if (!isEnter) return;
+        if (!isEnter && !isEsc) return;
 
         mWaitingForEnter = false;
 
@@ -325,14 +416,12 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
 
     // ── CHOICE ──────────────────────────────────────────────────────
     if (node.type == EventNodeType::CHOICE) {
-        if (isEsc) {
-            clear();
-            return;
-        }
+        if (isEsc) return;
         int idx = -1;
         if (isNum1) idx = 0;
         else if (isNum2) idx = 1;
         else if (isNum3) idx = 2;
+        else if (isNum4) idx = 3;
         // 在 2 选项时 Enter = 选 1
         if (idx == -1 && isEnter && node.options.size() <= 2) idx = 0;
 
@@ -371,8 +460,10 @@ void EventRunner::render(sf::RenderWindow& window, ModalBox& modalBox) {
             if (i + 1 < node.options.size()) oss << '\n';
         }
         body = oss.str();
-        if (footer.empty())
-            footer = (node.options.size() >= 3 ? "Press 1, 2, or 3" : "Press 1 or 2");
+        if (footer.empty()) {
+            if (node.options.size() >= 4) footer = "Press 1, 2, 3, or 4";
+            else footer = (node.options.size() >= 3 ? "Press 1, 2, or 3" : "Press 1 or 2");
+        }
         break;
     }
     case EventNodeType::DISPLAY:
@@ -391,11 +482,44 @@ void EventRunner::render(sf::RenderWindow& window, ModalBox& modalBox) {
 // ─── 触发器轮询 ─────────────────────────────────────────────────────────────
 
 bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
-    for (auto& [id, def] : mEvents) {
+    const CampusPlace previousPlace = ctx.currentPlace;
+    bool classAttendanceQueued = false;
+    std::string classAttendanceId;
+
+    for (const auto& id : mEventOrder) {
+        auto it = mEvents.find(id);
+        if (it == mEvents.end()) continue;
+        auto& def = it->second;
         const auto& tr = def.trigger;
         if (tr.type == EventTrigger::TIME_SCHEDULE) {
             if (tr.method == "crossed_class_time") {
-                if (ctx.timeSystem.crossedClassTime(previousMinute)) {
+                if (!ctx.timeSystem.crossedClassTime(previousMinute)) continue;
+                if (!tr.conditions.empty() && !evaluateConditions(tr.conditions, tr.requireMode, ctx)) continue;
+
+                if (id == "class_attendance") {
+                    classAttendanceQueued = true;
+                    classAttendanceId = id;
+                    continue;
+                }
+
+                if (!passesTriggerGate(def, ctx, mRng))
+                    continue;
+
+                ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+                ctx.timeSystem.markClassPrompted();
+                ctx.activityNotice.clear();
+                startEvent(id, ctx);
+                return true;
+            }
+        }
+    }
+
+    if (classAttendanceQueued) {
+        auto it = mEvents.find(classAttendanceId);
+        if (it != mEvents.end()) {
+            auto& def = it->second;
+            if (passesTriggerGate(def, ctx, mRng)) {
+                if (previousPlace == CampusPlace::Classroom) {
                     ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
                     ctx.timeSystem.markClassPrompted();
                     ctx.currentPlace = CampusPlace::Classroom;
@@ -403,9 +527,15 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
                     ctx.player.setPosition(480.0f, 276.0f);
                     ctx.player.stopMovement();
                     ctx.activityNotice.clear();
-                    startEvent(id, ctx);
+                    startEvent(classAttendanceId, ctx);
                     return true;
                 }
+
+                ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+                ctx.timeSystem.markClassPrompted();
+                ctx.activityNotice.clear();
+                startEvent(classAttendanceId, ctx);
+                return true;
             }
         }
     }
@@ -415,14 +545,25 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
 // ─── 交互触发 ───────────────────────────────────────────────────────────────
 
 bool EventRunner::triggerByAction(const std::string& actionId, GameContext& ctx) {
-    for (auto& [id, def] : mEvents) {
-        if (def.trigger.type == EventTrigger::INTERACTION
-            && def.trigger.actionId == actionId) {
-            std::cout << "[Event] Triggered by interaction: " << id
-                      << " (action=" << actionId << ")" << std::endl;
-            startEvent(id, ctx);
-            return true;
+    const std::string normalized = normalizeActionId(actionId);
+    for (const auto& id : mEventOrder) {
+        auto it = mEvents.find(id);
+        if (it == mEvents.end()) continue;
+        auto& def = it->second;
+        if (def.trigger.type != EventTrigger::INTERACTION) continue;
+        if (def.trigger.actionId != actionId && def.trigger.actionId != normalized) continue;
+        if (!def.trigger.conditions.empty() && !evaluateConditions(def.trigger.conditions, def.trigger.requireMode, ctx)) {
+            continue;
         }
+        if (!passesTriggerGate(def, ctx, mRng)) {
+            if (def.trigger.fallbackToRegular)
+                std::cout << "[Event] Skipped optional trigger: " << id << std::endl;
+            continue;
+        }
+        std::cout << "[Event] Triggered by interaction: " << id
+                  << " (action=" << actionId << ", normalized=" << normalized << ")" << std::endl;
+        startEvent(id, ctx);
+        return true;
     }
     return false;
 }
@@ -446,33 +587,94 @@ bool EventRunner::evaluateConditions(const std::vector<Condition>& conditions,
 }
 
 bool EventRunner::evaluateCondition(const Condition& cond, GameContext& ctx) {
+    const auto compareJson = [&](const json& actual) -> bool {
+        const json expected = cond.valueJson.is_null() ? json(cond.value) : cond.valueJson;
+
+        if (actual.is_number() && expected.is_number()) {
+            const int lhs = actual.get<int>();
+            const int rhs = expected.get<int>();
+            if (cond.op == ">=") return lhs >= rhs;
+            if (cond.op == "<=") return lhs <= rhs;
+            if (cond.op == ">")  return lhs > rhs;
+            if (cond.op == "<")  return lhs < rhs;
+            if (cond.op == "eq") return lhs == rhs;
+            if (cond.op == "neq") return lhs != rhs;
+            return false;
+        }
+
+        if (actual.is_boolean() && expected.is_boolean()) {
+            const bool lhs = actual.get<bool>();
+            const bool rhs = expected.get<bool>();
+            if (cond.op == "eq") return lhs == rhs;
+            if (cond.op == "neq") return lhs != rhs;
+            return false;
+        }
+
+        if (actual.is_string() && expected.is_string()) {
+            const std::string lhs = actual.get<std::string>();
+            const std::string rhs = expected.get<std::string>();
+            if (cond.op == "eq") return lhs == rhs;
+            if (cond.op == "neq") return lhs != rhs;
+            return false;
+        }
+
+        return false;
+    };
+
     switch (cond.kind) {
     case ConditionKind::LOCATION:
-        if (cond.place == "classroom") return ctx.currentPlace == CampusPlace::Classroom;
-        if (cond.place == "dormitory") return ctx.currentPlace == CampusPlace::Dormitory;
-        if (cond.place == "cafeteria") return ctx.currentPlace == CampusPlace::Cafeteria;
-        if (cond.place == "gym")       return ctx.currentPlace == CampusPlace::Gym;
-        if (cond.place == "library")   return ctx.currentPlace == CampusPlace::Library;
-        if (cond.place == "campus")    return ctx.currentPlace == CampusPlace::Campus;
-        return false;
-
-    case ConditionKind::STAT: {
-        int val = 0;
-        if (cond.stat == "energy")      val = ctx.player.getAttributes().energy;
-        else if (cond.stat == "health") val = ctx.player.getAttributes().health;
-        else if (cond.stat == "gold")   val = ctx.player.getAttributes().gold;
-        else if (cond.stat == "san")    val = ctx.player.getAttributes().san;
-        else if (cond.stat == "academic") val = ctx.player.getAttributes().academic;
-        else if (cond.stat == "social") val = ctx.player.getAttributes().social;
+    {
+        bool matches = false;
+        if (cond.place == "classroom") matches = ctx.currentPlace == CampusPlace::Classroom;
+        else if (cond.place == "dormitory") matches = ctx.currentPlace == CampusPlace::Dormitory;
+        else if (cond.place == "cafeteria") matches = ctx.currentPlace == CampusPlace::Cafeteria;
+        else if (cond.place == "gym")       matches = ctx.currentPlace == CampusPlace::Gym;
+        else if (cond.place == "library")   matches = ctx.currentPlace == CampusPlace::Library;
+        else if (cond.place == "campus")    matches = ctx.currentPlace == CampusPlace::Campus;
+        else if (cond.place == "store")     matches = ctx.currentPlace == CampusPlace::Store;
         else return false;
-        if (cond.op == ">=") return val >= cond.value;
-        if (cond.op == "<")  return val < cond.value;
-        return false;
+        return cond.op == "neq" ? !matches : matches;
+    }
+
+    case ConditionKind::STAT:
+    case ConditionKind::ENUM: {
+        json actual;
+        if (cond.stat == "energy") actual = ctx.player.getAttributes().energy;
+        else if (cond.stat == "health") actual = ctx.player.getAttributes().health;
+        else if (cond.stat == "gold") actual = ctx.player.getAttributes().gold;
+        else if (cond.stat == "san") actual = ctx.player.getAttributes().san;
+        else if (cond.stat == "academic") actual = ctx.player.getAttributes().academic;
+        else if (cond.stat == "social") actual = ctx.player.getAttributes().social;
+        else {
+            const auto& hidden = ctx.player.getHidden();
+            if (!hidden.contains(cond.stat)) return false;
+            actual = hidden.at(cond.stat);
+        }
+        return compareJson(actual);
     }
     case ConditionKind::FLAG:
         if (cond.flag == "is_midterm_day")
             return ctx.timeSystem.isMidtermDay();
         return false;
+    case ConditionKind::TIME: {
+        if (cond.stat == "phase") {
+            return compareJson(json(phaseName(ctx.timeSystem.currentPhase())));
+        }
+        if (cond.stat == "minute") {
+            return compareJson(json(ctx.timeSystem.getMinuteOfDay() % (24 * 60)));
+        }
+        if (cond.stat == "day") {
+            return compareJson(json(ctx.timeSystem.getDay()));
+        }
+        if (cond.stat == "meal_time") {
+            return compareJson(json(ctx.timeSystem.isMealTime()));
+        }
+        return false;
+    }
+    case ConditionKind::GROUP:
+        return evaluateConditions(cond.conditions, cond.requireMode.empty() ? "all" : cond.requireMode, ctx);
+    case ConditionKind::META:
+        return true;
     }
     return false;
 }
@@ -487,16 +689,7 @@ void EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
         d.san != 0 || d.academic != 0 || d.social != 0)
         ctx.player.modifyAttributes(node.delta);
     if (!node.hiddenDelta.is_null()) {
-        auto& hidden = ctx.player.getHidden();
-        for (auto it = node.hiddenDelta.begin(); it != node.hiddenDelta.end(); ++it) {
-            if (it.value().is_number_integer()) {
-                int cur = hidden.value(it.key(), 0);
-                int add = it.value();
-                hidden[it.key()] = cur + add;
-            } else {
-                hidden[it.key()] = it.value();
-            }
-        }
+        mergeHidden(ctx.player.getHidden(), node.hiddenDelta);
     }
     if (!node.flashText.empty())
         ctx.timeSkipFlash.start(node.flashText);

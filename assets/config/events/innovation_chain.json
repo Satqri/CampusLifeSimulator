@@ -2,7 +2,15 @@
   "events": [
     {
       "id": "innovation_notice",
-      "trigger": { "type": "interaction", "action_id": "campus_bulletin" },
+      "trigger": { "type": "interaction", "action_id": "campus_bulletin", "once": true,
+        "conditions": [
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": 0 },
+            { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": false }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -26,7 +34,7 @@
           "title": "报名参加",
           "body": "你毫不犹豫地扫了二维码，填写了报名表。系统显示：'报名成功'。从现在开始，你的大学生涯多了一条高压但可能绚丽的支线。",
           "delta": { "san": 5, "energy": -2 },
-          "hidden_delta": { "innovationJoined": true }
+          "hidden_delta": { "innovationJoined": true, "innovationStage": 1 }
         },
         "gather_intel_check": {
           "type": "check",
@@ -44,26 +52,36 @@
           "title": "打听到了",
           "body": "学长很热情地给你讲了很多：哪个导师好说话、哪个题目方向容易出成绩、怎么选靠谱队友。这些信息比海报值钱多了。听完后你心里更有谱了。",
           "delta": { "social": 2, "energy": -5 },
-          "hidden_delta": { "innovationIntel": true, "innovationTeamTrust": 5 }
+          "hidden_delta": { "innovationIntel": true, "innovationTeamTrust": 5, "innovationStage": 1 }
         },
         "gather_intel_fail": {
           "type": "outcome",
           "title": "没问到",
           "body": "你想打听，但问了两个人对方都不太了解。你只好先回去自己琢磨。",
-          "delta": { "san": 2, "energy": -3 }
+          "delta": { "san": 2, "energy": -3 },
+          "hidden_delta": { "innovationJoined": true, "innovationStage": 1 }
         },
         "give_up_innovation": {
           "type": "outcome",
           "title": "放弃",
           "body": "你看了两眼，然后转身走了。'大创太费时间了，还是专注学业吧。' 这是明智的，但也意味着你选择了另一条路。",
           "delta": { "san": -5 },
-          "hidden_delta": { "innovationResult": "bystander" }
+          "hidden_delta": { "innovationResult": "bystander", "innovationStage": -1 }
         }
       }
     },
     {
       "id": "innovation_team",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": 1 },
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "stat", "stat": "innovationJoined", "op": "eq", "value": true },
+            { "kind": "stat", "stat": "innovationIntel", "op": "eq", "value": true }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -98,13 +116,14 @@
           "title": "成为负责人",
           "body": "你拍板定了方向：做一个帮大学生科学起床的'早八救星'应用。你成了项目负责人，开始招募队友。压力大了，但掌控力也大了。",
           "delta": { "san": 15, "energy": -10 },
-          "hidden_delta": { "innovationLeader": true, "innovationTopic": "morning_helper", "innovationProgress": 15, "innovationTeamTrust": 5 }
+          "hidden_delta": { "innovationLeader": true, "innovationTopic": "morning_helper", "innovationProgress": 15, "innovationTeamTrust": 5, "innovationStage": 2 }
         },
         "leader_morning_fail": {
           "type": "outcome",
           "title": "不够格",
           "body": "你想当负责人，但很快发现自己的学术基础还不够扎实，也没有足够的社交资源拉团队。只好退而求其次加入别人的队伍。",
-          "delta": { "san": 5, "energy": -5 }
+          "delta": { "san": 5, "energy": -5 },
+          "hidden_delta": { "innovationLeader": false, "innovationTopic": "fallback_team", "innovationTeamTrust": 0, "innovationProgress": 3, "innovationStage": 2 }
         },
         "join_mature_check": {
           "type": "check",
@@ -120,13 +139,14 @@
           "title": "加入成熟队伍",
           "body": "你加入了一个已经成型的队伍，做'食堂拥挤预测'系统。队友经验丰富，指导老师也很负责。虽然你不是队长，但这是一个稳定的选择。",
           "delta": { "social": 5, "energy": -5 },
-          "hidden_delta": { "innovationLeader": false, "innovationTopic": "cafeteria_predict", "innovationTeamTrust": 15, "innovationProgress": 5 }
+          "hidden_delta": { "innovationLeader": false, "innovationTopic": "cafeteria_predict", "innovationTeamTrust": 15, "innovationProgress": 5, "innovationStage": 2 }
         },
         "join_mature_fail": {
           "type": "outcome",
           "title": "被拒了",
           "body": "你想加入那支成熟队伍，但他们说已经满员了。你只好另做打算。",
-          "delta": { "san": 3, "energy": -3 }
+          "delta": { "san": 3, "energy": -3 },
+          "hidden_delta": { "innovationTopic": "fallback_team", "innovationTeamTrust": -2, "innovationProgress": 3, "innovationStage": 2 }
         },
         "friends_team_check": {
           "type": "check",
@@ -142,26 +162,33 @@
           "title": "熟人组队",
           "body": "你拉了几个熟人，凑了一支队伍做'心理状态小助手'。虽然技术底子一般，但大家配合默契，气氛轻松。熟人做项目的好处是——不会坑你。",
           "delta": { "san": -5, "energy": -5 },
-          "hidden_delta": { "innovationTopic": "san_helper", "innovationTeamTrust": 5, "innovationProgress": 5 }
+          "hidden_delta": { "innovationTopic": "san_helper", "innovationTeamTrust": 5, "innovationProgress": 5, "innovationStage": 2 }
         },
         "friends_team_fail": {
           "type": "outcome",
           "title": "凑不够人",
           "body": "你想找熟人组队，但他们各自已经有了安排。你一时找不到合适的人。",
-          "delta": { "san": 8 }
+          "delta": { "san": 8 },
+          "hidden_delta": { "innovationTopic": "fallback_team", "innovationTeamTrust": -3, "innovationProgress": 2, "innovationStage": 2 }
         },
         "random_team": {
           "type": "outcome",
           "title": "随便凑队",
           "body": "你随便找了个还有空位的队伍加了进去。大家连题目都还没定，第一次开会时一群人面面相觑。这个开头不算好。",
           "delta": { "san": -2 },
-          "hidden_delta": { "innovationTopic": "undecided", "innovationTeamTrust": -10, "innovationProgress": -5 }
+          "hidden_delta": { "innovationTopic": "undecided", "innovationTeamTrust": -10, "innovationProgress": -5, "innovationStage": 2 }
         }
       }
     },
     {
       "id": "innovation_crisis",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": 2 },
+          { "kind": "stat", "stat": "innovationProgress", "op": ">=", "value": 5 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -199,14 +226,14 @@
           "title": "熬夜成果",
           "body": "你连续熬了两个通宵，硬是把核心功能跑通了。提交中期材料时虽然眼睛里全是血丝，但东西至少能用了。队友们看着你的黑眼圈，默默给你点了外卖。",
           "delta": { "academic": 10, "san": 15, "energy": -25 },
-          "hidden_delta": { "innovationProgress": 25, "lateNightLevel": 5, "healthIndex": -5, "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationProgress": 25, "lateNightLevel": 5, "healthIndex": -5, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "all_nighter_fail": {
           "type": "outcome",
           "title": "身体撑不住",
           "body": "你熬了半宿就撑不住了。代码写得稀烂，第二天反而要花更多时间返工。",
           "delta": { "san": 10, "energy": -20 },
-          "hidden_delta": { "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationProgress": 4, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "emergency_meeting_check": {
           "type": "check",
@@ -224,14 +251,14 @@
           "title": "重新分工",
           "body": "紧急语音会议开到了凌晨。大家把各自手头的问题摊开了说，最终重新分配了任务。虽然还是很难，但方向清晰了不少。",
           "delta": { "social": 5, "san": 8, "energy": -15 },
-          "hidden_delta": { "innovationTeamTrust": 12, "innovationProgress": 12 }
+          "hidden_delta": { "innovationTeamTrust": 12, "innovationProgress": 12, "innovationStage": 3 }
         },
         "emergency_meeting_fail": {
           "type": "outcome",
           "title": "会议跑偏",
           "body": "会议开了两个小时，变成了互相推诿责任的甩锅大会。问题没解决，气氛反而更差了。",
           "delta": { "san": 15, "energy": -12 },
-          "hidden_delta": { "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationTeamTrust": -5, "innovationProgress": 2, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "ask_advisor_check": {
           "type": "check",
@@ -250,13 +277,14 @@
           "title": "老师指路",
           "body": "指导老师听完你的描述，花了半小时给了几条关键建议。有些地方你之前钻了牛角尖，老师一句话就点通了。临走时老师说：'不要都自己扛。'",
           "delta": { "san": 5, "energy": -8 },
-          "hidden_delta": { "teacherTrust": 5, "innovationProgress": 10, "innovationDefenseScore": 5 }
+          "hidden_delta": { "teacherTrust": 5, "innovationProgress": 10, "innovationDefenseScore": 5, "innovationStage": 3 }
         },
         "ask_advisor_fail": {
           "type": "outcome",
           "title": "没找到老师",
           "body": "老师不在办公室。你又发了邮件，但短期内没有得到回复。",
-          "delta": { "san": 5, "energy": -5 }
+          "delta": { "san": 5, "energy": -5 },
+          "hidden_delta": { "innovationProgress": 2, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "ppt_package_check": {
           "type": "check",
@@ -274,27 +302,33 @@
           "title": "PPT救场",
           "body": "一份精美的PPT交了上去，中期检查竟然过了。虽然你知道实际进度远没有PPT上那么好看，但至少争取到了更多时间。",
           "delta": { "academic": 3, "san": 6, "energy": -10 },
-          "hidden_delta": { "innovationProgress": 8, "innovationDefenseScore": 3, "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationProgress": 8, "innovationDefenseScore": 3, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "ppt_package_fail": {
           "type": "outcome",
           "title": "PPT太假",
           "body": "你做的PPT可能太浮夸了，评审老师一眼就看出了问题。中期检查被严肃警告。",
           "delta": { "san": 12, "energy": -10 },
-          "hidden_delta": { "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationProgress": -5, "innovationDefenseScore": -3, "innovationCrisisCount": 1, "innovationStage": 3 }
         },
         "sleep_off": {
           "type": "outcome",
           "title": "先睡一觉",
           "body": "你把电脑一关，蒙头大睡。醒来时发现队友群里炸了锅——有人在疯狂补进度，有人在决定退出。你揉揉眼睛，世界还在转。",
           "delta": { "energy": 15, "san": -10 },
-          "hidden_delta": { "innovationProgress": -20, "innovationTeamTrust": -5, "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationProgress": -20, "innovationTeamTrust": -5, "innovationCrisisCount": 1, "innovationStage": 3 }
         }
       }
     },
     {
       "id": "innovation_defense_eve",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": 3 },
+          { "kind": "stat", "stat": "innovationProgress", "op": ">=", "value": 20 }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -332,14 +366,14 @@
           "title": "Demo就绪",
           "body": "你熬了一个通宵把Demo打磨到可以现场展示的水平。风险很大——如果明天出了任何bug，就会被评委当场看到。但你相信自己的准备。",
           "delta": { "san": 12, "energy": -30 },
-          "hidden_delta": { "innovationDemoReady": true, "innovationDemoMode": "live", "innovationProgress": 15, "lateNightLevel": 10, "healthIndex": -5 }
+          "hidden_delta": { "innovationDemoReady": true, "innovationDemoMode": "live", "innovationProgress": 15, "lateNightLevel": 10, "healthIndex": -5, "innovationStage": 4 }
         },
         "live_demo_fail": {
           "type": "outcome",
           "title": "体力不够",
           "body": "你太累了，实在打磨不动现场Demo。只好降级做了一版录制演示。",
           "delta": { "san": 5, "energy": -15 },
-          "hidden_delta": { "innovationDemoMode": "video" }
+          "hidden_delta": { "innovationDemoMode": "video", "innovationStage": 4 }
         },
         "video_check": {
           "type": "check",
@@ -357,13 +391,14 @@
           "title": "视频备好",
           "body": "你录制了一个稳定的演示视频，反复检查了三遍没有问题。虽然不如现场Demo惊艳，但至少不会翻车。稳妥也是一种策略。",
           "delta": { "san": 5, "energy": -15 },
-          "hidden_delta": { "innovationDemoReady": true, "innovationDemoMode": "video", "innovationDefenseScore": 8 }
+          "hidden_delta": { "innovationDemoReady": true, "innovationDemoMode": "video", "innovationDefenseScore": 8, "innovationStage": 4 }
         },
         "video_fail": {
           "type": "outcome",
           "title": "录制出问题",
           "body": "你想录制，但软件频频闪退。折腾到半夜也没录出一个完美的版本。",
-          "delta": { "san": 10, "energy": -15 }
+          "delta": { "san": 10, "energy": -15 },
+          "hidden_delta": { "innovationDemoMode": "safe", "innovationDefenseScore": -2, "innovationStage": 4 }
         },
         "teammate_speaker_check": {
           "type": "check",
@@ -381,13 +416,14 @@
           "title": "队友主讲",
           "body": "你让表达最流畅的队友担任主讲。他虽然有点紧张，但答应了。团队的信任度提升了——这说明你不是一个要揽所有功劳的人。",
           "delta": { "social": 3, "energy": -8 },
-          "hidden_delta": { "innovationSpeaker": "teammate", "innovationTeamTrust": 10 }
+          "hidden_delta": { "innovationSpeaker": "teammate", "innovationTeamTrust": 10, "innovationStage": 4 }
         },
         "teammate_speaker_fail": {
           "type": "outcome",
           "title": "没人愿意",
           "body": "你问了几个队友，没人愿意主讲。最后只剩下你了。",
-          "delta": { "san": 8 }
+          "delta": { "san": 8 },
+          "hidden_delta": { "innovationSpeaker": "player", "innovationTeamTrust": -3, "innovationStage": 4 }
         },
         "player_speaker_check": {
           "type": "check",
@@ -406,26 +442,39 @@
           "title": "亲自主讲",
           "body": "你开始逐页打磨答辩PPT，每个数据、每段逻辑都亲自过了一遍。虽然紧张，但当你真正理解项目时，讲解本身就是一种自信。",
           "delta": { "san": 15, "energy": -10 },
-          "hidden_delta": { "innovationSpeaker": "player", "innovationDefenseScore": 8 }
+          "hidden_delta": { "innovationSpeaker": "player", "innovationDefenseScore": 8, "innovationStage": 4 }
         },
         "player_speaker_fail": {
           "type": "outcome",
           "title": "太紧张了",
           "body": "你越想越紧张，PPT做到一半就开始发抖。最后只能草草收尾。",
-          "delta": { "san": 20, "energy": -10 }
+          "delta": { "san": 20, "energy": -10 },
+          "hidden_delta": { "innovationSpeaker": "player", "innovationDefenseScore": -5, "innovationStage": 4 }
         },
         "downgrade": {
           "type": "outcome",
           "title": "降级保守方案",
           "body": "你决定不求高分，只求通过。把演示方式改成图片+文字说明，PPT做得工整就行。虽然不出彩，但没有风险。",
           "delta": { "san": -10 },
-          "hidden_delta": { "innovationDemoMode": "safe", "innovationProgress": -5, "innovationDefenseScore": 2 }
+          "hidden_delta": { "innovationDemoMode": "safe", "innovationProgress": -5, "innovationDefenseScore": 2, "innovationStage": 4 }
         }
       }
     },
     {
       "id": "innovation_defense",
-      "trigger": { "type": "interaction", "action_id": "campus_square" },
+      "trigger": { "type": "interaction", "action_id": "campus_square", "once": true,
+        "conditions": [
+          { "kind": "stat", "stat": "innovationStage", "op": "eq", "value": 4 },
+          { "kind": "group", "require": "any", "conditions": [
+            { "kind": "stat", "stat": "innovationDemoMode", "op": "eq", "value": "live" },
+            { "kind": "stat", "stat": "innovationDemoMode", "op": "eq", "value": "video" },
+            { "kind": "stat", "stat": "innovationDemoMode", "op": "eq", "value": "safe" },
+            { "kind": "stat", "stat": "innovationSpeaker", "op": "eq", "value": "player" },
+            { "kind": "stat", "stat": "innovationSpeaker", "op": "eq", "value": "teammate" }
+          ] }
+        ],
+        "require": "all"
+      },
       "root": "intro",
       "steps": {
         "intro": {
@@ -464,13 +513,13 @@
           "title": "答辩流畅",
           "body": "你流畅地讲完了全部内容。评委点头的频率比你想的高。最后一个问题回答完毕后，一位评委说：'不错，看得出来你们真的理解这个项目。'",
           "delta": { "san": 8, "energy": -8 },
-          "hidden_delta": { "innovationDefenseScore": 18 }
+          "hidden_delta": { "innovationDefenseScore": 18, "innovationResult": "completed", "innovationStage": 5 }
         },
         "player_defense_fail": {
           "type": "outcome",
           "title": "答辩紧张",
           "body": "你站在讲台上大脑空白了几秒。虽然最终还是讲完了，但效果远不如你准备的。",
-          "delta": { "san": 15, "energy": -8 }
+          "hidden_delta": { "innovationResult": "pass", "innovationStage": 5 }
         },
         "teammate_defense_check": {
           "type": "check",
@@ -488,13 +537,13 @@
           "title": "完美配合",
           "body": "队友在前面讲得精彩，你在关键的技术细节上精准补充。评委对你们的配合赞不绝口：'团队协作也是评分的重要一项。'",
           "delta": { "social": 3, "energy": -6 },
-          "hidden_delta": { "innovationDefenseScore": 15, "innovationTeamTrust": 5 }
+          "hidden_delta": { "innovationDefenseScore": 15, "innovationTeamTrust": 5, "innovationResult": "completed", "innovationStage": 5 }
         },
         "teammate_defense_fail": {
           "type": "outcome",
           "title": "配合不佳",
           "body": "队友讲的时候你插不上嘴，你的补充时机也不对。整体效果打了折扣。",
-          "delta": { "san": 5, "energy": -6 }
+          "hidden_delta": { "innovationResult": "pass", "innovationStage": 5 }
         },
         "demo_defense_check": {
           "type": "check",
@@ -513,14 +562,14 @@
           "title": "Demo完美运行",
           "body": "你点击运行——一次成功。Demo流畅地展示了全部核心功能。评委们纷纷凑近了看。现场Demo的效果远超PPT，整个团队都兴奋了。",
           "delta": { "san": 10, "energy": -8 },
-          "hidden_delta": { "innovationDefenseScore": 25 }
+          "hidden_delta": { "innovationDefenseScore": 25, "innovationResult": "excellent", "innovationStage": 5 }
         },
         "demo_defense_fail": {
           "type": "outcome",
           "title": "Demo翻车",
           "body": "现场Demo出了bug——屏幕卡住不动了。会议室里一片安静。队友们齐刷刷低下了头。你听到了这辈子最长的一分钟。",
           "delta": { "san": 20, "energy": -8 },
-          "hidden_delta": { "innovationDefenseScore": -20, "innovationCrisisCount": 1 }
+          "hidden_delta": { "innovationDefenseScore": -20, "innovationCrisisCount": 1, "innovationResult": "failed", "innovationStage": 5 }
         },
         "answer_tough_check": {
           "type": "check",
@@ -538,13 +587,13 @@
           "title": "正面回应",
           "body": "你没有被问题吓倒，用数据和逻辑正面回应了质疑。评委听完后竟然点了点头：'这个解释我接受。' 全场最危险的时刻被你化解了。",
           "delta": { "academic": 3, "san": 5, "energy": -5 },
-          "hidden_delta": { "innovationDefenseScore": 12 }
+          "hidden_delta": { "innovationDefenseScore": 12, "innovationResult": "completed", "innovationStage": 5 }
         },
         "answer_tough_fail": {
           "type": "outcome",
           "title": "答不上来",
           "body": "你被问住了。支吾了半天也没给出满意的回答。评委在纸上记了什么。",
-          "delta": { "san": 12, "energy": -5 }
+          "hidden_delta": { "innovationResult": "pass", "innovationStage": 5 }
         },
         "fix_live_check": {
           "type": "check",
@@ -562,20 +611,20 @@
           "title": "临场救场",
           "body": "投影仪黑了，你没有慌。'没关系，我可以直接讲——项目的内容都在我脑子里。' 你脱稿讲了十分钟，反而比念PPT更打动人。评委最后说了句：'应变能力很强。'",
           "delta": { "social": 3, "san": 8 },
-          "hidden_delta": { "innovationDefenseScore": 8 }
+          "hidden_delta": { "innovationDefenseScore": 8, "innovationResult": "firefighter", "innovationStage": 5 }
         },
         "fix_live_fail": {
           "type": "outcome",
           "title": "乱了阵脚",
           "body": "故障让你彻底慌了。后面的内容讲得前言不搭后语。",
-          "delta": { "san": 15 }
+          "hidden_delta": { "innovationResult": "failed", "innovationStage": 5 }
         },
         "safe_ppt": {
           "type": "outcome",
           "title": "保守读PPT",
           "body": "你按部就班地读完了PPT上的每一点。评委没有特别的表情。虽然没有出彩的地方，但也没有失误。有些时候，平安就是一种胜利。",
           "delta": { "san": 3, "energy": -3 },
-          "hidden_delta": { "innovationDefenseScore": 3 }
+          "hidden_delta": { "innovationDefenseScore": 3, "innovationResult": "pass", "innovationStage": 5 }
         }
       }
     }

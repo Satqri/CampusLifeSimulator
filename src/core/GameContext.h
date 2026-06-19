@@ -17,6 +17,7 @@
 #include "map/LibraryInterior.h"
 #include "map/ClassroomInterior.h"
 #include "map/CafeteriaInterior.h"
+#include "map/ConvenienceStoreInterior.h"
 #include <array>
 #include <functional>
 #include <memory>
@@ -41,6 +42,7 @@ struct GameContext {
     LibraryInterior* libraryMap;
     ClassroomInterior* classroomMap;
     CafeteriaInterior* cafeteriaMap;
+    ConvenienceStoreInterior* storeMap;
 
     // ── UI 状态 ──────────────────────────────────────────────
     TimeSystem& timeSystem;

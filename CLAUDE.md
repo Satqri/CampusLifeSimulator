@@ -4,7 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run
 
-### vcpkg（推荐）
+### Build Priority
+
+Default to the repository-provided Windows runner when working on Windows:
+
+```powershell
+.\run-game.bat mingw
+```
+
+Use this order unless the user asks for a specific toolchain:
+
+1. Windows local development: `.\run-game.bat mingw`
+2. Windows Visual Studio generator: `.\run-game.bat vs`
+3. Cross-platform / CI / clean setup: vcpkg preset
+4. macOS: Homebrew preset
+5. MSYS2 UCRT64: last-resort fallback only
+
+Do not default to the MSYS2 UCRT64 shell route. Use MSYS2 only if the runner and vcpkg route are unavailable, or if the user explicitly asks for MSYS2.
+
+### Windows runner（default on Windows）
+
+```powershell
+.\run-game.bat mingw
+```
+
+### vcpkg（推荐跨平台）
 
 ```bash
 cmake --preset vcpkg -S . -B build && cmake --build build
@@ -20,7 +44,7 @@ brew install sfml nlohmann-json curl
 cmake --preset homebrew -S . -B build && cmake --build build
 ```
 
-### MSYS2 UCRT64（Windows 备选）
+### MSYS2 UCRT64（last resort）
 
 ```bash
 pacman -S --needed mingw-w64-ucrt-x86_64-{gcc,cmake,ninja,sfml,nlohmann-json,curl}
