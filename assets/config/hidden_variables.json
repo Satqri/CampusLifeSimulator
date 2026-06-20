@@ -1,0 +1,234 @@
+{
+  "variables": {
+    "friendStage": {
+      "type": "int",
+      "initial": 0,
+      "min": -1,
+      "max": 4,
+      "merge": "assign"
+    },
+    "innovationStage": {
+      "type": "int",
+      "initial": 0,
+      "min": -1,
+      "max": 5,
+      "merge": "assign"
+    },
+    "clubStage": {
+      "type": "int",
+      "initial": 0,
+      "min": -1,
+      "max": 4,
+      "merge": "assign"
+    },
+
+    "clubType":             { "type": "string", "initial": "none" },
+    "innovationResult":     { "type": "string", "initial": "none" },
+    "innovationTopic":      { "type": "string", "initial": "none" },
+    "innovationDemoMode":   { "type": "string", "initial": "none" },
+    "innovationSpeaker":    { "type": "string", "initial": "none" },
+
+    "innovationJoined":     { "type": "bool", "initial": false },
+    "innovationIntel":      { "type": "bool", "initial": false },
+    "innovationLeader":     { "type": "bool", "initial": false },
+    "innovationDemoReady":  { "type": "bool", "initial": false },
+    "sharedNotes":          { "type": "bool", "initial": false },
+    "owedFavor":            { "type": "bool", "initial": false },
+    "clubShowcaseSuccess":  { "type": "bool", "initial": false },
+    "researchUnlocked":     { "type": "bool", "initial": false },
+    "logicUnlocked":        { "type": "bool", "initial": false },
+    "expressionUnlocked":   { "type": "bool", "initial": false },
+    "campusIntelUnlocked":  { "type": "bool", "initial": false },
+
+    "healthIndex": {
+      "type": "int",
+      "initial": 100,
+      "min": 0,
+      "max": 130,
+      "scaling": "benefit"
+    },
+    "teacherTrust": {
+      "type": "int",
+      "min": -20,
+      "max": 40,
+      "scaling": "benefit"
+    },
+    "friendBond": {
+      "type": "int",
+      "min": -10,
+      "max": 20,
+      "scaling": "benefit"
+    },
+    "storeTrust": {
+      "type": "int",
+      "min": -10,
+      "max": 15,
+      "scaling": "benefit"
+    },
+    "clubContribution": {
+      "type": "int",
+      "min": -10,
+      "max": 25,
+      "scaling": "benefit"
+    },
+    "clubRelation": {
+      "type": "int",
+      "min": -10,
+      "max": 25,
+      "scaling": "benefit"
+    },
+    "clubShowcaseScore": {
+      "type": "int",
+      "min": -20,
+      "max": 40,
+      "scaling": "benefit"
+    },
+    "innovationProgress": {
+      "type": "int",
+      "min": 0,
+      "max": 100,
+      "scaling": "benefit"
+    },
+    "innovationTeamTrust": {
+      "type": "int",
+      "min": -20,
+      "max": 60,
+      "scaling": "benefit"
+    },
+    "innovationDefenseScore": {
+      "type": "int",
+      "min": -30,
+      "max": 100,
+      "scaling": "benefit"
+    },
+
+    "lateNightLevel": {
+      "type": "int",
+      "min": 0,
+      "max": 60,
+      "scaling": "burden"
+    },
+    "gameAddiction": {
+      "type": "int",
+      "min": 0,
+      "max": 60,
+      "scaling": "burden"
+    },
+
+    "lowEnergyDays": {
+      "type": "int",
+      "min": 0,
+      "max": 14
+    },
+    "lowHealthDays": {
+      "type": "int",
+      "min": 0,
+      "max": 14
+    },
+
+    "consecutiveNoSleepDays": {
+      "type": "int",
+      "min": 0,
+      "max": 14,
+      "merge": "assign"
+    },
+    "lastSleepMinutes": {
+      "type": "int",
+      "initial": 450,
+      "min": 0,
+      "max": 720,
+      "merge": "assign"
+    },
+    "alarmSleepMinutes": {
+      "type": "int",
+      "initial": 450,
+      "min": 0,
+      "max": 720,
+      "merge": "assign"
+    },
+    "lastSleepDay": {
+      "type": "int",
+      "min": 0,
+      "max": 14,
+      "merge": "assign"
+    },
+    "dailyExerciseDay": {
+      "type": "int",
+      "min": 0,
+      "max": 14,
+      "merge": "assign"
+    },
+    "dailyExerciseCount": {
+      "type": "int",
+      "min": 0,
+      "max": 12,
+      "merge": "assign"
+    },
+    "lastExerciseAbsoluteMinute": {
+      "type": "int",
+      "initial": -999999,
+      "min": -999999,
+      "max": 999999,
+      "merge": "assign"
+    },
+
+    "activityStreak": {
+      "type": "int",
+      "min": 0,
+      "max": 99
+    },
+
+    "lastActivityId": {
+      "type": "string",
+      "initial": "none"
+    },
+
+    "friendHelpCount":          { "type": "int" },
+    "friendReviewCount":        { "type": "int" },
+    "friendRefuseCount":        { "type": "int" },
+    "friendRollCallHelpCount":  { "type": "int" },
+    "classAttendCount":         { "type": "int" },
+    "skipClassCount":           { "type": "int" },
+    "rollCallSavedCount":       { "type": "int" },
+    "absencePenaltyCount":      { "type": "int" },
+    "lateCount":                { "type": "int" },
+    "returnClassCount":         { "type": "int" },
+    "clubActivityCount":        { "type": "int" },
+    "innovationCrisisCount":    { "type": "int" },
+    "exerciseCount":            { "type": "int" },
+    "partTimeCount":            { "type": "int" },
+    "storeNightShiftCount":     { "type": "int" },
+    "mealCount":                { "type": "int" },
+    "libraryVisitCount":        { "type": "int" },
+    "socialAwkwardCount":       { "type": "int" }
+  },
+
+  "patterns": [
+    {
+      "pattern": "prefix_suffix",
+      "prefix": "_event_",
+      "suffix": "_count",
+      "min": 0,
+      "max": 99,
+      "merge": "accumulate",
+      "scaling": "none"
+    },
+    {
+      "pattern": "prefix_suffix",
+      "prefix": "_event_",
+      "suffix": "_last_day",
+      "min": -1,
+      "max": 14,
+      "merge": "assign",
+      "scaling": "none"
+    },
+    {
+      "pattern": "suffix",
+      "suffix": "Count",
+      "min": 0,
+      "max": 99,
+      "merge": "accumulate",
+      "scaling": "none"
+    }
+  ]
+}

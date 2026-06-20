@@ -1,6 +1,7 @@
 #ifndef CLS_CORE_CHARACTERSTATE_H
 #define CLS_CORE_CHARACTERSTATE_H
 
+#include "core/HiddenVariableConfig.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <string>
@@ -33,63 +34,35 @@ inline Attributes defaultPlayerAttributes() {
     };
 }
 
-/**
- * @brief 隐藏变量类型 — 存储不影响六维属性的叙事累积状态
- *
- * 支持 int / bool / string 三种值类型，用于结局判定和条件分支。
- * 合并规则：数值累加（int），布尔/字符串覆盖。
- *
- * 常用 key（详见 events/数据说明.md）:
- *   int:  teacherTrust, friendBond, innovationProgress, lateNightLevel, ...
- *   bool: owedFavor, innovationJoined, sharedNotes, ...
- *   str:  clubType, innovationTopic, innovationDemoMode, ...
- */
-using HiddenMap = nlohmann::json;
+// ── 全局配置访问 ──────────────────────────────────────────
+
+namespace cls_hidden_detail {
+    inline const HiddenVariableConfig* gHiddenConfig = nullptr;
+}
+
+/** @brief 初始化隐藏变量配置（main() 启动时调用一次） */
+inline void initHiddenVariableConfig(const HiddenVariableConfig& config) {
+    cls_hidden_detail::gHiddenConfig = &config;
+}
+
+/** @brief 获取隐藏变量配置（内部使用） */
+inline const HiddenVariableConfig& getHiddenConfig() {
+    return *cls_hidden_detail::gHiddenConfig;
+}
+
+/** @brief 用配置中的初始值初始化 HiddenMap */
+inline void initializeHiddenState(HiddenMap& target) {
+    cls_hidden_detail::gHiddenConfig->initialize(target);
+}
+
+// ── 基本查询（委托到 JSON 配置）──────────────────────────
 
 inline bool isHiddenAssignmentKey(const std::string& key) {
-    if (key == "friendStage" || key == "clubStage" || key == "innovationStage")
-        return true;
-    if (key == "lastSleepMinutes" || key == "alarmSleepMinutes"
-        || key == "consecutiveNoSleepDays" || key == "lastSleepDay"
-        || key == "dailyExerciseDay" || key == "dailyExerciseCount"
-        || key == "lastExerciseAbsoluteMinute") {
-        return true;
-    }
-    if (key.rfind("_event_", 0) == 0 && key.size() >= 9
-        && key.ends_with("_last_day"))
-        return true;
-    return false;
+    return getHiddenConfig().isAssignment(key);
 }
 
 inline int clampHiddenInteger(const std::string& key, int value) {
-    if (key == "healthIndex") return std::clamp(value, 0, 130);
-    if (key == "innovationProgress") return std::clamp(value, 0, 100);
-    if (key == "innovationDefenseScore") return std::clamp(value, -30, 100);
-    if (key == "innovationTeamTrust") return std::clamp(value, -20, 60);
-    if (key == "teacherTrust") return std::clamp(value, -20, 40);
-    if (key == "friendBond") return std::clamp(value, -10, 20);
-    if (key == "storeTrust") return std::clamp(value, -10, 15);
-    if (key == "clubContribution" || key == "clubRelation") return std::clamp(value, -10, 25);
-    if (key == "clubShowcaseScore") return std::clamp(value, -20, 40);
-    if (key == "lateNightLevel" || key == "gameAddiction") return std::clamp(value, 0, 60);
-    if (key == "lowEnergyDays" || key == "lowHealthDays") return std::clamp(value, 0, 14);
-    if (key == "consecutiveNoSleepDays") return std::clamp(value, 0, 14);
-    if (key == "lastSleepMinutes" || key == "alarmSleepMinutes") return std::clamp(value, 0, 12 * 60);
-    if (key == "lastSleepDay" || key == "dailyExerciseDay") return std::clamp(value, 0, 14);
-    if (key == "dailyExerciseCount") return std::clamp(value, 0, 12);
-    if (key == "lastExerciseAbsoluteMinute") return std::clamp(value, -999999, 999999);
-    if (key == "activityStreak") return std::clamp(value, 0, 99);
-    if (key == "friendStage" || key == "clubStage") return std::clamp(value, -1, 4);
-    if (key == "innovationStage") return std::clamp(value, -1, 5);
-    if (key.rfind("_event_", 0) == 0 && key.ends_with("_count")) return std::clamp(value, 0, 99);
-    if (key.rfind("_event_", 0) == 0 && key.ends_with("_last_day")) return std::clamp(value, -1, 14);
-
-    static const std::string countSuffix = "Count";
-    if (key.size() >= countSuffix.size()
-        && key.compare(key.size() - countSuffix.size(), countSuffix.size(), countSuffix) == 0) {
-        return std::clamp(value, 0, 99);
-    }
-    return value;
+    return getHiddenConfig().clamp(key, value);
 }
 
 inline void normalizeHidden(HiddenMap& target) {
@@ -128,6 +101,114 @@ inline void syncVisibleHealthFromHidden(Attributes& attributes, HiddenMap& hidde
     }
     normalizeHidden(hidden);
     attributes.health = std::clamp(hidden.value("healthIndex", 100), 0, 100);
+}
+
+// ── 重复活动缩放 ───────────────────────────────────────
+
+inline int repeatedBenefitPercent(int streak) {
+    return std::max(40, 100 - (streak - 1) * 20);
+}
+
+inline int repeatedPenaltyPercent(int streak) {
+    return std::min(200, 100 + (streak - 1) * 25);
+}
+
+inline int scalePositiveBenefit(int value, int streak) {
+    if (value <= 0 || streak <= 1) return value;
+    return (value * repeatedBenefitPercent(streak) + 50) / 100;
+}
+
+inline int scalePenaltyMagnitude(int value, int streak) {
+    if (value <= 0 || streak <= 1) return value;
+    return (value * repeatedPenaltyPercent(streak) + 99) / 100;
+}
+
+inline int scaleNormalDelta(int value, int streak) {
+    if (value > 0) return scalePositiveBenefit(value, streak);
+    if (value < 0) return -scalePenaltyMagnitude(-value, streak);
+    return 0;
+}
+
+inline int scaleBadAccumulationDelta(int value, int streak) {
+    if (value > 0) return scalePenaltyMagnitude(value, streak);
+    if (value < 0) return -scalePositiveBenefit(-value, streak);
+    return 0;
+}
+
+inline bool isScalableHiddenBenefit(const std::string& key) {
+    return getHiddenConfig().scalingCategory(key) == HiddenVarScaling::Benefit;
+}
+
+inline bool isScalableHiddenBurden(const std::string& key) {
+    return getHiddenConfig().scalingCategory(key) == HiddenVarScaling::Burden;
+}
+
+inline Attributes adjustAttributesForRepetition(const Attributes& delta, int streak) {
+    if (streak <= 1) return delta;
+
+    Attributes adjusted = delta;
+    adjusted.energy = scaleNormalDelta(delta.energy, streak);
+    adjusted.health = scaleNormalDelta(delta.health, streak);
+    adjusted.gold = delta.gold > 0 ? scalePositiveBenefit(delta.gold, streak) : delta.gold;
+    adjusted.san = scaleNormalDelta(delta.san, streak);
+    adjusted.academic = scaleNormalDelta(delta.academic, streak);
+    adjusted.social = scaleNormalDelta(delta.social, streak);
+    return adjusted;
+}
+
+inline HiddenMap adjustHiddenForRepetition(const HiddenMap& hiddenDelta, int streak) {
+    if (streak <= 1 || !hiddenDelta.is_object()) return hiddenDelta;
+
+    HiddenMap adjusted = hiddenDelta;
+    for (auto it = adjusted.begin(); it != adjusted.end(); ++it) {
+        if (!it.value().is_number_integer()) continue;
+
+        const std::string key = it.key();
+        const int value = it.value().get<int>();
+        if (isScalableHiddenBenefit(key)) {
+            it.value() = scaleNormalDelta(value, streak);
+        } else if (isScalableHiddenBurden(key)) {
+            it.value() = scaleBadAccumulationDelta(value, streak);
+        }
+    }
+    return adjusted;
+}
+
+// ── 时长缩放 ──────────────────────────────────────────
+
+inline int scaledIntegerDelta(int value, int actualMinutes, int baseMinutes) {
+    if (value == 0 || actualMinutes <= 0 || baseMinutes <= 0) return 0;
+    const int sign = value < 0 ? -1 : 1;
+    const int magnitude = std::abs(value);
+    return sign * ((magnitude * actualMinutes + baseMinutes / 2) / baseMinutes);
+}
+
+inline Attributes scaleAttributesByDuration(const Attributes& delta, int actualMinutes, int baseMinutes) {
+    Attributes scaled = delta;
+    scaled.energy = scaledIntegerDelta(delta.energy, actualMinutes, baseMinutes);
+    scaled.health = scaledIntegerDelta(delta.health, actualMinutes, baseMinutes);
+    scaled.gold = scaledIntegerDelta(delta.gold, actualMinutes, baseMinutes);
+    scaled.san = scaledIntegerDelta(delta.san, actualMinutes, baseMinutes);
+    scaled.academic = scaledIntegerDelta(delta.academic, actualMinutes, baseMinutes);
+    scaled.social = scaledIntegerDelta(delta.social, actualMinutes, baseMinutes);
+    return scaled;
+}
+
+inline bool isDurationScaledHiddenKey(const std::string& key) {
+    auto cat = getHiddenConfig().scalingCategory(key);
+    return cat == HiddenVarScaling::Benefit || cat == HiddenVarScaling::Burden;
+}
+
+inline HiddenMap scaleHiddenByDuration(const HiddenMap& hiddenDelta, int actualMinutes, int baseMinutes) {
+    if (!hiddenDelta.is_object() || actualMinutes <= 0 || baseMinutes <= 0) return hiddenDelta;
+
+    HiddenMap scaled = hiddenDelta;
+    for (auto it = scaled.begin(); it != scaled.end(); ++it) {
+        if (it.value().is_number_integer() && isDurationScaledHiddenKey(it.key())) {
+            it.value() = scaledIntegerDelta(it.value().get<int>(), actualMinutes, baseMinutes);
+        }
+    }
+    return scaled;
 }
 
 #endif

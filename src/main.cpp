@@ -143,119 +143,6 @@ int commuteMinutes(CampusPlace from, CampusPlace to) {
     return 10;
 }
 
-int repeatedBenefitPercent(int streak) {
-    return std::max(40, 100 - (streak - 1) * 20);
-}
-
-int repeatedPenaltyPercent(int streak) {
-    return std::min(200, 100 + (streak - 1) * 25);
-}
-
-int scalePositiveBenefit(int value, int streak) {
-    if (value <= 0 || streak <= 1) return value;
-    return (value * repeatedBenefitPercent(streak) + 50) / 100;
-}
-
-int scalePenaltyMagnitude(int value, int streak) {
-    if (value <= 0 || streak <= 1) return value;
-    return (value * repeatedPenaltyPercent(streak) + 99) / 100;
-}
-
-int scaleNormalDelta(int value, int streak) {
-    if (value > 0) return scalePositiveBenefit(value, streak);
-    if (value < 0) return -scalePenaltyMagnitude(-value, streak);
-    return 0;
-}
-
-int scaleBadAccumulationDelta(int value, int streak) {
-    if (value > 0) return scalePenaltyMagnitude(value, streak);
-    if (value < 0) return -scalePositiveBenefit(-value, streak);
-    return 0;
-}
-
-Attributes adjustAttributesForRepetition(const Attributes& delta, int streak) {
-    if (streak <= 1) return delta;
-
-    Attributes adjusted = delta;
-    adjusted.energy = scaleNormalDelta(delta.energy, streak);
-    adjusted.health = scaleNormalDelta(delta.health, streak);
-    adjusted.gold = delta.gold > 0 ? scalePositiveBenefit(delta.gold, streak) : delta.gold;
-    adjusted.san = scaleNormalDelta(delta.san, streak);
-    adjusted.academic = scaleNormalDelta(delta.academic, streak);
-    adjusted.social = scaleNormalDelta(delta.social, streak);
-    return adjusted;
-}
-
-bool isScalableHiddenBenefit(const std::string& key) {
-    return key == "healthIndex"
-        || key == "teacherTrust"
-        || key == "friendBond"
-        || key == "storeTrust"
-        || key == "clubContribution"
-        || key == "clubRelation"
-        || key == "clubShowcaseScore"
-        || key == "innovationProgress"
-        || key == "innovationTeamTrust"
-        || key == "innovationDefenseScore";
-}
-
-bool isScalableHiddenBurden(const std::string& key) {
-    return key == "lateNightLevel"
-        || key == "gameAddiction";
-}
-
-HiddenMap adjustHiddenForRepetition(const HiddenMap& hiddenDelta, int streak) {
-    if (streak <= 1 || !hiddenDelta.is_object()) return hiddenDelta;
-
-    HiddenMap adjusted = hiddenDelta;
-    for (auto it = adjusted.begin(); it != adjusted.end(); ++it) {
-        if (!it.value().is_number_integer()) continue;
-
-        const std::string key = it.key();
-        const int value = it.value().get<int>();
-        if (isScalableHiddenBenefit(key)) {
-            it.value() = scaleNormalDelta(value, streak);
-        } else if (isScalableHiddenBurden(key)) {
-            it.value() = scaleBadAccumulationDelta(value, streak);
-        }
-    }
-    return adjusted;
-}
-
-int scaledIntegerDelta(int value, int actualMinutes, int baseMinutes) {
-    if (value == 0 || actualMinutes <= 0 || baseMinutes <= 0) return 0;
-    const int sign = value < 0 ? -1 : 1;
-    const int magnitude = std::abs(value);
-    return sign * ((magnitude * actualMinutes + baseMinutes / 2) / baseMinutes);
-}
-
-Attributes scaleAttributesByDuration(const Attributes& delta, int actualMinutes, int baseMinutes) {
-    Attributes scaled = delta;
-    scaled.energy = scaledIntegerDelta(delta.energy, actualMinutes, baseMinutes);
-    scaled.health = scaledIntegerDelta(delta.health, actualMinutes, baseMinutes);
-    scaled.gold = scaledIntegerDelta(delta.gold, actualMinutes, baseMinutes);
-    scaled.san = scaledIntegerDelta(delta.san, actualMinutes, baseMinutes);
-    scaled.academic = scaledIntegerDelta(delta.academic, actualMinutes, baseMinutes);
-    scaled.social = scaledIntegerDelta(delta.social, actualMinutes, baseMinutes);
-    return scaled;
-}
-
-bool isDurationScaledHiddenKey(const std::string& key) {
-    return isScalableHiddenBenefit(key) || isScalableHiddenBurden(key);
-}
-
-HiddenMap scaleHiddenByDuration(const HiddenMap& hiddenDelta, int actualMinutes, int baseMinutes) {
-    if (!hiddenDelta.is_object() || actualMinutes <= 0 || baseMinutes <= 0) return hiddenDelta;
-
-    HiddenMap scaled = hiddenDelta;
-    for (auto it = scaled.begin(); it != scaled.end(); ++it) {
-        if (it.value().is_number_integer() && isDurationScaledHiddenKey(it.key())) {
-            it.value() = scaledIntegerDelta(it.value().get<int>(), actualMinutes, baseMinutes);
-        }
-    }
-    return scaled;
-}
-
 std::string formatClockMinute(int minuteOfDay) {
     const int minute = ((minuteOfDay % (24 * 60)) + (24 * 60)) % (24 * 60);
     std::ostringstream ss;
@@ -413,6 +300,14 @@ int main() {
 #endif
     cls::clampSettings(gameSettings);
     cls::setLanguage(gameSettings.language);
+
+    // ── 隐藏变量配置 ──────────────────────────────────────────
+    HiddenVariableConfig hiddenConfig;
+    if (!hiddenConfig.loadFromFile(cls::resolveAssetPath("assets/config/hidden_variables.json"))) {
+        std::cerr << "[HiddenVars] Failed to load hidden_variables.json" << std::endl;
+        return 1;
+    }
+    initHiddenVariableConfig(hiddenConfig);
 
     // ── 窗口 ────────────────────────────────────────────────
     const auto& initialWindowSize = cls::windowScalePresets()[gameSettings.windowScaleIndex];
@@ -611,71 +506,7 @@ int main() {
 
     Player player(480.0f, 280.0f);
     player.setName("Protagonist");
-    auto initializeHiddenState = [&player]() {
-        auto& hidden = player.getHidden();
-        hidden = HiddenMap::object();
-        hidden["friendStage"] = 0;
-        hidden["innovationStage"] = 0;
-        hidden["clubStage"] = 0;
-        hidden["clubType"] = "none";
-        hidden["innovationResult"] = "none";
-        hidden["innovationTopic"] = "none";
-        hidden["innovationDemoMode"] = "none";
-        hidden["innovationSpeaker"] = "none";
-        hidden["innovationJoined"] = false;
-        hidden["innovationIntel"] = false;
-        hidden["innovationLeader"] = false;
-        hidden["innovationDemoReady"] = false;
-        hidden["sharedNotes"] = false;
-        hidden["owedFavor"] = false;
-        hidden["teacherTrust"] = 0;
-        hidden["friendBond"] = 0;
-        hidden["friendHelpCount"] = 0;
-        hidden["friendReviewCount"] = 0;
-        hidden["friendRefuseCount"] = 0;
-        hidden["friendRollCallHelpCount"] = 0;
-        hidden["classAttendCount"] = 0;
-        hidden["skipClassCount"] = 0;
-        hidden["rollCallSavedCount"] = 0;
-        hidden["absencePenaltyCount"] = 0;
-        hidden["lateCount"] = 0;
-        hidden["returnClassCount"] = 0;
-        hidden["clubActivityCount"] = 0;
-        hidden["clubContribution"] = 0;
-        hidden["clubRelation"] = 0;
-        hidden["clubShowcaseScore"] = 0;
-        hidden["clubShowcaseSuccess"] = false;
-        hidden["innovationProgress"] = 0;
-        hidden["innovationTeamTrust"] = 0;
-        hidden["innovationDefenseScore"] = 0;
-        hidden["innovationCrisisCount"] = 0;
-        hidden["healthIndex"] = 100;
-        hidden["lowEnergyDays"] = 0;
-        hidden["lowHealthDays"] = 0;
-        hidden[kLastActivityIdKey] = "none";
-        hidden[kActivityStreakKey] = 0;
-        hidden["lateNightLevel"] = 0;
-        hidden["lastSleepMinutes"] = kDefaultSleepMinutes;
-        hidden["alarmSleepMinutes"] = kDefaultSleepMinutes;
-        hidden["consecutiveNoSleepDays"] = 0;
-        hidden["lastSleepDay"] = 0;
-        hidden["exerciseCount"] = 0;
-        hidden["dailyExerciseDay"] = 0;
-        hidden["dailyExerciseCount"] = 0;
-        hidden["lastExerciseAbsoluteMinute"] = -999999;
-        hidden["partTimeCount"] = 0;
-        hidden["storeNightShiftCount"] = 0;
-        hidden["mealCount"] = 0;
-        hidden["libraryVisitCount"] = 0;
-        hidden["gameAddiction"] = 0;
-        hidden["storeTrust"] = 0;
-        hidden["socialAwkwardCount"] = 0;
-        hidden["researchUnlocked"] = false;
-        hidden["logicUnlocked"] = false;
-        hidden["expressionUnlocked"] = false;
-        hidden["campusIntelUnlocked"] = false;
-    };
-    initializeHiddenState();
+    initializeHiddenState(player.getHidden());
     CampusPlace currentPlace = CampusPlace::Campus;
     CampusPlace pendingPlace = CampusPlace::Campus;
     sf::Vector2f pendingSpawnPosition(480.0f, 276.0f);
@@ -1315,7 +1146,7 @@ int main() {
                     currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
                     timeSystem = TimeSystem();
-                    initializeHiddenState();
+                    initializeHiddenState(player.getHidden());
                     applyDifficulty(player, selectedDifficulty);
                     syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
                     difficultyApplied = true;
