@@ -393,7 +393,7 @@ std::vector<DebugEventInfo> EventRunner::debugEvents(GameContext& ctx) {
         } else if (trigger.type == EventTrigger::TIME_SCHEDULE) {
             if (trigger.method == "crossed_class_time") {
                 info.currentContext = ctx.timeSystem.shouldForceClass()
-                    || ctx.timeSystem.getMinuteOfDay() == TimeSystem::kClassMinute;
+                    || ctx.timeSystem.getMinuteOfDay() == ctx.timeSystem.getRollCallMinute();
             } else {
                 info.currentContext = true;
             }
@@ -659,7 +659,7 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
         const auto& tr = def.trigger;
         if (tr.type == EventTrigger::TIME_SCHEDULE) {
             if (tr.method == "crossed_class_time") {
-                if (!ctx.timeSystem.crossedClassTime(previousMinute)) continue;
+                if (!ctx.timeSystem.crossedRollCallTime(previousMinute)) continue;
                 if (!tr.conditions.empty() && !evaluateConditions(tr.conditions, tr.requireMode, ctx)) continue;
 
                 if (id == "class_attendance") {
@@ -671,7 +671,7 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
                 if (!passesTriggerGate(def, ctx, mRng))
                     continue;
 
-                ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+                ctx.timeSystem.setTimeAbsolute(ctx.timeSystem.getRollCallMinute());
                 ctx.timeSystem.markClassPrompted();
                 ctx.activityNotice.clear();
                 startEvent(id, ctx);
@@ -686,18 +686,14 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
             auto& def = it->second;
             if (passesTriggerGate(def, ctx, mRng)) {
                 if (previousPlace == CampusPlace::Classroom) {
-                    ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+                    ctx.timeSystem.setTimeAbsolute(ctx.timeSystem.getRollCallMinute());
                     ctx.timeSystem.markClassPrompted();
-                    ctx.currentPlace = CampusPlace::Classroom;
-                    ctx.currentMap = ctx.classroomMap;
-                    ctx.player.setPosition(480.0f, 276.0f);
-                    ctx.player.stopMovement();
                     ctx.activityNotice.clear();
                     startEvent(classAttendanceId, ctx);
                     return true;
                 }
 
-                ctx.timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+                ctx.timeSystem.setTimeAbsolute(ctx.timeSystem.getRollCallMinute());
                 ctx.timeSystem.markClassPrompted();
                 ctx.activityNotice.clear();
                 startEvent(classAttendanceId, ctx);

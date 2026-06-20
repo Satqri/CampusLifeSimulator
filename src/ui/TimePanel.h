@@ -14,12 +14,17 @@ class TimePanel : public UIComponent {
 public:
     explicit TimePanel(sf::Font& font);
     void setTimeSystem(const TimeSystem* time);
+    bool handleClick(sf::Vector2f point);
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
 
 private:
+    sf::FloatRect collapsedBounds() const;
+    sf::FloatRect expandedBounds() const;
+
     sf::Font& mFont;
     const TimeSystem* mTimeSystem = nullptr;
+    bool mExpanded = false;
 };
 
 #endif

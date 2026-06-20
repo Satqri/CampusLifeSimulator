@@ -29,7 +29,7 @@
 "trigger": { "type": "time_schedule", "method": "crossed_class_time" }
 ```
 
-当游戏时间跨过上课时间点时触发。
+每天会在 08:50-12:15 之间按 10 分钟精度生成一个点名时间点；当游戏时间跨过这个点且玩家不在教室时触发。
 
 ### 交互触发
 
@@ -97,7 +97,7 @@
   "type": "random_check",
   "probability": 45,
   "title": "点名中...",
-  "body": "10:20，老师开始点名。",
+  "body": "上课中途，老师开始点名。",
   "success": "caught",
   "failure": "safe",
   "time_advance": 90,
@@ -198,7 +198,7 @@ flag 取值: `is_midterm_day`（后续可扩展）
 事件流程:
   上课时间到 → 检测位置
     ├─ 在教室 → 自动上课 (+academic, -energy, -san) → [结束]
-    └─ 不在教室 → 时间跳到10:20，老师点名
+    └─ 不在教室 → 时间跳到当天随机点名时间，老师点名
                    ├─ 45% 点名 → 社交检定(social ≥ 50?)
                    │               ├─ 通过 → 同学代答 → [结束]
                    │               └─ 失败 → 逃课被抓(-san,-social) → [结束]

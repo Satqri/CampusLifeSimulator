@@ -18,10 +18,20 @@ public:
     static constexpr int kClassMinute = 8 * 60 + 50;
     static constexpr int kClassEndMinute = 12 * 60 + 15;
     static constexpr int kRollCallMinute = 10 * 60 + 20;
-    static constexpr int kSleepAllowedMinute = 22 * 60 + 30;
+    static constexpr int kRollCallStepMinutes = 10;
+    static constexpr int kSleepAllowedMinute = 21 * 60;
+    static constexpr int kBreakfastStartMinute = 6 * 60 + 30;
+    static constexpr int kBreakfastEndMinute = 10 * 60;
+    static constexpr int kLunchStartMinute = 11 * 60 + 30;
+    static constexpr int kLunchEndMinute = 13 * 60 + 30;
+    static constexpr int kDinnerStartMinute = 16 * 60 + 40;
+    static constexpr int kDinnerEndMinute = 19 * 60 + 30;
+
+    TimeSystem();
 
     int getDay() const { return day; }
     int getMinuteOfDay() const { return minuteOfDay; }
+    int getRollCallMinute() const { return rollCallMinute; }
     bool isMidtermDay() const { return day == 7; }
     bool isFinished() const { return finished; }
 
@@ -31,11 +41,13 @@ public:
     void markClassResolved() { classResolved = true; }
 
     int advanceMinutes(int minutes);
+    void generateRollCallMinute();
     void setTime(int hour, int minute);
     void setTimeAbsolute(int minutes);
+    int sleepForMinutes(int minutes);
     int sleepToNextDay();
 
-    bool crossedClassTime(int previousMinute) const;
+    bool crossedRollCallTime(int previousMinute) const;
     bool shouldForceClass() const;
     bool isMealTime() const;
     int mealSlotId() const;
@@ -51,6 +63,7 @@ private:
 
     int day = 1;
     int minuteOfDay = kDayStartMinute;
+    int rollCallMinute = kRollCallMinute;
     bool classPrompted = false;
     bool classResolved = false;
     bool finished = false;

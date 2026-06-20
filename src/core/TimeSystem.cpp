@@ -2,12 +2,35 @@
 #include "core/Localization.h"
 
 #include <iomanip>
+#include <random>
 #include <sstream>
+
+TimeSystem::TimeSystem() {
+    generateRollCallMinute();
+}
 
 int TimeSystem::advanceMinutes(int minutes) {
     if (minutes <= 0 || finished) return minuteOfDay;
-    const int previous = minuteOfDay;
-    minuteOfDay += minutes;
+    const int previous = displayMinute();
+    int remaining = minutes;
+    while (remaining > 0 && !finished) {
+        const int currentMinute = displayMinute();
+        const int untilMidnight = 24 * 60 - currentMinute;
+        if (remaining < untilMidnight) {
+            minuteOfDay = currentMinute + remaining;
+            remaining = 0;
+        } else {
+            remaining -= untilMidnight;
+            if (day >= kMaxDay) {
+                finished = true;
+                minuteOfDay = kDayStartMinute;
+            } else {
+                ++day;
+                minuteOfDay = 0;
+                resetDailyFlags();
+            }
+        }
+    }
     return previous;
 }
 
@@ -18,6 +41,16 @@ void TimeSystem::setTime(int hour, int minute) {
 void TimeSystem::setTimeAbsolute(int minutes) {
     if (finished) return;
     minuteOfDay = minutes;
+}
+
+void TimeSystem::generateRollCallMinute() {
+    static std::mt19937 rng(std::random_device{}());
+    constexpr int start = kClassMinute;
+    constexpr int end = kClassEndMinute;
+    constexpr int slotCount = (end - start) / kRollCallStepMinutes;
+    std::uniform_int_distribution<int> dist(0, slotCount);
+    rollCallMinute = start + dist(rng) * kRollCallStepMinutes;
+    if (rollCallMinute > end) rollCallMinute = end;
 }
 
 int TimeSystem::sleepToNextDay() {
@@ -40,33 +73,63 @@ int TimeSystem::sleepToNextDay() {
     return sleptMinutes > 0 ? sleptMinutes : 0;
 }
 
-bool TimeSystem::crossedClassTime(int previousMinute) const {
+int TimeSystem::sleepForMinutes(int minutes) {
+    if (finished || minutes <= 0) return 0;
+    int remaining = minutes;
+    int slept = 0;
+    while (remaining > 0 && !finished) {
+        const int untilMidnight = 24 * 60 - displayMinute();
+        if (remaining < untilMidnight) {
+            minuteOfDay = displayMinute() + remaining;
+            slept += remaining;
+            remaining = 0;
+        } else {
+            remaining -= untilMidnight;
+            slept += untilMidnight;
+            if (day >= kMaxDay) {
+                finished = true;
+                minuteOfDay = kDayStartMinute;
+            } else {
+                ++day;
+                minuteOfDay = 0;
+                resetDailyFlags();
+            }
+        }
+    }
+
+    return slept;
+}
+
+bool TimeSystem::crossedRollCallTime(int previousMinute) const {
     return !classPrompted
-        && previousMinute < kClassMinute
-        && minuteOfDay >= kClassMinute
+        && previousMinute < rollCallMinute
+        && minuteOfDay >= rollCallMinute
         && minuteOfDay < 24 * 60;
 }
 
 bool TimeSystem::shouldForceClass() const {
-    return !classPrompted && minuteOfDay >= kClassMinute && minuteOfDay < 24 * 60;
+    return !classPrompted && minuteOfDay >= rollCallMinute && minuteOfDay < 24 * 60;
 }
 
 bool TimeSystem::isMealTime() const {
     const int minute = displayMinute();
-    const bool lunch = minute >= 12 * 60 && minute < 14 * 60;
-    const bool dinner = minute >= 17 * 60 && minute < 19 * 60;
-    return lunch || dinner;
+    const bool breakfast = minute >= kBreakfastStartMinute && minute < kBreakfastEndMinute;
+    const bool lunch = minute >= kLunchStartMinute && minute < kLunchEndMinute;
+    const bool dinner = minute >= kDinnerStartMinute && minute < kDinnerEndMinute;
+    return breakfast || lunch || dinner;
 }
 
 int TimeSystem::mealSlotId() const {
     const int minute = displayMinute();
-    if (minute >= 12 * 60 && minute < 14 * 60) return day * 10 + 1;
-    if (minute >= 17 * 60 && minute < 19 * 60) return day * 10 + 2;
+    if (minute >= kBreakfastStartMinute && minute < kBreakfastEndMinute) return day * 10 + 1;
+    if (minute >= kLunchStartMinute && minute < kLunchEndMinute) return day * 10 + 2;
+    if (minute >= kDinnerStartMinute && minute < kDinnerEndMinute) return day * 10 + 3;
     return -1;
 }
 
 bool TimeSystem::canSleep() const {
-    return minuteOfDay >= kSleepAllowedMinute;
+    const int minute = displayMinute();
+    return minute >= kSleepAllowedMinute || minute < 12 * 60;
 }
 
 TimePhase TimeSystem::currentPhase() const {
@@ -113,4 +176,5 @@ int TimeSystem::displayMinute() const {
 void TimeSystem::resetDailyFlags() {
     classPrompted = false;
     classResolved = false;
+    generateRollCallMinute();
 }

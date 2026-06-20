@@ -11,7 +11,8 @@ bool handle(GameContext& ctx, const InteractionPoint& ip) {
         } else {
             ctx.runTimedActivity(30, Attributes{.energy = 15, .san = 5},
                 cls::text("notice.quiet_moment"),
-                cls::text("activity.dormitory_bed.rest"));
+                cls::text("activity.dormitory_bed.rest"),
+                ip.actionId, false);
         }
         return true;
     }

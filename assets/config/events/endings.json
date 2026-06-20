@@ -38,6 +38,12 @@
           "stat": "lowEnergyDays",
           "op": ">=",
           "value": 3
+        },
+        {
+          "kind": "stat",
+          "stat": "consecutiveNoSleepDays",
+          "op": ">=",
+          "value": 2
         }
       ],
       "require": "any",

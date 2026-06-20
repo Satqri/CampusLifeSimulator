@@ -59,6 +59,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <iomanip>
 #include <sstream>
 #include <iostream>
 #include <array>
@@ -78,6 +79,69 @@ namespace {
 
 constexpr char kLastActivityIdKey[] = "lastActivityId";
 constexpr char kActivityStreakKey[] = "activityStreak";
+constexpr char kDurationPromptPurpose[] = "activity_duration";
+constexpr char kSleepPromptPurpose[] = "sleep_alarm";
+constexpr int kMinActivityMinutes = 10;
+constexpr int kMaxActivityMinutes = 120;
+constexpr int kMinutesPerDay = 24 * 60;
+constexpr int kDefaultSleepMinutes = 7 * 60 + 30;
+constexpr int kMinimumHealthySleepMinutes = 6 * 60 + 30;
+constexpr int kOversleepFloorMinutes = 7 * 60;
+
+int normalizedMinute(int minute) {
+    int result = minute % kMinutesPerDay;
+    if (result < 0) result += kMinutesPerDay;
+    return result;
+}
+
+bool isWithinClockWindow(int minute, int start, int end) {
+    minute = normalizedMinute(minute);
+    start = normalizedMinute(start);
+    end = normalizedMinute(end);
+    if (start <= end) return minute >= start && minute < end;
+    return minute >= start || minute < end;
+}
+
+std::string campusPlaceKey(CampusPlace place) {
+    switch (place) {
+        case CampusPlace::Dormitory: return "dormitory";
+        case CampusPlace::Cafeteria: return "cafeteria";
+        case CampusPlace::Classroom: return "classroom";
+        case CampusPlace::Library: return "library";
+        case CampusPlace::Gym: return "gym";
+        case CampusPlace::Store: return "store";
+        case CampusPlace::Campus: return "campus";
+    }
+    return "campus";
+}
+
+int commuteMinutes(CampusPlace from, CampusPlace to) {
+    if (from == to || from == CampusPlace::Campus || to == CampusPlace::Campus)
+        return 0;
+
+    const std::string a = campusPlaceKey(from);
+    const std::string b = campusPlaceKey(to);
+    const auto matches = [&](const std::string& lhs, const std::string& rhs) {
+        return (a == lhs && b == rhs) || (a == rhs && b == lhs);
+    };
+
+    if (matches("dormitory", "cafeteria")) return 5;
+    if (matches("dormitory", "classroom")) return 15;
+    if (matches("dormitory", "library")) return 10;
+    if (matches("dormitory", "gym")) return 10;
+    if (matches("dormitory", "store")) return 5;
+    if (matches("cafeteria", "classroom")) return 10;
+    if (matches("cafeteria", "library")) return 5;
+    if (matches("cafeteria", "gym")) return 5;
+    if (matches("cafeteria", "store")) return 5;
+    if (matches("classroom", "library")) return 5;
+    if (matches("classroom", "gym")) return 10;
+    if (matches("classroom", "store")) return 10;
+    if (matches("library", "gym")) return 10;
+    if (matches("library", "store")) return 5;
+    if (matches("gym", "store")) return 5;
+    return 10;
+}
 
 int repeatedBenefitPercent(int streak) {
     return std::max(40, 100 - (streak - 1) * 20);
@@ -156,6 +220,59 @@ HiddenMap adjustHiddenForRepetition(const HiddenMap& hiddenDelta, int streak) {
         }
     }
     return adjusted;
+}
+
+int scaledIntegerDelta(int value, int actualMinutes, int baseMinutes) {
+    if (value == 0 || actualMinutes <= 0 || baseMinutes <= 0) return 0;
+    const int sign = value < 0 ? -1 : 1;
+    const int magnitude = std::abs(value);
+    return sign * ((magnitude * actualMinutes + baseMinutes / 2) / baseMinutes);
+}
+
+Attributes scaleAttributesByDuration(const Attributes& delta, int actualMinutes, int baseMinutes) {
+    Attributes scaled = delta;
+    scaled.energy = scaledIntegerDelta(delta.energy, actualMinutes, baseMinutes);
+    scaled.health = scaledIntegerDelta(delta.health, actualMinutes, baseMinutes);
+    scaled.gold = scaledIntegerDelta(delta.gold, actualMinutes, baseMinutes);
+    scaled.san = scaledIntegerDelta(delta.san, actualMinutes, baseMinutes);
+    scaled.academic = scaledIntegerDelta(delta.academic, actualMinutes, baseMinutes);
+    scaled.social = scaledIntegerDelta(delta.social, actualMinutes, baseMinutes);
+    return scaled;
+}
+
+bool isDurationScaledHiddenKey(const std::string& key) {
+    return isScalableHiddenBenefit(key) || isScalableHiddenBurden(key);
+}
+
+HiddenMap scaleHiddenByDuration(const HiddenMap& hiddenDelta, int actualMinutes, int baseMinutes) {
+    if (!hiddenDelta.is_object() || actualMinutes <= 0 || baseMinutes <= 0) return hiddenDelta;
+
+    HiddenMap scaled = hiddenDelta;
+    for (auto it = scaled.begin(); it != scaled.end(); ++it) {
+        if (it.value().is_number_integer() && isDurationScaledHiddenKey(it.key())) {
+            it.value() = scaledIntegerDelta(it.value().get<int>(), actualMinutes, baseMinutes);
+        }
+    }
+    return scaled;
+}
+
+std::string formatClockMinute(int minuteOfDay) {
+    const int minute = ((minuteOfDay % (24 * 60)) + (24 * 60)) % (24 * 60);
+    std::ostringstream ss;
+    ss << std::setw(2) << std::setfill('0') << (minute / 60)
+       << ":" << std::setw(2) << (minute % 60);
+    return ss.str();
+}
+
+std::string durationLabel(int minutes) {
+    if (minutes < 60) return cls::format("activity.duration.minutes", {{"minutes", std::to_string(minutes)}});
+    const int hours = minutes / 60;
+    const int restMinutes = minutes % 60;
+    if (restMinutes == 0) {
+        return cls::format("activity.duration.hours", {{"hours", std::to_string(hours)}});
+    }
+    return cls::format("activity.duration.hours_minutes",
+        {{"hours", std::to_string(hours)}, {"minutes", std::to_string(restMinutes)}});
 }
 
 std::string activityKeyFor(const std::string& title, const std::string& body) {
@@ -369,6 +486,37 @@ int main() {
     bool settlementActive = false;
     int settlementPage = 0;
     SettlementResult settlementResult;
+
+    struct PendingTimedActivity {
+        bool active = false;
+        int baseMinutes = 0;
+        Attributes delta{};
+        HiddenMap hiddenDelta = HiddenMap::object();
+        std::string title;
+        std::string body;
+        std::string activityId;
+        bool hasHidden = false;
+
+        void clear() {
+            active = false;
+            baseMinutes = 0;
+            delta = Attributes{};
+            hiddenDelta = HiddenMap::object();
+            title.clear();
+            body.clear();
+            activityId.clear();
+            hasHidden = false;
+        }
+    };
+    PendingTimedActivity pendingTimedActivity;
+    struct PendingSleep {
+        bool active = false;
+
+        void clear() {
+            active = false;
+        }
+    };
+    PendingSleep pendingSleep;
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
     auto libraryBooks = loadLibraryConfig(cls::resolveAssetPath("assets/config/library.json"));
@@ -507,7 +655,14 @@ int main() {
         hidden[kLastActivityIdKey] = "none";
         hidden[kActivityStreakKey] = 0;
         hidden["lateNightLevel"] = 0;
+        hidden["lastSleepMinutes"] = kDefaultSleepMinutes;
+        hidden["alarmSleepMinutes"] = kDefaultSleepMinutes;
+        hidden["consecutiveNoSleepDays"] = 0;
+        hidden["lastSleepDay"] = 0;
         hidden["exerciseCount"] = 0;
+        hidden["dailyExerciseDay"] = 0;
+        hidden["dailyExerciseCount"] = 0;
+        hidden["lastExerciseAbsoluteMinute"] = -999999;
         hidden["partTimeCount"] = 0;
         hidden["storeNightShiftCount"] = 0;
         hidden["mealCount"] = 0;
@@ -567,7 +722,7 @@ int main() {
     };
 
     auto checkEventTriggers = [&eventRunner, &ctx](int prev) {
-        eventRunner.checkTriggers(ctx, prev);
+        return eventRunner.checkTriggers(ctx, prev);
     };
 
     std::function<bool()> maybeFinalizeRun;
@@ -623,74 +778,242 @@ int main() {
         return false;
     };
 
-    auto sleepFromDormitory = [&ctx, &showTimedResult, &maybeFinalizeRun, &settlementActive]() {
-        if (!ctx.timeSystem.canSleep()) {
-            ctx.activityNotice.show("Too Early",
-                "You can choose sleep after 22:30.");
-            return;
+    auto executeSleep = [&ctx, &showTimedResult, &maybeFinalizeRun, &settlementActive](int requestedMinutes, bool explicitAlarm) {
+        auto& hidden = ctx.player.getHidden();
+        normalizeHidden(hidden);
+
+        int targetMinutes = requestedMinutes > 0
+            ? requestedMinutes
+            : hidden.value("lastSleepMinutes", kDefaultSleepMinutes);
+        targetMinutes = std::clamp(targetMinutes, 60, 12 * 60);
+
+        bool overslept = false;
+        if (explicitAlarm && targetMinutes < 6 * 60) {
+            const int seed = ctx.timeSystem.getDay() * 97 + normalizedMinute(ctx.timeSystem.getMinuteOfDay()) * 13
+                + hidden.value("consecutiveNoSleepDays", 0) * 31;
+            if (seed % 100 < 65) {
+                targetMinutes = kOversleepFloorMinutes;
+                overslept = true;
+            }
         }
-        const int sleptMinutes = ctx.timeSystem.sleepToNextDay();
+
+        const int startDay = ctx.timeSystem.getDay();
+        const int sleptMinutes = ctx.timeSystem.sleepForMinutes(targetMinutes);
         const int sleptHours = sleptMinutes / 60;
-        const int sanGain = std::min(45, sleptHours * 5);
-        const int energyGain = std::min(70, sleptHours * 8);
-        ctx.player.dailyAttributeCheck();
+        const int sleptRestMinutes = sleptMinutes % 60;
+
+        int sanGain = std::min(45, sleptMinutes / 12);
+        int energyGain = std::min(70, sleptMinutes / 8);
+        int healthDelta = 0;
+        int lateNightRelief = -5;
+        if (sleptMinutes < 6 * 60) {
+            sanGain = std::max(0, sanGain - 8);
+            energyGain = std::max(5, energyGain - 12);
+            healthDelta = -5;
+            lateNightRelief = 1;
+        } else if (sleptMinutes < kMinimumHealthySleepMinutes) {
+            healthDelta = -2;
+            lateNightRelief = -2;
+        }
+
+        if (startDay != ctx.timeSystem.getDay()) {
+            ctx.player.dailyAttributeCheck();
+        }
+
+        HiddenMap sleepDelta = HiddenMap::object();
+        sleepDelta["lastSleepMinutes"] = sleptMinutes;
+        sleepDelta["alarmSleepMinutes"] = targetMinutes;
+        sleepDelta["consecutiveNoSleepDays"] = 0;
+        sleepDelta["lastSleepDay"] = ctx.timeSystem.getDay();
+        sleepDelta["lateNightLevel"] = lateNightRelief;
+        if (healthDelta != 0) sleepDelta["healthIndex"] = healthDelta;
+        mergeHidden(hidden, sleepDelta);
+
         ctx.player.modifyAttributes(Attributes{.energy = energyGain, .san = sanGain});
-        resetActivityStreak(ctx.player.getHidden());
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+        resetActivityStreak(hidden);
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), hidden);
         ctx.player.setPosition(480.0f, 276.0f);
         ctx.player.stopMovement();
         ctx.currentPlace = CampusPlace::Dormitory;
         ctx.currentMap = ctx.dormitoryMap;
         ctx.gamePlayDay = ctx.timeSystem.getDay();
         ctx.gamesPlayedToday = 0;
+
         std::ostringstream body;
         if (ctx.timeSystem.isFinished()) {
-            body << "The 14-day project period is complete. SAN +"
-                 << sanGain << ", Energy +" << energyGain << ".";
-        } else {
-            body << "You slept " << sleptHours << " hours. SAN +"
-                 << sanGain << ", Energy +" << energyGain << ".";
+            body << cls::text("sleep.semester_complete") << "\n";
         }
-        ctx.timeSkipFlash.start("Sleeping...");
+        body << cls::format("sleep.result",
+            {{"hours", std::to_string(sleptHours)},
+             {"minutes", std::to_string(sleptRestMinutes)},
+             {"energy", std::to_string(energyGain)},
+             {"san", std::to_string(sanGain)}});
+        if (overslept) {
+            body << "\n" << cls::text("sleep.overslept");
+        }
+        if (sleptMinutes < kMinimumHealthySleepMinutes) {
+            body << "\n" << cls::text("sleep.short_penalty");
+        }
+
+        ctx.timeSkipFlash.start(cls::text("time.sleeping"));
         maybeFinalizeRun();
         if (!settlementActive) {
             showTimedResult(ctx.timeSystem.isFinished()
-                ? "Fourteen Days Complete" : "New Day", body.str());
+                ? cls::text("notice.days_complete")
+                : (startDay == ctx.timeSystem.getDay() ? cls::text("sleep.result.title") : cls::text("notice.new_day")),
+                body.str());
         }
     };
 
-    auto runTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun](
+    auto sleepFromDormitory = [&ctx, &pendingSleep]() {
+        if (!ctx.timeSystem.canSleep()) {
+            ctx.activityNotice.show(cls::text("notice.too_early"),
+                cls::text("sleep.too_early"));
+            return;
+        }
+        auto& hidden = ctx.player.getHidden();
+        normalizeHidden(hidden);
+        const int previousSleep = hidden.value("lastSleepMinutes", kDefaultSleepMinutes);
+        pendingSleep.active = true;
+        ctx.mealChoicePrompt.show(
+            cls::text("sleep.alarm.title"),
+            cls::format("sleep.alarm.body", {{"last", durationLabel(previousSleep)}}),
+            std::vector<std::string>{
+                cls::text("sleep.alarm.option_default"),
+                cls::text("sleep.alarm.option_7_5h"),
+                cls::text("sleep.alarm.option_6h"),
+                cls::text("sleep.alarm.option_5h")
+            },
+            kSleepPromptPurpose,
+            std::vector<int>{0, kDefaultSleepMinutes, 6 * 60, 5 * 60});
+    };
+
+    auto markNoSleepForSkippedDays = [&ctx]() {
+        auto& hidden = ctx.player.getHidden();
+        normalizeHidden(hidden);
+        const int currentDay = ctx.timeSystem.getDay();
+        const int lastSleepDay = hidden.value("lastSleepDay", 0);
+        if (currentDay > lastSleepDay + 1) {
+            HiddenMap delta = HiddenMap::object();
+            delta["consecutiveNoSleepDays"] = hidden.value("consecutiveNoSleepDays", 0)
+                + (currentDay - lastSleepDay - 1);
+            delta["lastSleepDay"] = currentDay - 1;
+            mergeHidden(hidden, delta);
+        }
+    };
+
+    auto executeTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun, &markNoSleepForSkippedDays](
+            int baseMinutes, int requestedMinutes, const Attributes& delta,
+            const HiddenMap& hiddenDelta, bool hasHidden,
+            const std::string& title, const std::string& body,
+            const std::string& activityId) {
+        const int startMinute = ctx.timeSystem.getMinuteOfDay();
+        const int startDay = ctx.timeSystem.getDay();
+        int actualMinutes = std::clamp(requestedMinutes, kMinActivityMinutes, kMaxActivityMinutes);
+        const int rollCallMinute = ctx.timeSystem.getRollCallMinute();
+        const bool interruptedByRollCall = !ctx.timeSystem.isClassPrompted()
+            && ctx.currentPlace != CampusPlace::Classroom
+            && startDay == ctx.timeSystem.getDay()
+            && startMinute < rollCallMinute
+            && startMinute + actualMinutes >= rollCallMinute;
+        if (interruptedByRollCall) {
+            actualMinutes = std::max(0, rollCallMinute - startMinute);
+        }
+
+        const int prev = ctx.timeSystem.advanceMinutes(actualMinutes);
+        if (ctx.timeSystem.getDay() != startDay) {
+            markNoSleepForSkippedDays();
+            ctx.player.dailyAttributeCheck();
+            ctx.gamePlayDay = ctx.timeSystem.getDay();
+            ctx.gamesPlayedToday = 0;
+        }
+        if (actualMinutes <= 0) {
+            if (interruptedByRollCall && checkEventTriggers(prev)) {
+                maybeFinalizeRun();
+                return;
+            }
+            showTimedResult(title, body);
+            return;
+        }
+
+        const std::string activityKey = activityId.empty() ? activityKeyFor(title, body) : activityId;
+        const int streak = updateActivityStreak(ctx.player.getHidden(), activityKey);
+        const Attributes durationDelta = scaleAttributesByDuration(delta, actualMinutes, baseMinutes);
+        const Attributes adjustedDelta = adjustAttributesForRepetition(durationDelta, streak);
+        ctx.player.modifyAttributes(adjustedDelta);
+        if (hasHidden) {
+            const HiddenMap durationHiddenDelta = scaleHiddenByDuration(hiddenDelta, actualMinutes, baseMinutes);
+            const HiddenMap adjustedHiddenDelta = adjustHiddenForRepetition(durationHiddenDelta, streak);
+            if (!adjustedHiddenDelta.is_null()) {
+                mergeHidden(ctx.player.getHidden(), adjustedHiddenDelta);
+            }
+        }
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+        ctx.timeSkipFlash.start("Time passes...");
+        if (maybeFinalizeRun()) return;
+
+        if (interruptedByRollCall) {
+            if (checkEventTriggers(prev)) {
+                maybeFinalizeRun();
+                return;
+            }
+        }
+
+        std::string resultBody = body;
+        resultBody += "\n\n" + cls::format("activity.duration_result",
+            {{"minutes", std::to_string(actualMinutes)}, {"target", std::to_string(requestedMinutes)}});
+        showTimedResult(title, appendRepeatNotice(resultBody, streak));
+        checkEventTriggers(prev);
+        maybeFinalizeRun();
+    };
+
+    auto promptTimedActivityDuration = [&ctx, &pendingTimedActivity](
+            int minutes, const Attributes& delta, const HiddenMap& hiddenDelta, bool hasHidden,
+            const std::string& title, const std::string& body, const std::string& activityId) {
+        pendingTimedActivity.active = true;
+        pendingTimedActivity.baseMinutes = std::max(1, minutes);
+        pendingTimedActivity.delta = delta;
+        pendingTimedActivity.hiddenDelta = hiddenDelta;
+        pendingTimedActivity.title = title;
+        pendingTimedActivity.body = body;
+        pendingTimedActivity.activityId = activityId;
+        pendingTimedActivity.hasHidden = hasHidden;
+
+        const int initialMinutes = std::clamp(
+            ((minutes + kMinActivityMinutes / 2) / kMinActivityMinutes) * kMinActivityMinutes,
+            kMinActivityMinutes,
+            kMaxActivityMinutes);
+        ctx.mealChoicePrompt.showRange(
+            cls::text("activity.duration.title"),
+            cls::format("activity.duration.body",
+                {{"activity", title}, {"base", durationLabel(minutes)}}),
+            kDurationPromptPurpose,
+            initialMinutes,
+            kMinActivityMinutes,
+            kMaxActivityMinutes,
+            kMinActivityMinutes);
+    };
+
+    auto runTimedActivity = [&executeTimedActivity, &promptTimedActivityDuration](
             int minutes, const Attributes& delta,
-            const std::string& title, const std::string& body) {
-        const int prev = ctx.timeSystem.advanceMinutes(minutes);
-        const int streak = updateActivityStreak(ctx.player.getHidden(), activityKeyFor(title, body));
-        const Attributes adjustedDelta = adjustAttributesForRepetition(delta, streak);
-        ctx.player.modifyAttributes(adjustedDelta);
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (maybeFinalizeRun()) return;
-        showTimedResult(title, appendRepeatNotice(body, streak));
-        checkEventTriggers(prev);
-        maybeFinalizeRun();
+            const std::string& title, const std::string& body,
+            const std::string& activityId, bool customDuration) {
+        if (customDuration) {
+            promptTimedActivityDuration(minutes, delta, HiddenMap::object(), false, title, body, activityId);
+            return;
+        }
+        executeTimedActivity(minutes, minutes, delta, HiddenMap::object(), false, title, body, activityId);
     };
 
-    auto runTimedActivityWithHidden = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun](
+    auto runTimedActivityWithHidden = [&executeTimedActivity, &promptTimedActivityDuration](
             int minutes, const Attributes& delta, const HiddenMap& hiddenDelta,
-            const std::string& title, const std::string& body) {
-        const int prev = ctx.timeSystem.advanceMinutes(minutes);
-        const int streak = updateActivityStreak(ctx.player.getHidden(), activityKeyFor(title, body));
-        const Attributes adjustedDelta = adjustAttributesForRepetition(delta, streak);
-        const HiddenMap adjustedHiddenDelta = adjustHiddenForRepetition(hiddenDelta, streak);
-        ctx.player.modifyAttributes(adjustedDelta);
-        if (!adjustedHiddenDelta.is_null()) {
-            mergeHidden(ctx.player.getHidden(), adjustedHiddenDelta);
+            const std::string& title, const std::string& body,
+            const std::string& activityId, bool customDuration) {
+        if (customDuration) {
+            promptTimedActivityDuration(minutes, delta, hiddenDelta, true, title, body, activityId);
+            return;
         }
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (maybeFinalizeRun()) return;
-        showTimedResult(title, appendRepeatNotice(body, streak));
-        checkEventTriggers(prev);
-        maybeFinalizeRun();
+        executeTimedActivity(minutes, minutes, delta, hiddenDelta, true, title, body, activityId);
     };
 
     ctx.runTimedActivity = runTimedActivity;
@@ -709,7 +1032,95 @@ int main() {
         return CombatSystem::fightNearestEnemy(ctx);
     };
 
-    auto startMapTransition = [&ctx, &sceneTransition](const MapPortal& portal) {
+    auto canEnterPlace = [&ctx](CampusPlace target) {
+        const int minute = normalizedMinute(ctx.timeSystem.getMinuteOfDay());
+        std::string body;
+        switch (target) {
+            case CampusPlace::Gym:
+                if (!isWithinClockWindow(minute, 9 * 60, 22 * 60)) {
+                    body = cls::text("place.closed.gym");
+                }
+                break;
+            case CampusPlace::Library:
+                if (!isWithinClockWindow(minute, 7 * 60, 23 * 60)) {
+                    body = cls::text("place.closed.library");
+                }
+                break;
+            case CampusPlace::Cafeteria:
+                if (!isWithinClockWindow(minute, TimeSystem::kBreakfastStartMinute, 22 * 60)) {
+                    body = cls::text("place.closed.cafeteria");
+                }
+                break;
+            default:
+                break;
+        }
+        if (body.empty()) return true;
+        ctx.activityNotice.show(cls::text("place.closed.title"), body);
+        return false;
+    };
+
+    auto startMapTransition = [&ctx, &sceneTransition, &canEnterPlace, &checkEventTriggers,
+                               &maybeFinalizeRun, &markNoSleepForSkippedDays](const MapPortal& portal) {
+        if (!canEnterPlace(portal.target)) return;
+
+        auto& hidden = ctx.player.getHidden();
+        normalizeHidden(hidden);
+        CampusPlace commuteFrom = ctx.currentPlace;
+        if (ctx.currentPlace == CampusPlace::Campus && hidden.contains("lastIndoorPlace")
+            && hidden["lastIndoorPlace"].is_string()) {
+            const std::string last = hidden["lastIndoorPlace"].get<std::string>();
+            if (last == "dormitory") commuteFrom = CampusPlace::Dormitory;
+            else if (last == "cafeteria") commuteFrom = CampusPlace::Cafeteria;
+            else if (last == "classroom") commuteFrom = CampusPlace::Classroom;
+            else if (last == "library") commuteFrom = CampusPlace::Library;
+            else if (last == "gym") commuteFrom = CampusPlace::Gym;
+            else if (last == "store") commuteFrom = CampusPlace::Store;
+        }
+
+        const bool enteringIndoor = ctx.currentPlace == CampusPlace::Campus && portal.target != CampusPlace::Campus;
+        int travelMinutes = enteringIndoor ? commuteMinutes(commuteFrom, portal.target) : 0;
+        if (enteringIndoor && portal.target == CampusPlace::Store) {
+            travelMinutes = std::max(travelMinutes, 30);
+        }
+        if (travelMinutes > 0) {
+            const int startDay = ctx.timeSystem.getDay();
+            const int prev = ctx.timeSystem.advanceMinutes(travelMinutes);
+            ctx.timeSkipFlash.start(cls::format("time.commuting", {{"minutes", std::to_string(travelMinutes)}}));
+            if (ctx.timeSystem.getDay() != startDay) {
+                markNoSleepForSkippedDays();
+                ctx.player.dailyAttributeCheck();
+                ctx.gamePlayDay = ctx.timeSystem.getDay();
+                ctx.gamesPlayedToday = 0;
+                if (maybeFinalizeRun()) return;
+            }
+            if (checkEventTriggers(prev)) {
+                maybeFinalizeRun();
+                return;
+            }
+            if (maybeFinalizeRun()) return;
+        }
+
+        if (enteringIndoor && portal.target == CampusPlace::Dormitory
+            && isWithinClockWindow(normalizedMinute(ctx.timeSystem.getMinuteOfDay()), 0, 6 * 60)) {
+            auto& afterTravelHidden = ctx.player.getHidden();
+            const int seed = ctx.timeSystem.getDay() * 101 + normalizedMinute(ctx.timeSystem.getMinuteOfDay()) * 17
+                + afterTravelHidden.value("lateNightLevel", 0) * 7;
+            if (seed % 100 < 35) {
+                ctx.player.modifyAttributes(Attributes{.san = -6});
+                mergeHidden(afterTravelHidden, HiddenMap{{"lateNightLevel", 2}});
+                syncVisibleHealthFromHidden(ctx.player.getAttributes(), afterTravelHidden);
+                ctx.activityNotice.show(cls::text("notice.late_return.title"),
+                    cls::text("notice.late_return.body"));
+                if (maybeFinalizeRun()) return;
+            }
+        }
+
+        if (portal.target == CampusPlace::Campus && ctx.currentPlace != CampusPlace::Campus) {
+            hidden["lastIndoorPlace"] = campusPlaceKey(ctx.currentPlace);
+        } else if (portal.target != CampusPlace::Campus) {
+            hidden["lastIndoorPlace"] = campusPlaceKey(portal.target);
+        }
+
         ctx.pendingPlace = portal.target;
         ctx.pendingSpawnPosition = portal.spawnPosition;
         ctx.hasPendingMapTransition = true;
@@ -731,7 +1142,36 @@ int main() {
         CafeteriaInteraction::resolveMealChoice(ctx, mealIndex);
     };
 
-    auto handleInteraction = [&ctx, &eventRunner](const InteractionPoint& ip) {
+    auto canTriggerInteraction = [&ctx](const InteractionPoint& ip) {
+        const std::string& actionId = ip.actionId;
+        const int minute = normalizedMinute(ctx.timeSystem.getMinuteOfDay());
+        std::string body;
+
+        if (actionId.rfind("classroom_", 0) == 0
+            && isWithinClockWindow(minute, 23 * 60, 7 * 60)) {
+            body = cls::text("interaction.closed.classroom_night");
+        } else if ((actionId.rfind("gym_treadmill_", 0) == 0
+                || actionId.rfind("gym_barbell_", 0) == 0
+                || actionId == "gym_front_desk")
+            && !isWithinClockWindow(minute, 9 * 60, 22 * 60)) {
+            body = cls::text("interaction.closed.gym");
+        } else if ((actionId.rfind("library_shelf_", 0) == 0
+                || actionId == "library_table")
+            && !isWithinClockWindow(minute, 7 * 60, 23 * 60)) {
+            body = cls::text("interaction.closed.library");
+        } else if ((actionId == "cafeteria_counter"
+                || actionId.rfind("cafeteria_table_", 0) == 0)
+            && !ctx.timeSystem.isMealTime()) {
+            body = cls::text("activity.cafeteria.meal_time_closed");
+        }
+
+        if (body.empty()) return true;
+        ctx.activityNotice.show(cls::text("interaction.closed.title"), body);
+        return false;
+    };
+
+    auto handleInteraction = [&ctx, &eventRunner, &canTriggerInteraction](const InteractionPoint& ip) {
+        if (!canTriggerInteraction(ip)) return;
         if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
         if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.displayLabel())) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
@@ -881,6 +1321,8 @@ int main() {
                     difficultyApplied = true;
                     activityNotice.clear();
                     mealChoicePrompt.clear();
+                    pendingTimedActivity.clear();
+                    pendingSleep.clear();
                     lastMealPickupSlot = -1;
                     gamePlayDay = timeSystem.getDay();
                     gamesPlayedToday = 0;
@@ -924,6 +1366,9 @@ int main() {
                 if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEv->button == sf::Mouse::Button::Left) {
                         const sf::Vector2f target = window.mapPixelToCoords(mouseEv->position, gameView);
+                        if (timePanel.handleClick(target)) {
+                            continue;
+                        }
                         player.setMoveTarget(target);
                     }
                     continue;
@@ -932,13 +1377,68 @@ int main() {
 
             if (mealChoicePrompt.active) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
-                    if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) {
-                        resolveMealChoice(0);
-                    } else if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) {
-                        resolveMealChoice(1);
-                    } else if (keyEv->code == sf::Keyboard::Key::Num3 || keyEv->code == sf::Keyboard::Key::Numpad3) {
-                        resolveMealChoice(2);
+                    if (mealChoicePrompt.purpose == kDurationPromptPurpose) {
+                        if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
+                            mealChoicePrompt.selectedValue = std::max(
+                                mealChoicePrompt.minValue,
+                                mealChoicePrompt.selectedValue - mealChoicePrompt.stepValue);
+                        } else if (keyEv->code == sf::Keyboard::Key::Right || keyEv->code == sf::Keyboard::Key::D) {
+                            mealChoicePrompt.selectedValue = std::min(
+                                mealChoicePrompt.maxValue,
+                                mealChoicePrompt.selectedValue + mealChoicePrompt.stepValue);
+                        } else if (keyEv->code == sf::Keyboard::Key::Enter
+                            || keyEv->code == sf::Keyboard::Key::Space) {
+                            if (pendingTimedActivity.active) {
+                                const int selectedMinutes = mealChoicePrompt.selectedValue;
+                                const auto pending = pendingTimedActivity;
+                                pendingTimedActivity.clear();
+                                mealChoicePrompt.clear();
+                                executeTimedActivity(
+                                    pending.baseMinutes, selectedMinutes, pending.delta,
+                                    pending.hiddenDelta, pending.hasHidden,
+                                    pending.title, pending.body, pending.activityId);
+                            }
+                        } else if (keyEv->code == sf::Keyboard::Key::Escape) {
+                            pendingTimedActivity.clear();
+                            mealChoicePrompt.clear();
+                        }
+                        continue;
+                    }
+
+                    if (mealChoicePrompt.purpose == kSleepPromptPurpose) {
+                        auto choiceIndex = [&]() {
+                            if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) return 0;
+                            if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) return 1;
+                            if (keyEv->code == sf::Keyboard::Key::Num3 || keyEv->code == sf::Keyboard::Key::Numpad3) return 2;
+                            if (keyEv->code == sf::Keyboard::Key::Num4 || keyEv->code == sf::Keyboard::Key::Numpad4) return 3;
+                            return -1;
+                        }();
+                        if (choiceIndex >= 0 && pendingSleep.active
+                            && choiceIndex < static_cast<int>(mealChoicePrompt.values.size())) {
+                            const int selectedMinutes = mealChoicePrompt.values[choiceIndex];
+                            const bool explicitAlarm = selectedMinutes > 0;
+                            pendingSleep.clear();
+                            mealChoicePrompt.clear();
+                            executeSleep(selectedMinutes, explicitAlarm);
+                        } else if (keyEv->code == sf::Keyboard::Key::Escape) {
+                            pendingSleep.clear();
+                            mealChoicePrompt.clear();
+                        }
+                        continue;
+                    }
+
+                    auto choiceIndex = [&]() {
+                        if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) return 0;
+                        if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) return 1;
+                        if (keyEv->code == sf::Keyboard::Key::Num3 || keyEv->code == sf::Keyboard::Key::Numpad3) return 2;
+                        if (keyEv->code == sf::Keyboard::Key::Num4 || keyEv->code == sf::Keyboard::Key::Numpad4) return 3;
+                        return -1;
+                    }();
+                    if (choiceIndex >= 0) {
+                        resolveMealChoice(choiceIndex);
                     } else if (keyEv->code == sf::Keyboard::Key::Escape) {
+                        pendingTimedActivity.clear();
+                        pendingSleep.clear();
                         mealChoicePrompt.clear();
                     }
                 }
@@ -1149,13 +1649,26 @@ int main() {
         }
         if (mealChoicePrompt.active) {
             std::ostringstream body;
-            body << mealChoicePrompt.body << "\n\n"
-                 << "[1] " << mealChoicePrompt.first
-                 << "\n[2] " << mealChoicePrompt.second;
-            if (!mealChoicePrompt.third.empty())
-                body << "\n[3] " << mealChoicePrompt.third;
+            std::string footer;
+            if (mealChoicePrompt.purpose == kDurationPromptPurpose) {
+                body << mealChoicePrompt.body << "\n\n"
+                     << cls::format("activity.duration.current",
+                         {{"duration", durationLabel(mealChoicePrompt.selectedValue)}});
+                footer = cls::text("activity.duration.footer");
+            } else {
+                body << mealChoicePrompt.body << "\n\n"
+                     << "[1] " << mealChoicePrompt.first
+                     << "\n[2] " << mealChoicePrompt.second;
+                if (!mealChoicePrompt.third.empty())
+                    body << "\n[3] " << mealChoicePrompt.third;
+                if (!mealChoicePrompt.fourth.empty())
+                    body << "\n[4] " << mealChoicePrompt.fourth;
+                footer = !mealChoicePrompt.fourth.empty()
+                    ? cls::text("prompt.choice1234")
+                    : (mealChoicePrompt.third.empty() ? cls::text("prompt.choice12") : cls::text("prompt.choice123"));
+            }
             modalBox.setContent(mealChoicePrompt.title, body.str(),
-                                mealChoicePrompt.third.empty() ? cls::text("prompt.choice12") : cls::text("prompt.choice123"));
+                                footer);
             modalBox.render(window);
         }
         if (fontOk) {

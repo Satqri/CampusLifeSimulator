@@ -47,7 +47,8 @@ bool handleInteraction(GameContext& ctx, const std::string& actionId,
         if (ctx.runTimedActivityWithHidden) {
             ctx.runTimedActivityWithHidden(25, reward, hiddenDelta,
                 cls::text("notice.meal_complete"),
-                cls::text("activity.cafeteria.eat_at_table"));
+                cls::text("activity.cafeteria.eat_at_table"),
+                actionId, false);
         } else {
             const int previousMinute = ctx.timeSystem.advanceMinutes(25);
             ctx.player.modifyAttributes(reward);
@@ -105,7 +106,8 @@ void resolveMealChoice(GameContext& ctx, int mealIndex) {
     HiddenMap hiddenDelta{{"mealCount", 1}, {"healthIndex", meal.cost >= 20 ? 4 : 2}};
     if (ctx.runTimedActivityWithHidden) {
         ctx.runTimedActivityWithHidden(20, reward, hiddenDelta,
-            cls::text("notice.meal_complete"), body.str());
+            cls::text("notice.meal_complete"), body.str(),
+            "cafeteria_meal_choice", false);
     } else {
         const int previousMinute = ctx.timeSystem.advanceMinutes(20);
         ctx.player.modifyAttributes(reward);

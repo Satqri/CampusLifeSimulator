@@ -49,6 +49,12 @@ using HiddenMap = nlohmann::json;
 inline bool isHiddenAssignmentKey(const std::string& key) {
     if (key == "friendStage" || key == "clubStage" || key == "innovationStage")
         return true;
+    if (key == "lastSleepMinutes" || key == "alarmSleepMinutes"
+        || key == "consecutiveNoSleepDays" || key == "lastSleepDay"
+        || key == "dailyExerciseDay" || key == "dailyExerciseCount"
+        || key == "lastExerciseAbsoluteMinute") {
+        return true;
+    }
     if (key.rfind("_event_", 0) == 0 && key.size() >= 9
         && key.ends_with("_last_day"))
         return true;
@@ -67,6 +73,11 @@ inline int clampHiddenInteger(const std::string& key, int value) {
     if (key == "clubShowcaseScore") return std::clamp(value, -20, 40);
     if (key == "lateNightLevel" || key == "gameAddiction") return std::clamp(value, 0, 60);
     if (key == "lowEnergyDays" || key == "lowHealthDays") return std::clamp(value, 0, 14);
+    if (key == "consecutiveNoSleepDays") return std::clamp(value, 0, 14);
+    if (key == "lastSleepMinutes" || key == "alarmSleepMinutes") return std::clamp(value, 0, 12 * 60);
+    if (key == "lastSleepDay" || key == "dailyExerciseDay") return std::clamp(value, 0, 14);
+    if (key == "dailyExerciseCount") return std::clamp(value, 0, 12);
+    if (key == "lastExerciseAbsoluteMinute") return std::clamp(value, -999999, 999999);
     if (key == "activityStreak") return std::clamp(value, 0, 99);
     if (key == "friendStage" || key == "clubStage") return std::clamp(value, -1, 4);
     if (key == "innovationStage") return std::clamp(value, -1, 5);
