@@ -3,10 +3,11 @@
 
 Character::Character()
     : Entity()
-    , attributes()
+    , attributes(defaultPlayerAttributes())
     , moveSpeed(0.0f)
     , name("Unknown")
 {
+    mHidden["healthIndex"] = attributes.health;
 }
 
 Character::Character(float x, float y, const Attributes& attrs, float speed)
@@ -15,6 +16,7 @@ Character::Character(float x, float y, const Attributes& attrs, float speed)
     , moveSpeed(speed)
     , name("Unknown")
 {
+    mHidden["healthIndex"] = attributes.health;
 }
 
 void Character::takeDamage(int damage) {
@@ -32,6 +34,9 @@ const Attributes& Character::getAttributes() const {
 
 void Character::setAttributes(const Attributes& attrs) {
     attributes = attrs;
+    clampAttributes();
+    mHidden["healthIndex"] = attributes.health;
+    syncVisibleHealthFromHidden(attributes, mHidden);
 }
 
 float Character::getMoveSpeed() const {
@@ -46,8 +51,8 @@ const std::string& Character::getName() const {
     return name;
 }
 
-void Character::setName(const std::string& name) {
-    this->name = name;
+void Character::setName(const std::string& newName) {
+    name = newName;
 }
 
 void Character::clampAttributes() {

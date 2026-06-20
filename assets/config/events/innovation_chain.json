@@ -58,7 +58,7 @@
         "sign_up": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -2
           },
           "hidden_delta": {
@@ -101,7 +101,7 @@
         "gather_intel_fail": {
           "type": "outcome",
           "delta": {
-            "san": 2,
+            "san": -2,
             "energy": -3
           },
           "hidden_delta": {
@@ -114,7 +114,7 @@
         "give_up_innovation": {
           "type": "outcome",
           "delta": {
-            "san": -5
+            "san": 5
           },
           "hidden_delta": {
             "innovationResult": "bystander",
@@ -213,7 +213,7 @@
         "leader_morning_success": {
           "type": "outcome",
           "delta": {
-            "san": 15,
+            "san": -15,
             "energy": -10
           },
           "hidden_delta": {
@@ -229,7 +229,7 @@
         "leader_morning_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -5
           },
           "hidden_delta": {
@@ -275,7 +275,7 @@
         "join_mature_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -3
           },
           "hidden_delta": {
@@ -304,7 +304,7 @@
         "friends_team_success": {
           "type": "outcome",
           "delta": {
-            "san": -5,
+            "san": 5,
             "energy": -5
           },
           "hidden_delta": {
@@ -319,7 +319,7 @@
         "friends_team_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "innovationTopic": "fallback_team",
@@ -333,7 +333,7 @@
         "random_team": {
           "type": "outcome",
           "delta": {
-            "san": -2
+            "san": 2
           },
           "hidden_delta": {
             "innovationTopic": "undecided",
@@ -429,7 +429,7 @@
           "type": "outcome",
           "delta": {
             "academic": 10,
-            "san": 15,
+            "san": -15,
             "energy": -25
           },
           "hidden_delta": {
@@ -445,7 +445,7 @@
         "all_nighter_fail": {
           "type": "outcome",
           "delta": {
-            "san": 10,
+            "san": -10,
             "energy": -20
           },
           "hidden_delta": {
@@ -476,7 +476,7 @@
           "type": "outcome",
           "delta": {
             "social": 5,
-            "san": 8,
+            "san": -8,
             "energy": -15
           },
           "hidden_delta": {
@@ -490,7 +490,7 @@
         "emergency_meeting_fail": {
           "type": "outcome",
           "delta": {
-            "san": 15,
+            "san": -15,
             "energy": -12
           },
           "hidden_delta": {
@@ -514,8 +514,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 70
+              "op": ">=",
+              "value": 30
             }
           ],
           "require": "all",
@@ -527,7 +527,7 @@
         "ask_advisor_success": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -8
           },
           "hidden_delta": {
@@ -542,7 +542,7 @@
         "ask_advisor_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -5
           },
           "hidden_delta": {
@@ -573,7 +573,7 @@
           "type": "outcome",
           "delta": {
             "academic": 3,
-            "san": 6,
+            "san": -6,
             "energy": -10
           },
           "hidden_delta": {
@@ -588,7 +588,7 @@
         "ppt_package_fail": {
           "type": "outcome",
           "delta": {
-            "san": 12,
+            "san": -12,
             "energy": -10
           },
           "hidden_delta": {
@@ -604,7 +604,7 @@
           "type": "outcome",
           "delta": {
             "energy": 15,
-            "san": -10
+            "san": 10
           },
           "hidden_delta": {
             "innovationProgress": -20,
@@ -699,7 +699,7 @@
         "live_demo_success": {
           "type": "outcome",
           "delta": {
-            "san": 12,
+            "san": -12,
             "energy": -30
           },
           "hidden_delta": {
@@ -716,7 +716,7 @@
         "live_demo_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -15
           },
           "hidden_delta": {
@@ -745,7 +745,7 @@
         "video_success": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -15
           },
           "hidden_delta": {
@@ -760,7 +760,7 @@
         "video_fail": {
           "type": "outcome",
           "delta": {
-            "san": 10,
+            "san": -10,
             "energy": -15
           },
           "hidden_delta": {
@@ -804,7 +804,7 @@
         "teammate_speaker_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "innovationSpeaker": "player",
@@ -826,8 +826,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 70
+              "op": ">=",
+              "value": 30
             }
           ],
           "require": "all",
@@ -839,7 +839,7 @@
         "player_speaker_success": {
           "type": "outcome",
           "delta": {
-            "san": 15,
+            "san": -15,
             "energy": -10
           },
           "hidden_delta": {
@@ -853,7 +853,7 @@
         "player_speaker_fail": {
           "type": "outcome",
           "delta": {
-            "san": 20,
+            "san": -20,
             "energy": -10
           },
           "hidden_delta": {
@@ -867,7 +867,7 @@
         "downgrade": {
           "type": "outcome",
           "delta": {
-            "san": -10
+            "san": 10
           },
           "hidden_delta": {
             "innovationDemoMode": "safe",
@@ -983,8 +983,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 70
+              "op": ">=",
+              "value": 30
             }
           ],
           "require": "all",
@@ -996,7 +996,7 @@
         "player_defense_success": {
           "type": "outcome",
           "delta": {
-            "san": 8,
+            "san": -8,
             "energy": -8
           },
           "hidden_delta": {
@@ -1068,8 +1068,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 65
+              "op": ">=",
+              "value": 35
             }
           ],
           "require": "all",
@@ -1081,7 +1081,7 @@
         "demo_defense_success": {
           "type": "outcome",
           "delta": {
-            "san": 10,
+            "san": -10,
             "energy": -8
           },
           "hidden_delta": {
@@ -1095,7 +1095,7 @@
         "demo_defense_fail": {
           "type": "outcome",
           "delta": {
-            "san": 20,
+            "san": -20,
             "energy": -8
           },
           "hidden_delta": {
@@ -1127,7 +1127,7 @@
           "type": "outcome",
           "delta": {
             "academic": 3,
-            "san": 5,
+            "san": -5,
             "energy": -5
           },
           "hidden_delta": {
@@ -1153,7 +1153,7 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
+              "op": ">=",
               "value": 50
             }
           ],
@@ -1167,7 +1167,7 @@
           "type": "outcome",
           "delta": {
             "social": 3,
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "innovationDefenseScore": 8,
@@ -1189,7 +1189,7 @@
         "safe_ppt": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -3
           },
           "hidden_delta": {

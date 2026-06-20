@@ -79,8 +79,8 @@ private:
     /** @brief 递归跳转到目标节点，自动解析 RANDOM_CHECK/CHECK */
     void transitionTo(const std::string& nodeId, GameContext& ctx);
 
-    /** @brief 执行节点的附属效果（delta + time_advance + flash） */
-    void applyEffects(const EventNode& node, GameContext& ctx);
+    /** @brief 执行节点的附属效果（delta + time_advance + flash），返回 true 表示触发结算中断 */
+    bool applyEffects(const EventNode& node, GameContext& ctx);
 
     /** @brief 添加一条 Debug/QA 事件运行记录 */
     void appendDebugHistory(const std::string& message);

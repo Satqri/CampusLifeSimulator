@@ -5,10 +5,22 @@
       "trigger": {
         "type": "interaction",
         "action_id": "library_desk",
-        "chance": 20,
+        "chance": 28,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
+          {
+            "kind": "time",
+            "stat": "day",
+            "op": ">=",
+            "value": 4
+          },
+          {
+            "kind": "time",
+            "stat": "day",
+            "op": "<=",
+            "value": 7
+          },
           {
             "kind": "group",
             "require": "any",
@@ -79,7 +91,7 @@
           "type": "outcome",
           "delta": {
             "academic": 5,
-            "san": 2,
+            "san": -2,
             "energy": -5,
             "social": -5
           },
@@ -89,7 +101,7 @@
         "rush_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -3
           },
           "title_key": "event.library_seat_battle.rush_fail.title",
@@ -125,7 +137,7 @@
         "polite_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -3
           },
           "title_key": "event.library_seat_battle.polite_fail.title",
@@ -157,7 +169,7 @@
         "corner_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "title_key": "event.library_seat_battle.corner_fail.title",
           "body_key": "event.library_seat_battle.corner_fail.body"
@@ -165,7 +177,7 @@
         "give_up": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "title_key": "event.library_seat_battle.give_up.title",
           "body_key": "event.library_seat_battle.give_up.body"

@@ -22,6 +22,7 @@ void SimpleQuest::execute(Player& player) {
         player.modifyAttributes(choiceOutcomes[selectedChoiceIndex]);
     }
     player.modifyAttributes(completionReward);
+    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
     completed = true;
 }
 

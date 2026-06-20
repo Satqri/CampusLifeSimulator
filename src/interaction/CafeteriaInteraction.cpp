@@ -42,10 +42,27 @@ bool handleInteraction(GameContext& ctx, const std::string& actionId,
             return true;
         }
 
-        Attributes reward{.energy = 18, .san = -6, .social = 1};
-        ctx.runTimedActivity(25, reward, cls::text("notice.meal_complete"),
-            cls::text("activity.cafeteria.eat_at_table"));
-        mergeHidden(ctx.player.getHidden(), HiddenMap{{"mealCount", 1}});
+        Attributes reward{.energy = 18, .san = 6, .social = 1};
+        HiddenMap hiddenDelta{{"mealCount", 1}, {"healthIndex", 3}};
+        if (ctx.runTimedActivityWithHidden) {
+            ctx.runTimedActivityWithHidden(25, reward, hiddenDelta,
+                cls::text("notice.meal_complete"),
+                cls::text("activity.cafeteria.eat_at_table"));
+        } else {
+            const int previousMinute = ctx.timeSystem.advanceMinutes(25);
+            ctx.player.modifyAttributes(reward);
+            mergeHidden(ctx.player.getHidden(), hiddenDelta);
+            syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+            ctx.timeSkipFlash.start("Time passes...");
+            if (!(ctx.finalizeStateChange && ctx.finalizeStateChange())) {
+                if (ctx.showTimedResult) {
+                    ctx.showTimedResult(cls::text("notice.meal_complete"),
+                        cls::text("activity.cafeteria.eat_at_table"));
+                }
+                if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
+                if (ctx.finalizeStateChange) ctx.finalizeStateChange();
+            }
+        }
         ctx.lastMealPickupSlot = -1;
         return true;
     }
@@ -83,7 +100,24 @@ void resolveMealChoice(GameContext& ctx, int mealIndex) {
     std::ostringstream body;
     body << cls::format("activity.cafeteria.meal_choice_result",
         {{"meal", meal.displayName()}, {"cost", std::to_string(meal.cost)}});
-    ctx.runTimedActivity(20, meal.reward, cls::text("notice.meal_complete"), body.str());
+    Attributes reward = meal.reward;
+    reward.gold -= meal.cost;
+    HiddenMap hiddenDelta{{"mealCount", 1}, {"healthIndex", meal.cost >= 20 ? 4 : 2}};
+    if (ctx.runTimedActivityWithHidden) {
+        ctx.runTimedActivityWithHidden(20, reward, hiddenDelta,
+            cls::text("notice.meal_complete"), body.str());
+    } else {
+        const int previousMinute = ctx.timeSystem.advanceMinutes(20);
+        ctx.player.modifyAttributes(reward);
+        mergeHidden(ctx.player.getHidden(), hiddenDelta);
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+        ctx.timeSkipFlash.start("Time passes...");
+        if (!(ctx.finalizeStateChange && ctx.finalizeStateChange())) {
+            if (ctx.showTimedResult) ctx.showTimedResult(cls::text("notice.meal_complete"), body.str());
+            if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
+            if (ctx.finalizeStateChange) ctx.finalizeStateChange();
+        }
+    }
 }
 
 } // namespace CafeteriaInteraction

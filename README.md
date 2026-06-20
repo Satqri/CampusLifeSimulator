@@ -140,7 +140,7 @@ cmake --build build
 | `WASD` / 方向键 | 移动玩家 |
 | 鼠标点击地图 | 引导玩家移动到目标点 |
 | `Enter` | 场景切换 / 交互点触发 |
-| `C` | 触发压力事件（SAN -15） |
+| `C` | 触发 SAN 冲击（SAN -15） |
 | `F` | 与附近敌人战斗 |
 | `V` | 恢复 SAN（+15） |
 | `X` | 设置测试战斗 buff（+2） |
@@ -183,14 +183,14 @@ cmake --build build
 
 ### 健身房
 
-- 跑步机（40min）：SAN-4 Energy-14 Social+2
-- 杠铃（40min）：SAN-5 Energy-16 Social+1
+- 跑步机（45min）：SAN+8 Energy-10 HealthIndex+5
+- 杠铃（50min）：SAN+3 Energy-15 HealthIndex+5
 
 ### 宿舍
 
 - 睡觉（22:30 后）：推进到下一天 08:00，按睡眠时长恢复
-- 书桌学习（45min）：SAN-6 Energy-10 Academic+7
-- 打游戏（60min）：前 2 次 SAN+12 Energy+8，第 3 次起效果衰减
+- 书桌学习（60min）：SAN-5 Energy-10 Academic+8
+- 打游戏（45min）：SAN+10 Energy-5 Academic-2，长期增加沉迷与熬夜
 - 第 14 天睡觉后学期结束
 
 ### 战斗系统

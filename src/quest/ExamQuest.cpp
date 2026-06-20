@@ -27,6 +27,7 @@ ExamQuest::ExamQuest(const std::string& id, const std::string& name,
 void ExamQuest::execute(Player& player) {
     applyResult(player);
     player.modifyAttributes(completionReward);
+    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
     completed = true;
 }
 
@@ -158,11 +159,13 @@ void ExamQuest::applyResult(Player& player) {
         delta.energy = -10;
     }
     player.modifyAttributes(delta);
+    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
 }
 
 void ExamQuest::review(Player& player) {
     Attributes delta;
     delta.energy = -reviewEnergyCost;
     player.modifyAttributes(delta);
+    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
     reviewBonus = reviewBonusAmount;
 }

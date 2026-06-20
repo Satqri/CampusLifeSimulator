@@ -60,7 +60,7 @@ void HUD::render(sf::RenderWindow& window) {
     window.draw(stats);
     window.draw(page);
 
-    // 6 属性条：体力、健康、金钱、压力、知识、社交，均匀分布
+    // 6 属性条：体力、健康、金钱、SAN、知识、社交，均匀分布
     constexpr float kSpacing = 152.0f;
     constexpr float kStartX = 8.0f;
     constexpr float kBarY = 25.0f;

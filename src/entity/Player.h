@@ -70,7 +70,7 @@ public:
      *
      * 每天结束时调用，检测长期低属性状态并施加跨属性惩罚：
      * - 体力 < 30 连续 >= 2 天 → 扣健康
-     * - 健康 < 30 连续 >= 2 天 → 扣压力 / 知识 / 社交
+     * - 健康 < 30 连续 >= 2 天 → 扣 SAN / 知识 / 社交
      */
     void dailyAttributeCheck();
 
@@ -134,7 +134,7 @@ private:
     CombatBuffs combatBuffs;    ///< 战斗增益/减益效果
     sf::RectangleShape sprite;  ///< 简易像素精灵方块
     int lowEnergyDays = 0;      ///< 连续低体力天数（>=2 触发扣健康）
-    int lowHealthDays = 0;      ///< 连续低健康天数（>=2 触发扣压力/知识/社交）
+    int lowHealthDays = 0;      ///< 连续低健康天数（>=2 触发扣 SAN/知识/社交）
     bool moveTargetActive = false; ///< 鼠标点击移动目标是否有效
     sf::Vector2f moveTarget;    ///< 鼠标点击移动目标坐标
 };

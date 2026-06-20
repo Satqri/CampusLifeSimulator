@@ -18,7 +18,7 @@
           ],
           "require": "all",
           "then": "attend_normal",
-          "else": "roll_call"
+          "else": "risk_check"
         },
         "attend_normal": {
           "type": "outcome",
@@ -34,9 +34,31 @@
           "title_key": "event.class_attendance.attend_normal.title",
           "body_key": "event.class_attendance.attend_normal.body"
         },
+        "risk_check": {
+          "type": "check",
+          "conditions": [
+            {
+              "kind": "stat",
+              "stat": "skipClassCount",
+              "op": ">=",
+              "value": 1
+            },
+            {
+              "kind": "stat",
+              "stat": "teacherTrust",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "require": "any",
+          "then": "roll_call_high_risk",
+          "else": "roll_call",
+          "title_key": "event.class_attendance.risk_check.title",
+          "body_key": "event.class_attendance.risk_check.body"
+        },
         "roll_call": {
           "type": "random_check",
-          "probability": 45,
+          "probability": 30,
           "success": "roll_call_caught",
           "failure": "skip_success",
           "time_advance": 90,
@@ -44,10 +66,20 @@
           "body_key": "event.class_attendance.roll_call.body",
           "flash_key": "event.class_attendance.roll_call.flash"
         },
+        "roll_call_high_risk": {
+          "type": "random_check",
+          "probability": 45,
+          "success": "roll_call_caught",
+          "failure": "skip_success",
+          "time_advance": 90,
+          "title_key": "event.class_attendance.roll_call_high_risk.title",
+          "body_key": "event.class_attendance.roll_call_high_risk.body",
+          "flash_key": "event.class_attendance.roll_call.flash"
+        },
         "skip_success": {
           "type": "outcome",
           "delta": {
-            "san": -5
+            "san": 5
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -94,7 +126,7 @@
         "friend_cover_success": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "rollCallCount": 1,
@@ -107,7 +139,7 @@
         "friend_cover_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "rollCallCount": 1,
@@ -136,7 +168,7 @@
           "type": "outcome",
           "delta": {
             "energy": -15,
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "lateCount": 1,
@@ -151,7 +183,7 @@
         "rush_back_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -164,7 +196,7 @@
         "ignore_roll_call": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "rollCallCount": 1,

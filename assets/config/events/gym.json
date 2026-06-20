@@ -5,7 +5,7 @@
       "trigger": {
         "type": "interaction",
         "action_id": "gym_bench",
-        "chance": 18,
+        "chance": 14,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
@@ -88,7 +88,7 @@
           "type": "outcome",
           "delta": {
             "energy": -3,
-            "san": 5
+            "san": -5
           },
           "title_key": "event.gym_equipment_occupied.ask_fail.title",
           "body_key": "event.gym_equipment_occupied.ask_fail.body"
@@ -120,7 +120,7 @@
           "type": "outcome",
           "delta": {
             "energy": -3,
-            "san": 5
+            "san": -5
           },
           "title_key": "event.gym_equipment_occupied.change_fail.title",
           "body_key": "event.gym_equipment_occupied.change_fail.body"
@@ -128,7 +128,7 @@
         "wait": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -3
           },
           "title_key": "event.gym_equipment_occupied.wait.title",
@@ -137,7 +137,7 @@
         "leave": {
           "type": "outcome",
           "delta": {
-            "san": 2
+            "san": -2
           },
           "title_key": "event.gym_equipment_occupied.leave.title",
           "body_key": "event.gym_equipment_occupied.leave.body"

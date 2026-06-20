@@ -2,6 +2,7 @@
 #define CLS_CORE_SETTLEMENTRESOLVER_H
 
 #include "core/CharacterState.h"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,8 @@ struct EndingDefinition {
     std::string descriptionKey;
     std::string type;
     std::string trigger;
+    std::string requireMode;
+    nlohmann::json conditions = nlohmann::json::array();
 };
 
 struct EarnedTitle {
@@ -30,6 +33,8 @@ struct EarnedTitle {
     std::string subtitleKey;
     std::string text;
     std::string textKey;
+    std::string requireMode;
+    nlohmann::json conditions = nlohmann::json::array();
 };
 
 struct SettlementResult {

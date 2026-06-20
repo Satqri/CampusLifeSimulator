@@ -79,7 +79,7 @@
         "join_academic_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3
+            "san": -3
           },
           "hidden_delta": {
             "clubType": "none",
@@ -105,7 +105,7 @@
         "join_sports_success": {
           "type": "outcome",
           "delta": {
-            "san": -5,
+            "san": 5,
             "energy": -10
           },
           "hidden_delta": {
@@ -121,7 +121,7 @@
         "join_sports_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "clubType": "none",
@@ -162,7 +162,7 @@
         "join_arts_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "clubType": "none",
@@ -174,7 +174,7 @@
         "join_none": {
           "type": "outcome",
           "delta": {
-            "san": -3
+            "san": 3
           },
           "hidden_delta": {
             "clubType": "none",
@@ -257,7 +257,7 @@
           "delta": {
             "academic": 3,
             "social": 3,
-            "san": 5,
+            "san": -5,
             "energy": -10
           },
           "hidden_delta": {
@@ -323,7 +323,7 @@
         "team_up_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -6
           },
           "hidden_delta": {
@@ -337,7 +337,7 @@
         "skip_task": {
           "type": "outcome",
           "delta": {
-            "san": -5
+            "san": 5
           },
           "hidden_delta": {
             "clubRelation": -2,
@@ -420,7 +420,7 @@
           "type": "outcome",
           "delta": {
             "academic": 5,
-            "san": 10,
+            "san": -10,
             "energy": -10
           },
           "hidden_delta": {
@@ -491,7 +491,7 @@
         "quit_core": {
           "type": "outcome",
           "delta": {
-            "san": -15,
+            "san": 15,
             "social": -5
           },
           "hidden_delta": {
@@ -522,6 +522,12 @@
             "stat": "clubType",
             "op": "neq",
             "value": "none"
+          },
+          {
+            "kind": "time",
+            "stat": "day",
+            "op": ">=",
+            "value": 10
           }
         ],
         "require": "all"
@@ -575,7 +581,7 @@
           "type": "outcome",
           "delta": {
             "social": 8,
-            "san": -5,
+            "san": 5,
             "energy": -8
           },
           "hidden_delta": {
@@ -613,7 +619,7 @@
           "type": "outcome",
           "delta": {
             "academic": 8,
-            "san": 3,
+            "san": -3,
             "energy": -8
           },
           "hidden_delta": {
@@ -671,7 +677,7 @@
         "showcase_skip": {
           "type": "outcome",
           "delta": {
-            "san": -5
+            "san": 5
           },
           "hidden_delta": {
             "clubShowcaseScore": -5,

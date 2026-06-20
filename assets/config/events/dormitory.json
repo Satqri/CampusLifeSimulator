@@ -5,7 +5,7 @@
       "trigger": {
         "type": "interaction",
         "action_id": "dormitory_rug",
-        "chance": 25,
+        "chance": 10,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
@@ -81,7 +81,7 @@
           "type": "outcome",
           "delta": {
             "academic": 5,
-            "san": -5,
+            "san": 5,
             "energy": -5
           },
           "title_key": "event.dormitory_network_outage.fix_success.title",
@@ -90,7 +90,7 @@
         "fix_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -5
           },
           "title_key": "event.dormitory_network_outage.fix_fail.title",
@@ -116,7 +116,7 @@
           "type": "outcome",
           "delta": {
             "social": 8,
-            "san": -10,
+            "san": 10,
             "energy": -2
           },
           "hidden_delta": {
@@ -128,7 +128,7 @@
         "chat_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -2
           },
           "title_key": "event.dormitory_network_outage.chat_fail.title",
@@ -140,7 +140,7 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
+              "op": ">=",
               "value": 50
             }
           ],
@@ -163,7 +163,7 @@
           "type": "outcome",
           "delta": {
             "energy": -3,
-            "san": 5
+            "san": -5
           },
           "title_key": "event.dormitory_network_outage.study_fail.title",
           "body_key": "event.dormitory_network_outage.study_fail.body"
@@ -172,7 +172,7 @@
           "type": "outcome",
           "delta": {
             "energy": -3,
-            "san": 10
+            "san": -10
           },
           "title_key": "event.dormitory_network_outage.rage_refresh.title",
           "body_key": "event.dormitory_network_outage.rage_refresh.body"
@@ -184,10 +184,34 @@
       "trigger": {
         "type": "interaction",
         "action_id": "dormitory_games",
-        "chance": 22,
+        "chance": 8,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
+          {
+            "kind": "group",
+            "require": "any",
+            "conditions": [
+              {
+                "kind": "stat",
+                "stat": "gameAddiction",
+                "op": ">=",
+                "value": 8
+              },
+              {
+                "kind": "stat",
+                "stat": "lateNightLevel",
+                "op": ">=",
+                "value": 6
+              },
+              {
+                "kind": "stat",
+                "stat": "san",
+                "op": "<",
+                "value": 45
+              }
+            ]
+          },
           {
             "kind": "group",
             "require": "any",
@@ -246,7 +270,7 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
+              "op": ">=",
               "value": 50
             }
           ],
@@ -259,7 +283,7 @@
         "delete_success": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -2
           },
           "hidden_delta": {
@@ -271,7 +295,7 @@
         "delete_fail": {
           "type": "outcome",
           "delta": {
-            "san": 10,
+            "san": -10,
             "energy": -2
           },
           "hidden_delta": {
@@ -300,7 +324,7 @@
           "type": "outcome",
           "delta": {
             "social": 5,
-            "san": -5,
+            "san": 5,
             "energy": -3
           },
           "hidden_delta": {
@@ -312,7 +336,7 @@
         "joke_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8,
+            "san": -8,
             "energy": -3
           },
           "hidden_delta": {
@@ -333,8 +357,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 60
+              "op": ">=",
+              "value": 40
             }
           ],
           "require": "all",
@@ -347,7 +371,7 @@
           "type": "outcome",
           "delta": {
             "social": 3,
-            "san": -8,
+            "san": 8,
             "energy": -5
           },
           "hidden_delta": {
@@ -359,7 +383,7 @@
         "explain_fail": {
           "type": "outcome",
           "delta": {
-            "san": 15,
+            "san": -15,
             "energy": -5
           },
           "hidden_delta": {
@@ -371,7 +395,7 @@
         "ignore": {
           "type": "outcome",
           "delta": {
-            "san": 15
+            "san": -15
           },
           "hidden_delta": {
             "socialAwkwardCount": 2,

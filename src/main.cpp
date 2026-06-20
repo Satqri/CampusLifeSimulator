@@ -428,7 +428,7 @@ int main() {
         activeEnemies, mealOptions, libraryBooks, libraryBookProgress,
         selectedLibraryBook, lastMealPickupSlot,
         gamePlayDay, gamesPlayedToday, spawnCounter,
-        {}, {}, {}, {}  // callbacks 稍后注入
+        {}, {}, {}, {}, {}, {}  // callbacks 稍后注入
     };
 
     // ── 核心回调（handler 通过 ctx 调用）───────────────────────
@@ -475,6 +475,8 @@ int main() {
 
     maybeFinalizeRun = [&]() {
         if (settlementActive) return true;
+        normalizeHidden(player.getHidden());
+        syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
         settlementResult = settlementResolver.resolveImmediate(player);
         if (settlementResult.resolved) {
             settlementActive = true;
@@ -492,7 +494,7 @@ int main() {
         return false;
     };
 
-    auto sleepFromDormitory = [&ctx, &showTimedResult, &maybeFinalizeRun]() {
+    auto sleepFromDormitory = [&ctx, &showTimedResult, &maybeFinalizeRun, &settlementActive]() {
         if (!ctx.timeSystem.canSleep()) {
             ctx.activityNotice.show("Too Early",
                 "You can choose sleep after 22:30.");
@@ -504,6 +506,7 @@ int main() {
         const int energyGain = std::min(70, sleptHours * 8);
         ctx.player.modifyAttributes(Attributes{.energy = energyGain, .san = sanGain});
         ctx.player.dailyAttributeCheck();
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
         ctx.player.setPosition(480.0f, 276.0f);
         ctx.player.stopMovement();
         ctx.currentPlace = CampusPlace::Dormitory;
@@ -519,9 +522,11 @@ int main() {
                  << sanGain << ", Energy +" << energyGain << ".";
         }
         ctx.timeSkipFlash.start("Sleeping...");
-        showTimedResult(ctx.timeSystem.isFinished()
-            ? "Fourteen Days Complete" : "New Day", body.str());
         maybeFinalizeRun();
+        if (!settlementActive) {
+            showTimedResult(ctx.timeSystem.isFinished()
+                ? "Fourteen Days Complete" : "New Day", body.str());
+        }
     };
 
     auto runTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun](
@@ -529,16 +534,36 @@ int main() {
             const std::string& title, const std::string& body) {
         const int prev = ctx.timeSystem.advanceMinutes(minutes);
         ctx.player.modifyAttributes(delta);
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
         ctx.timeSkipFlash.start("Time passes...");
+        if (maybeFinalizeRun()) return;
+        showTimedResult(title, body);
+        checkEventTriggers(prev);
+        maybeFinalizeRun();
+    };
+
+    auto runTimedActivityWithHidden = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun](
+            int minutes, const Attributes& delta, const HiddenMap& hiddenDelta,
+            const std::string& title, const std::string& body) {
+        const int prev = ctx.timeSystem.advanceMinutes(minutes);
+        ctx.player.modifyAttributes(delta);
+        if (!hiddenDelta.is_null()) {
+            mergeHidden(ctx.player.getHidden(), hiddenDelta);
+        }
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+        ctx.timeSkipFlash.start("Time passes...");
+        if (maybeFinalizeRun()) return;
         showTimedResult(title, body);
         checkEventTriggers(prev);
         maybeFinalizeRun();
     };
 
     ctx.runTimedActivity = runTimedActivity;
+    ctx.runTimedActivityWithHidden = runTimedActivityWithHidden;
     ctx.showTimedResult = showTimedResult;
     ctx.checkEventTriggers = checkEventTriggers;
     ctx.sleepFromDormitory = sleepFromDormitory;
+    ctx.finalizeStateChange = maybeFinalizeRun;
 
     // ── 薄封装 lambda ──────────────────────────────────────────
     auto trySpawnEnemy = [&ctx]() {
@@ -710,15 +735,15 @@ int main() {
             if (screen == GameScreen::DIFFICULTY) {
                 auto startGameWithDifficulty = [&](Difficulty difficulty) {
                     selectedDifficulty = difficulty;
-                    if (!difficultyApplied) {
-                        applyDifficulty(player, selectedDifficulty);
-                        difficultyApplied = true;
-                    }
+                    player.setAttributes(defaultPlayerAttributes());
                     currentPlace = CampusPlace::Campus;
                     currentMap = campusMap.get();
                     player.setPosition(480.0f, 276.0f);
                     timeSystem = TimeSystem();
                     initializeHiddenState();
+                    applyDifficulty(player, selectedDifficulty);
+                    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+                    difficultyApplied = true;
                     activityNotice.clear();
                     mealChoicePrompt.clear();
                     lastMealPickupSlot = -1;
@@ -879,9 +904,10 @@ int main() {
                 player.moveToTarget(dt);
             }
 
-            // 按键 C = 压力事件（降低 SAN，触发敌人出现）
+            // 按键 C = SAN 冲击（降低 SAN，触发敌人出现）
             if (justPressed(sf::Keyboard::Key::C)) {
                 player.modifyAttributes(Attributes{.san = -15});
+                maybeFinalizeRun();
                 int lvl = player.getSanLevel();
                 std::cout << "[Stress] SAN dropped to " << player.getAttributes().san
                           << " Level=" << lvl << std::endl;
@@ -893,12 +919,15 @@ int main() {
             if (justPressed(sf::Keyboard::Key::F)) {
                 if (!fightNearestEnemy()) {
                     std::cout << "[Combat] No enemy nearby! Get closer or spawn one first (press C)." << std::endl;
+                } else {
+                    maybeFinalizeRun();
                 }
             }
 
             // 按键 V = 恢复 SAN（模拟休息/自我关怀）
             if (justPressed(sf::Keyboard::Key::V)) {
                 player.modifyAttributes(Attributes{.san = 15});
+                maybeFinalizeRun();
                 int lvl = player.getSanLevel();
                 // 恢复后重新缩放已生成的敌人
                 for (auto& e : activeEnemies) {

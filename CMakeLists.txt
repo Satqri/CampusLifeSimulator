@@ -45,7 +45,7 @@ target_link_libraries(CampusLifeSimulator PRIVATE
     CURL::libcurl
 )
 
-target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4 /utf-8,-Wall -Wextra>)
+target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4 /utf-8 /FS,-Wall -Wextra>)
 
 add_custom_command(TARGET CampusLifeSimulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

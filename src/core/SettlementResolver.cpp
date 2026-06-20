@@ -66,11 +66,13 @@ bool evaluateConditionsJson(const json& conditions, const std::string& requireMo
     if (!conditions.is_array() || conditions.empty()) return true;
     if (requireMode == "any") {
         for (const auto& cond : conditions) {
+            if (cond.value("kind", "") == "meta") continue;
             if (evaluateConditionJson(cond, player)) return true;
         }
         return false;
     }
     for (const auto& cond : conditions) {
+        if (cond.value("kind", "") == "meta") continue;
         if (!evaluateConditionJson(cond, player)) return false;
     }
     return true;
@@ -82,7 +84,7 @@ bool evaluateConditionJson(const json& cond, const Player& player) {
         return evaluateConditionsJson(cond["conditions"], cond.value("require", "all"), player);
     }
     if (kind == "meta") {
-        return false;
+        return true;
     }
     if (kind == "stat" || kind == "enum") {
         const std::string stat = cond.value("stat", "");
@@ -121,8 +123,13 @@ bool SettlementResolver::load(const std::string& endingsPath, const std::string&
         def.descriptionKey = item.value("description_key", "");
         def.type = item.value("type", "");
         def.trigger = item.value("trigger", "");
+        def.requireMode = item.value("require", "all");
+        def.conditions = item.value("conditions", json::array());
         mEndings.push_back(def);
     }
+    std::sort(mEndings.begin(), mEndings.end(), [](const EndingDefinition& lhs, const EndingDefinition& rhs) {
+        return lhs.priority < rhs.priority;
+    });
 
     std::ifstream titlesFile(titlesPath);
     if (!titlesFile.is_open()) return false;
@@ -142,6 +149,8 @@ bool SettlementResolver::load(const std::string& endingsPath, const std::string&
             title.subtitleKey = item.value("subtitle_key", "");
             title.text = item.value("text", "");
             title.textKey = item.value("text_key", "");
+            title.requireMode = item.value("require", "all");
+            title.conditions = item.value("conditions", json::array());
             mTitleDefs.push_back(title);
         }
     }
@@ -152,18 +161,9 @@ SettlementResult SettlementResolver::resolveImmediate(const Player& player) cons
     SettlementResult result;
     for (const auto& ending : mEndings) {
         if (ending.trigger != "immediate") continue;
-        const auto& attrs = player.getAttributes();
-        const auto& hidden = player.getHidden();
-        if (ending.id == "hospitalized" && hidden.value("healthIndex", 100) <= 0) {
+        if (evaluateConditionsJson(ending.conditions, ending.requireMode, player)) {
             result.resolved = true;
-            result.gameOver = true;
-            result.ending = ending;
-            result.summary = buildSummary(player, result);
-            return result;
-        }
-        if (ending.id == "breakdown" && ((100 - attrs.san) >= 100 || attrs.energy <= 0)) {
-            result.resolved = true;
-            result.gameOver = true;
+            result.gameOver = ending.type == "game_over";
             result.ending = ending;
             result.summary = buildSummary(player, result);
             return result;
@@ -174,71 +174,22 @@ SettlementResult SettlementResolver::resolveImmediate(const Player& player) cons
 
 SettlementResult SettlementResolver::resolveFinal(const Player& player) const {
     SettlementResult result;
-    const auto& attrs = player.getAttributes();
-    const auto& hidden = player.getHidden();
 
-    auto setEnding = [&](const std::string& id) {
-        for (const auto& ending : mEndings) {
-            if (ending.id == id) {
-                result.ending = ending;
-                result.resolved = true;
-                result.gameOver = ending.type == "game_over";
-                return;
-            }
+    for (const auto& ending : mEndings) {
+        if (ending.trigger == "immediate") continue;
+        if (ending.type == "default" || evaluateConditionsJson(ending.conditions, ending.requireMode, player)) {
+            result.ending = ending;
+            result.resolved = true;
+            result.gameOver = ending.type == "game_over";
+            break;
         }
-    };
+    }
 
-    if (hidden.value("healthIndex", 100) <= 0) setEnding("hospitalized");
-    else if ((100 - attrs.san) >= 100 || attrs.energy <= 0) setEnding("breakdown");
-    else if (attrs.academic < 40 && hidden.value("skipClassCount", 0) >= 6) setEnding("retention");
-    else if (hidden.value("innovationResult", std::string("none")) == "excellent"
-          || (hidden.value("innovationProgress", 0) >= 80 && hidden.value("innovationTeamTrust", 0) >= 35 && hidden.value("innovationDefenseScore", 0) >= 60)) setEnding("innovation_star");
-    else if (attrs.academic >= 85 && hidden.value("teacherTrust", 0) >= 25 && hidden.value("skipClassCount", 0) <= 1) setEnding("top_student");
-    else if (attrs.social >= 85 && attrs.academic >= 50) setEnding("social_butterfly");
-    else if (attrs.gold >= 250 && hidden.value("partTimeCount", 0) >= 6) setEnding("workaholic");
-    else if (hidden.value("healthIndex", 100) >= 110 && hidden.value("exerciseCount", 0) >= 7) setEnding("fitness_guru");
-    else if (hidden.value("friendBond", 0) >= 10 && attrs.social >= 80) setEnding("network_king");
-    else if (hidden.value("gameAddiction", 0) >= 30 && (100 - attrs.san) <= 50) setEnding("gamer_legend");
-    else if (attrs.academic >= 70 && hidden.value("lateNightLevel", 0) >= 25) setEnding("night_grinder");
-    else if ((100 - attrs.san) <= 30 && attrs.academic < 50) setEnding("happy_slacker");
-    else setEnding("normal_graduate");
-
-    auto addTitle = [&](const std::string& id) {
-        for (const auto& def : mTitleDefs) {
-            if (def.id == id) result.titles.push_back(def);
+    for (const auto& title : mTitleDefs) {
+        if (evaluateConditionsJson(title.conditions, title.requireMode, player)) {
+            result.titles.push_back(title);
         }
-    };
-
-    if (hidden.value("classAttendCount", 0) >= 8 && hidden.value("skipClassCount", 0) <= 1 && hidden.value("teacherTrust", 0) >= 20) addTitle("class_stable_student");
-    if (hidden.value("returnClassCount", 0) >= 2) addTitle("class_honest_repair");
-    if (hidden.value("skipClassCount", 0) >= 2 && hidden.value("rollCallSavedCount", 0) >= 2) addTitle("class_roll_call_survivor");
-    if (hidden.value("skipClassCount", 0) >= 5 && hidden.value("absencePenaltyCount", 0) >= 3 && hidden.value("teacherTrust", 0) <= 10) addTitle("class_absence_warning");
-
-    if (hidden.value("friendBond", 0) >= 6 && hidden.value("friendHelpCount", 0) >= 3) addTitle("friend_reliable_partner");
-    if (hidden.value("friendRollCallHelpCount", 0) >= 1) addTitle("friend_roll_call_buddy");
-    if (hidden.value("sharedNotes", false) && hidden.value("friendReviewCount", 0) >= 1) addTitle("friend_exam_ally");
-    if (hidden.value("friendBond", 0) >= 0 && hidden.value("friendBond", 0) <= 2 && hidden.value("friendHelpCount", 0) <= 1) addTitle("friend_nodding_terms");
-    if (hidden.value("friendRefuseCount", 0) >= 2 || hidden.value("friendBond", 0) < 0) addTitle("friend_read_ignored");
-
-    if (hidden.value("clubType", std::string("none")) != "none" && hidden.value("clubContribution", 0) >= 6 && hidden.value("clubShowcaseSuccess", false)) addTitle("club_backbone");
-    if (hidden.value("clubRelation", 0) >= 5) addTitle("club_mediator");
-    if (hidden.value("clubShowcaseScore", 0) >= 18 && (hidden.value("expressionUnlocked", false) || attrs.social >= 50)) addTitle("club_showcase_star");
-    if (hidden.value("clubActivityCount", 0) >= 2 && hidden.value("clubContribution", 0) >= 2 && hidden.value("clubContribution", 0) <= 5) addTitle("club_steady_member");
-    if (hidden.value("clubType", std::string("none")) != "none" && (hidden.value("clubActivityCount", 0) <= 1 || hidden.value("clubContribution", 0) < 0)) addTitle("club_ghost_member");
-    if (hidden.value("clubType", std::string("none")) == "none") addTitle("club_free_spirit");
-
-    if (hidden.value("innovationResult", std::string("none")) == "excellent") addTitle("innovation_campus_star");
-    if (hidden.value("innovationTeamTrust", 0) >= 40 && hidden.value("innovationResult", std::string("none")) != "failed") addTitle("innovation_team_harmony");
-    if (hidden.value("innovationResult", std::string("none")) == "firefighter" || (hidden.value("innovationCrisisCount", 0) >= 2 && hidden.value("innovationProgress", 0) >= 60)) addTitle("innovation_firefighter");
-    if (hidden.value("innovationResult", std::string("none")) == "completed") addTitle("innovation_completed");
-    if (hidden.value("innovationResult", std::string("none")) == "pass" && (hidden.value("innovationDemoMode", std::string("none")) == "safe" || hidden.value("innovationDefenseScore", 0) >= 25)) addTitle("innovation_ppt_master");
-    if (hidden.value("innovationResult", std::string("none")) == "failed" || hidden.value("innovationTeamTrust", 0) <= 0) addTitle("innovation_silent");
-    if (hidden.value("innovationResult", std::string("none")) == "bystander" || !hidden.value("innovationJoined", false)) addTitle("innovation_bystander");
-
-    if (hidden.value("lateCount", 0) >= 5) addTitle("daily_morning_runner");
-    if (hidden.value("libraryVisitCount", 0) >= 10) addTitle("daily_library_dweller");
-    if (hidden.value("mealCount", 0) >= 20) addTitle("daily_cafeteria_resident");
-    if (hidden.value("storeNightShiftCount", 0) >= 5) addTitle("daily_night_shift_champion");
+    }
 
     result.summary = buildSummary(player, result);
     return result;

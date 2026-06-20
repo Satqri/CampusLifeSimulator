@@ -68,14 +68,16 @@ bool SaveManager::loadGame(SaveGameData& data) {
     data.player.name = playerJson.value("name", std::string("Protagonist"));
     data.player.position = {playerJson.value("x", 480.0f), playerJson.value("y", 276.0f)};
     const auto& attrJson = playerJson["attributes"];
-    data.player.attributes.energy = attrJson.value("energy", 80);
-    data.player.attributes.health = attrJson.value("health", 80);
-    data.player.attributes.gold = attrJson.value("gold", 100);
-    data.player.attributes.san = attrJson.value("san", 80);
-    data.player.attributes.academic = attrJson.value("academic", 60);
-    data.player.attributes.social = attrJson.value("social", 60);
+    const Attributes defaults = defaultPlayerAttributes();
+    data.player.attributes.energy = attrJson.value("energy", defaults.energy);
+    data.player.attributes.health = attrJson.value("health", defaults.health);
+    data.player.attributes.gold = attrJson.value("gold", defaults.gold);
+    data.player.attributes.san = attrJson.value("san", defaults.san);
+    data.player.attributes.academic = attrJson.value("academic", defaults.academic);
+    data.player.attributes.social = attrJson.value("social", defaults.social);
     if (playerJson.contains("hidden"))
         data.player.hidden = playerJson["hidden"];
+    syncVisibleHealthFromHidden(data.player.attributes, data.player.hidden);
     const auto& buffJson = playerJson["combatBuffs"];
     data.player.nextEventPositive = buffJson.value("nextEventPositive", false);
     data.player.nextRollModifier = buffJson.value("nextRollModifier", 0);

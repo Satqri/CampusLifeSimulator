@@ -70,9 +70,12 @@ struct GameContext {
     // ── 辅助回调（由 main() 设置，避免循环依赖）───────────────
     std::function<void(int minutes, const Attributes& delta,
                        const std::string& title, const std::string& body)> runTimedActivity;
+    std::function<void(int minutes, const Attributes& delta, const HiddenMap& hiddenDelta,
+                       const std::string& title, const std::string& body)> runTimedActivityWithHidden;
     std::function<void(const std::string& title, const std::string& body)> showTimedResult;
     std::function<void(int previousMinute)> checkEventTriggers;
     std::function<void()> sleepFromDormitory;
+    std::function<bool()> finalizeStateChange;
 };
 
 #endif

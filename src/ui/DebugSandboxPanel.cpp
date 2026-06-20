@@ -221,6 +221,8 @@ DebugSandboxResult DebugSandboxPanel::adjustCurrentAttribute(int delta, GameCont
 
     const auto before = ctx.player.getAttributes();
     ctx.player.modifyAttributes(attrDelta(selectedIndex, delta));
+    syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+    if (ctx.finalizeStateChange) ctx.finalizeStateChange();
     const auto after = ctx.player.getAttributes();
 
     std::ostringstream ss;
@@ -241,6 +243,11 @@ DebugSandboxResult DebugSandboxPanel::applyExtremeState(GameContext& ctx) {
     delta.academic = -a.academic;
     delta.social = -a.social;
     ctx.player.modifyAttributes(delta);
+    HiddenMap hiddenDelta = HiddenMap::object();
+    hiddenDelta["healthIndex"] = -ctx.player.getHidden().value("healthIndex", 100);
+    mergeHidden(ctx.player.getHidden(), hiddenDelta);
+    syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+    if (ctx.finalizeStateChange) ctx.finalizeStateChange();
 
     const std::string message = "Extreme low state applied.";
     addLog(message);

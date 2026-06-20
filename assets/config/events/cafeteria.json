@@ -5,7 +5,7 @@
       "trigger": {
         "type": "interaction",
         "action_id": "cafeteria_counter",
-        "chance": 25,
+        "chance": 10,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
@@ -67,7 +67,7 @@
           "type": "outcome",
           "delta": {
             "energy": 10,
-            "san": -5
+            "san": 5
           },
           "title_key": "event.cafeteria_last_chicken.snatch_success.title",
           "body_key": "event.cafeteria_last_chicken.snatch_success.body"
@@ -76,7 +76,7 @@
           "type": "outcome",
           "delta": {
             "energy": 2,
-            "san": 2
+            "san": -2
           },
           "title_key": "event.cafeteria_last_chicken.snatch_fail.title",
           "body_key": "event.cafeteria_last_chicken.snatch_fail.body"
@@ -112,7 +112,7 @@
           "type": "outcome",
           "delta": {
             "energy": 2,
-            "san": 2
+            "san": -2
           },
           "title_key": "event.cafeteria_last_chicken.share_fail.title",
           "body_key": "event.cafeteria_last_chicken.share_fail.body"
@@ -136,7 +136,7 @@
           "delta": {
             "gold": -30,
             "energy": 15,
-            "san": -10
+            "san": 10
           },
           "title_key": "event.cafeteria_last_chicken.luxury_success.title",
           "body_key": "event.cafeteria_last_chicken.luxury_success.body"
@@ -145,7 +145,7 @@
           "type": "outcome",
           "delta": {
             "energy": 2,
-            "san": 2
+            "san": -2
           },
           "title_key": "event.cafeteria_last_chicken.luxury_fail.title",
           "body_key": "event.cafeteria_last_chicken.luxury_fail.body"
@@ -154,7 +154,7 @@
           "type": "outcome",
           "delta": {
             "energy": 2,
-            "san": 2
+            "san": -2
           },
           "title_key": "event.cafeteria_last_chicken.veggie.title",
           "body_key": "event.cafeteria_last_chicken.veggie.body"

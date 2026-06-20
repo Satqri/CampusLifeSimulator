@@ -99,7 +99,7 @@
         "patient_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -8
           },
           "hidden_delta": {
@@ -144,7 +144,7 @@
         "hint_fail": {
           "type": "outcome",
           "delta": {
-            "san": 2,
+            "san": -2,
             "energy": -3
           },
           "hidden_delta": {
@@ -167,7 +167,7 @@
         "refuse": {
           "type": "outcome",
           "delta": {
-            "san": -2
+            "san": 2
           },
           "hidden_delta": {
             "friendBond": -1,
@@ -250,7 +250,7 @@
           "type": "outcome",
           "delta": {
             "social": 2,
-            "san": -3,
+            "san": 3,
             "energy": 5
           },
           "hidden_delta": {
@@ -263,7 +263,7 @@
         "accept_chat_fail": {
           "type": "outcome",
           "delta": {
-            "san": 2,
+            "san": -2,
             "energy": 3
           },
           "hidden_delta": {
@@ -278,8 +278,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 60
+              "op": ">=",
+              "value": 40
             }
           ],
           "require": "any",
@@ -290,7 +290,7 @@
           "type": "outcome",
           "delta": {
             "social": 1,
-            "san": -2
+            "san": 2
           },
           "hidden_delta": {
             "friendBond": 1,
@@ -303,7 +303,7 @@
         "refuse_drink_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3
+            "san": -3
           },
           "hidden_delta": {
             "friendStage": 2
@@ -350,7 +350,7 @@
         "joke_roll_call_fail": {
           "type": "outcome",
           "delta": {
-            "san": 2
+            "san": -2
           },
           "hidden_delta": {
             "friendStage": 2
@@ -443,7 +443,7 @@
         "cover_success": {
           "type": "outcome",
           "delta": {
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "rollCallSavedCount": 1,
@@ -457,7 +457,7 @@
         "cover_fail": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "absencePenaltyCount": 1,
@@ -487,7 +487,7 @@
           "type": "outcome",
           "delta": {
             "energy": -15,
-            "san": 5
+            "san": -5
           },
           "hidden_delta": {
             "lateCount": 1,
@@ -503,7 +503,7 @@
         "rush_back_fail2": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -520,8 +520,8 @@
             {
               "kind": "stat",
               "stat": "san",
-              "op": "<",
-              "value": 70
+              "op": ">=",
+              "value": 30
             }
           ],
           "require": "all",
@@ -531,7 +531,7 @@
         "dont_cover_success": {
           "type": "outcome",
           "delta": {
-            "san": 8
+            "san": -8
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -545,7 +545,7 @@
         "dont_cover_fail": {
           "type": "outcome",
           "delta": {
-            "san": 12
+            "san": -12
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -558,7 +558,7 @@
         "ignore_message": {
           "type": "outcome",
           "delta": {
-            "san": 2
+            "san": -2
           },
           "hidden_delta": {
             "skipClassCount": 1,
@@ -643,7 +643,7 @@
           "type": "outcome",
           "delta": {
             "academic": 10,
-            "san": -5,
+            "san": 5,
             "energy": -10
           },
           "hidden_delta": {
@@ -658,7 +658,7 @@
         "review_together_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -8
           },
           "hidden_delta": {
@@ -700,7 +700,7 @@
         "let_him_teach_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -8
           },
           "hidden_delta": {
@@ -743,7 +743,7 @@
         "share_notes_fail": {
           "type": "outcome",
           "delta": {
-            "san": 2
+            "san": -2
           },
           "hidden_delta": {
             "friendReviewCount": 1,

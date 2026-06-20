@@ -5,7 +5,7 @@
       "trigger": {
         "type": "interaction",
         "action_id": "campus_square",
-        "chance": 18,
+        "chance": 7,
         "once": true,
         "fallback_to_regular": true,
         "conditions": [
@@ -85,7 +85,7 @@
           "type": "outcome",
           "delta": {
             "social": 10,
-            "san": -5,
+            "san": 5,
             "energy": -5
           },
           "title_key": "event.campus_roadshow.go_up_success.title",
@@ -95,7 +95,7 @@
           "type": "outcome",
           "delta": {
             "social": -3,
-            "san": 10,
+            "san": -10,
             "energy": -5
           },
           "title_key": "event.campus_roadshow.go_up_fail.title",
@@ -127,7 +127,7 @@
         "humor_fail": {
           "type": "outcome",
           "delta": {
-            "san": 5,
+            "san": -5,
             "energy": -3
           },
           "title_key": "event.campus_roadshow.humor_fail.title",
@@ -151,7 +151,7 @@
           "type": "outcome",
           "delta": {
             "energy": -10,
-            "san": 2
+            "san": -2
           },
           "title_key": "event.campus_roadshow.escape_success.title",
           "body_key": "event.campus_roadshow.escape_success.body"
@@ -159,7 +159,7 @@
         "escape_fail": {
           "type": "outcome",
           "delta": {
-            "san": 3,
+            "san": -3,
             "energy": -3
           },
           "title_key": "event.campus_roadshow.escape_fail.title",
@@ -168,7 +168,7 @@
         "embarrassed": {
           "type": "outcome",
           "delta": {
-            "san": 10,
+            "san": -10,
             "energy": -2
           },
           "title_key": "event.campus_roadshow.embarrassed.title",

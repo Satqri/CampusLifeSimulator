@@ -472,7 +472,10 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         return;
 
     case EventNodeType::RANDOM_CHECK: {
-        applyEffects(node, ctx);
+        if (applyEffects(node, ctx)) {
+            clear();
+            return;
+        }
         const int roll = static_cast<int>(mRng() % 100);
         const bool success = roll < node.probability;
         std::cout << "[Event] Random: roll=" << roll
@@ -485,7 +488,10 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         return;
     }
     case EventNodeType::CHECK: {
-        applyEffects(node, ctx);
+        if (applyEffects(node, ctx)) {
+            clear();
+            return;
+        }
         const bool passed = evaluateConditions(
             node.conditions, node.requireMode, ctx);
         appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
@@ -499,7 +505,10 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         return;
     }
     case EventNodeType::OUTCOME:
-        applyEffects(node, ctx);
+        if (applyEffects(node, ctx)) {
+            clear();
+            return;
+        }
         markEventTriggered(mCurrentEventId, ctx);
         const std::string title = localizedValue(node.titleKey, node.title);
         const std::string bodyText = localizedValue(node.bodyKey, node.body);
@@ -536,7 +545,10 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
         mWaitingForEnter = false;
 
         if (node.type == EventNodeType::RANDOM_CHECK) {
-            applyEffects(node, ctx);
+            if (applyEffects(node, ctx)) {
+                clear();
+                return;
+            }
             const int roll = static_cast<int>(mRng() % 100);
             const bool success = roll < node.probability;
             std::cout << "[Event] Random (on Enter): roll=" << roll
@@ -548,7 +560,10 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
             return;
         }
         if (node.type == EventNodeType::CHECK) {
-            applyEffects(node, ctx);
+            if (applyEffects(node, ctx)) {
+                clear();
+                return;
+            }
             const bool passed = evaluateConditions(
                 node.conditions, node.requireMode, ctx);
             appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
@@ -832,17 +847,27 @@ bool EventRunner::evaluateCondition(const Condition& cond, GameContext& ctx) {
 
 // ─── 附属效果 ───────────────────────────────────────────────────────────────
 
-void EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
-    if (node.timeAdvanceMinutes > 0)
+bool EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
+    bool changedState = false;
+    if (node.timeAdvanceMinutes > 0) {
         ctx.timeSystem.advanceMinutes(node.timeAdvanceMinutes);
+        changedState = true;
+    }
     const auto& d = node.delta;
     if (d.energy != 0 || d.health != 0 || d.gold != 0 ||
-        d.san != 0 || d.academic != 0 || d.social != 0)
+        d.san != 0 || d.academic != 0 || d.social != 0) {
         ctx.player.modifyAttributes(node.delta);
+        changedState = true;
+    }
     if (!node.hiddenDelta.is_null()) {
         mergeHidden(ctx.player.getHidden(), node.hiddenDelta);
+        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
+        changedState = true;
     }
     const std::string flash = localizedValue(node.flashKey, node.flashText);
     if (!flash.empty())
         ctx.timeSkipFlash.start(flash);
+    if (changedState && ctx.finalizeStateChange)
+        return ctx.finalizeStateChange();
+    return false;
 }

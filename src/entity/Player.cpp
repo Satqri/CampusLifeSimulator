@@ -34,6 +34,8 @@ Player::Player()
     , deceleration(kDefaultDeceleration)
     , stopSpeedThreshold(kDefaultStopThreshold)
 {
+    attributes = defaultPlayerAttributes();
+    mHidden["healthIndex"] = attributes.health;
     setMoveSpeed(kDefaultMoveSpeed);
     sprite.setSize(sf::Vector2f(16.0f, 16.0f));
     sprite.setFillColor(sf::Color(100, 200, 255)); // 浅蓝色代表玩家
@@ -41,12 +43,13 @@ Player::Player()
 }
 
 Player::Player(float x, float y)
-    : Character(x, y, Attributes(), kDefaultMoveSpeed)
+    : Character(x, y, defaultPlayerAttributes(), kDefaultMoveSpeed)
     , velocity(0.0f, 0.0f)
     , acceleration(kDefaultAcceleration)
     , deceleration(kDefaultDeceleration)
     , stopSpeedThreshold(kDefaultStopThreshold)
 {
+    mHidden["healthIndex"] = attributes.health;
     sprite.setSize(sf::Vector2f(16.0f, 16.0f));
     sprite.setFillColor(sf::Color(100, 200, 255));
     sprite.setOrigin({8.0f, 8.0f});
@@ -142,12 +145,17 @@ void Player::moveToTarget(float deltaTime) {
 
 void Player::modifyAttributes(const Attributes& delta) {
     attributes.energy   += delta.energy;
-    attributes.health   += delta.health;
+    if (delta.health != 0) {
+        HiddenMap hiddenDelta = HiddenMap::object();
+        hiddenDelta["healthIndex"] = delta.health;
+        mergeHidden(mHidden, hiddenDelta);
+    }
     attributes.gold     += delta.gold;
     attributes.san      += delta.san;
     attributes.academic += delta.academic;
     attributes.social   += delta.social;
     clampAttributes();
+    syncVisibleHealthFromHidden(attributes, mHidden);
 }
 
 void Player::dailyAttributeCheck() {
@@ -157,18 +165,26 @@ void Player::dailyAttributeCheck() {
     constexpr int kSanPenalty = 8;
     constexpr int kAcademicPenalty = 5;
     constexpr int kSocialPenalty = 5;
+    constexpr int kLateNightWarning = 20;
+    constexpr int kLateNightDanger = 35;
+    constexpr int kLateNightHealthPenalty = 6;
+    constexpr int kLateNightSanPenalty = 6;
+    constexpr int kLateNightRecovery = 4;
 
     // 长期低体力 → 扣健康
     if (attributes.energy < kLowThreshold) {
         lowEnergyDays++;
         if (lowEnergyDays >= kConsecutiveDays) {
-            attributes.health -= kHealthPenalty;
+            HiddenMap hiddenDelta = HiddenMap::object();
+            hiddenDelta["healthIndex"] = -kHealthPenalty;
+            mergeHidden(mHidden, hiddenDelta);
         }
     } else {
         lowEnergyDays = 0;
     }
 
-    // 长期低健康 → 扣压力/知识/社交
+    // 长期低健康 → 扣 SAN/知识/社交
+    syncVisibleHealthFromHidden(attributes, mHidden);
     if (attributes.health < kLowThreshold) {
         lowHealthDays++;
         if (lowHealthDays >= kConsecutiveDays) {
@@ -180,7 +196,25 @@ void Player::dailyAttributeCheck() {
         lowHealthDays = 0;
     }
 
+    const int lateNightLevel = mHidden.value("lateNightLevel", 0);
+    if (lateNightLevel >= kLateNightWarning) {
+        HiddenMap hiddenDelta = HiddenMap::object();
+        hiddenDelta["healthIndex"] = lateNightLevel >= kLateNightDanger
+            ? -kLateNightHealthPenalty * 2
+            : -kLateNightHealthPenalty;
+        mergeHidden(mHidden, hiddenDelta);
+        attributes.san -= lateNightLevel >= kLateNightDanger
+            ? kLateNightSanPenalty * 2
+            : kLateNightSanPenalty;
+    }
+    if (lateNightLevel > 0) {
+        HiddenMap recoveryDelta = HiddenMap::object();
+        recoveryDelta["lateNightLevel"] = -kLateNightRecovery;
+        mergeHidden(mHidden, recoveryDelta);
+    }
+
     clampAttributes();
+    syncVisibleHealthFromHidden(attributes, mHidden);
 }
 
 bool Player::isSanCritical() const {

@@ -1,5 +1,5 @@
 {
-  "description": "主结局判定逻辑 — 代码从 1 到 13 顺序执行 if-else if，一旦满足立即触发该结局并跳出。",
+  "description": "主结局判定逻辑 — SettlementResolver 按 priority 从小到大读取 conditions，一旦满足立即触发该结局并跳出。",
   "endings": [
     {
       "priority": 1,
@@ -52,10 +52,22 @@
       "id": "retention",
       "conditions": [
         {
-          "kind": "stat",
-          "stat": "academic",
-          "op": "<",
-          "value": 40
+          "kind": "group",
+          "require": "any",
+          "conditions": [
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": "<",
+              "value": 45
+            },
+            {
+              "kind": "stat",
+              "stat": "teacherTrust",
+              "op": "<=",
+              "value": -8
+            }
+          ]
         },
         {
           "kind": "stat",
@@ -129,7 +141,7 @@
           "kind": "stat",
           "stat": "teacherTrust",
           "op": ">=",
-          "value": 25
+          "value": 18
         },
         {
           "kind": "stat",
@@ -158,6 +170,30 @@
           "stat": "academic",
           "op": ">=",
           "value": 50
+        },
+        {
+          "kind": "group",
+          "require": "any",
+          "conditions": [
+            {
+              "kind": "stat",
+              "stat": "friendBond",
+              "op": ">=",
+              "value": 4
+            },
+            {
+              "kind": "stat",
+              "stat": "clubRelation",
+              "op": ">=",
+              "value": 5
+            },
+            {
+              "kind": "stat",
+              "stat": "clubActivityCount",
+              "op": ">=",
+              "value": 3
+            }
+          ]
         }
       ],
       "require": "all",
@@ -214,10 +250,40 @@
       "id": "network_king",
       "conditions": [
         {
-          "kind": "stat",
-          "stat": "friendBond",
-          "op": ">=",
-          "value": 10
+          "kind": "group",
+          "require": "any",
+          "conditions": [
+            {
+              "kind": "stat",
+              "stat": "friendBond",
+              "op": ">=",
+              "value": 10
+            },
+            {
+              "kind": "group",
+              "require": "all",
+              "conditions": [
+                {
+                  "kind": "stat",
+                  "stat": "friendBond",
+                  "op": ">=",
+                  "value": 6
+                },
+                {
+                  "kind": "stat",
+                  "stat": "clubRelation",
+                  "op": ">=",
+                  "value": 6
+                },
+                {
+                  "kind": "stat",
+                  "stat": "clubActivityCount",
+                  "op": ">=",
+                  "value": 3
+                }
+              ]
+            }
+          ]
         },
         {
           "kind": "stat",
@@ -233,19 +299,77 @@
     },
     {
       "priority": 10,
+      "id": "gamer_burnout",
+      "conditions": [
+        {
+          "kind": "stat",
+          "stat": "gameAddiction",
+          "op": ">=",
+          "value": 40
+        },
+        {
+          "kind": "group",
+          "require": "any",
+          "conditions": [
+            {
+              "kind": "stat",
+              "stat": "healthIndex",
+              "op": "<",
+              "value": 70
+            },
+            {
+              "kind": "stat",
+              "stat": "academic",
+              "op": "<",
+              "value": 45
+            },
+            {
+              "kind": "stat",
+              "stat": "lateNightLevel",
+              "op": ">=",
+              "value": 35
+            }
+          ]
+        }
+      ],
+      "require": "all",
+      "name_key": "ending.gamer_burnout.name",
+      "tagline_key": "ending.gamer_burnout.tagline",
+      "description_key": "ending.gamer_burnout.description"
+    },
+    {
+      "priority": 11,
       "id": "gamer_legend",
       "conditions": [
         {
           "kind": "stat",
           "stat": "gameAddiction",
           "op": ">=",
-          "value": 30
+          "value": 40
         },
         {
           "kind": "stat",
           "stat": "stress",
           "op": "<=",
           "value": 50
+        },
+        {
+          "kind": "stat",
+          "stat": "skipClassCount",
+          "op": "<=",
+          "value": 3
+        },
+        {
+          "kind": "stat",
+          "stat": "healthIndex",
+          "op": ">=",
+          "value": 80
+        },
+        {
+          "kind": "stat",
+          "stat": "academic",
+          "op": ">=",
+          "value": 45
         }
       ],
       "require": "all",
@@ -254,7 +378,7 @@
       "description_key": "ending.gamer_legend.description"
     },
     {
-      "priority": 11,
+      "priority": 12,
       "id": "night_grinder",
       "conditions": [
         {
@@ -276,7 +400,47 @@
       "description_key": "ending.night_grinder.description"
     },
     {
-      "priority": 12,
+      "priority": 13,
+      "id": "balanced_life",
+      "conditions": [
+        {
+          "kind": "stat",
+          "stat": "academic",
+          "op": ">=",
+          "value": 65
+        },
+        {
+          "kind": "stat",
+          "stat": "social",
+          "op": ">=",
+          "value": 65
+        },
+        {
+          "kind": "stat",
+          "stat": "san",
+          "op": ">=",
+          "value": 55
+        },
+        {
+          "kind": "stat",
+          "stat": "healthIndex",
+          "op": ">=",
+          "value": 85
+        },
+        {
+          "kind": "stat",
+          "stat": "skipClassCount",
+          "op": "<=",
+          "value": 3
+        }
+      ],
+      "require": "all",
+      "name_key": "ending.balanced_life.name",
+      "tagline_key": "ending.balanced_life.tagline",
+      "description_key": "ending.balanced_life.description"
+    },
+    {
+      "priority": 14,
       "id": "happy_slacker",
       "conditions": [
         {
@@ -298,7 +462,7 @@
       "description_key": "ending.happy_slacker.description"
     },
     {
-      "priority": 13,
+      "priority": 15,
       "id": "normal_graduate",
       "conditions": [],
       "require": "all",
