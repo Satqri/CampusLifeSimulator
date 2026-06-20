@@ -1,7 +1,7 @@
 #include "map/CampusMap.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 #include "core/Localization.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "entity/Player.h"
 

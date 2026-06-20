@@ -1,7 +1,7 @@
 #include "interaction/CafeteriaInteraction.h"
 #include "core/GameContext.h"
 #include "core/CharacterState.h"
-#include "core/MealConfig.h"
+#include "config/MealConfig.h"
 #include "core/Localization.h"
 #include <sstream>
 

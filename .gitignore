@@ -79,6 +79,7 @@ logs/
 .cache/
 .ccls-cache/
 clangd/
+.clangd
 
 #自己的脚本
 run-game.bat

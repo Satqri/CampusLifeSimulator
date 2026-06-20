@@ -1,6 +1,6 @@
 #include "core/Localization.h"
 
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 #include <fstream>
 #include <iostream>

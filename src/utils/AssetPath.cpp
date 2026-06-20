@@ -1,4 +1,4 @@
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 #include <filesystem>
 #include <string>

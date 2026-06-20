@@ -1,7 +1,7 @@
 #ifndef CLS_CORE_CHARACTERSTATE_H
 #define CLS_CORE_CHARACTERSTATE_H
 
-#include "core/HiddenVariableConfig.h"
+#include "config/HiddenVariableConfig.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <string>
@@ -209,6 +209,40 @@ inline HiddenMap scaleHiddenByDuration(const HiddenMap& hiddenDelta, int actualM
         }
     }
     return scaled;
+}
+
+// ── 活动重复追踪 ─────────────────────────────────────
+
+inline std::string activityKeyFor(const std::string& title, const std::string& body) {
+    return title + "\n" + body;
+}
+
+/** @brief 更新活动连击计数，返回当前 streak */
+inline int updateActivityStreak(HiddenMap& hidden, const std::string& activityKey) {
+    if (!hidden.is_object()) hidden = HiddenMap::object();
+
+    constexpr const char* kLastActivity = "lastActivityId";
+    constexpr const char* kStreak = "activityStreak";
+
+    std::string lastId;
+    if (hidden.contains(kLastActivity) && hidden[kLastActivity].is_string())
+        lastId = hidden[kLastActivity].get<std::string>();
+
+    int prevStreak = 0;
+    if (hidden.contains(kStreak) && hidden[kStreak].is_number_integer())
+        prevStreak = hidden[kStreak].get<int>();
+
+    const int streak = (lastId == activityKey) ? std::min(prevStreak + 1, 99) : 1;
+    hidden[kLastActivity] = activityKey;
+    hidden[kStreak] = streak;
+    return streak;
+}
+
+/** @brief 重置活动连击计数 */
+inline void resetActivityStreak(HiddenMap& hidden) {
+    if (!hidden.is_object()) hidden = HiddenMap::object();
+    hidden["lastActivityId"] = "none";
+    hidden["activityStreak"] = 0;
 }
 
 #endif

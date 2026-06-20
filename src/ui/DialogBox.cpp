@@ -1,5 +1,5 @@
 #include "ui/DialogBox.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 
 DialogBox::DialogBox(sf::Font& font)
     : font(font)

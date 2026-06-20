@@ -1,5 +1,5 @@
 #include "map/LibraryInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 LibraryInterior::LibraryInterior() {
     interactions = loadInteractionsFromJson(

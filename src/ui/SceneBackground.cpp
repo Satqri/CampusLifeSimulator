@@ -1,5 +1,5 @@
 #include "ui/SceneBackground.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 #include <cmath>
 #include <filesystem>

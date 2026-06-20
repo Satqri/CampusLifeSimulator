@@ -1,5 +1,5 @@
 #include "map/CafeteriaInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 CafeteriaInterior::CafeteriaInterior() {
     interactions = loadInteractionsFromJson(

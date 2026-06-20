@@ -1,8 +1,6 @@
 #ifndef CLS_ENGINE_GAMECONTEXT_H
 #define CLS_ENGINE_GAMECONTEXT_H
 
-#include "core/CombatResult.h"
-#include "core/TimeSkipFlash.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
 #include "ui/ActivityNotice.h"

@@ -1,5 +1,5 @@
 #include "map/ClassroomInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 ClassroomInterior::ClassroomInterior() {
     interactions = loadInteractionsFromJson(

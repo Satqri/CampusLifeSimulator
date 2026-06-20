@@ -12,19 +12,18 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
-#include "core/AssetPath.h"
-#include "core/CombatResult.h"
+#include "core/ActivityRunner.h"
+#include "utils/AssetPath.h"
 #include "core/GameSettings.h"
+#include "core/SleepSystem.h"
 #include "core/Localization.h"
-#include "core/LibraryConfig.h"
-#include "core/MealConfig.h"
-#include "core/SceneConfig.h"
-#include "core/SceneTransition.h"
-#include "core/TextUtils.h"
-#include "core/TimeSkipFlash.h"
+#include "config/LibraryConfig.h"
+#include "config/MealConfig.h"
+#include "config/SceneConfig.h"
+#include "utils/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
-#include "core/WindowScaler.h"
+#include "utils/WindowScaler.h"
 #include "core/CombatSystem.h"
 #include "core/GameContext.h"
 #include "core/SettlementResolver.h"
@@ -59,7 +58,6 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <iomanip>
 #include <sstream>
 #include <iostream>
 #include <array>
@@ -75,143 +73,12 @@ enum class GameScreen {
     GAME
 };
 
-namespace {
-
-constexpr char kLastActivityIdKey[] = "lastActivityId";
-constexpr char kActivityStreakKey[] = "activityStreak";
-constexpr char kDurationPromptPurpose[] = "activity_duration";
-constexpr char kSleepPromptPurpose[] = "sleep_alarm";
-constexpr int kMinActivityMinutes = 10;
-constexpr int kMaxActivityMinutes = 120;
-constexpr int kMinutesPerDay = 24 * 60;
-constexpr int kDefaultSleepMinutes = 7 * 60 + 30;
-constexpr int kMinimumHealthySleepMinutes = 6 * 60 + 30;
-constexpr int kOversleepFloorMinutes = 7 * 60;
-
-int normalizedMinute(int minute) {
-    int result = minute % kMinutesPerDay;
-    if (result < 0) result += kMinutesPerDay;
-    return result;
-}
-
-bool isWithinClockWindow(int minute, int start, int end) {
-    minute = normalizedMinute(minute);
-    start = normalizedMinute(start);
-    end = normalizedMinute(end);
-    if (start <= end) return minute >= start && minute < end;
-    return minute >= start || minute < end;
-}
-
-std::string campusPlaceKey(CampusPlace place) {
-    switch (place) {
-        case CampusPlace::Dormitory: return "dormitory";
-        case CampusPlace::Cafeteria: return "cafeteria";
-        case CampusPlace::Classroom: return "classroom";
-        case CampusPlace::Library: return "library";
-        case CampusPlace::Gym: return "gym";
-        case CampusPlace::Store: return "store";
-        case CampusPlace::Campus: return "campus";
-    }
-    return "campus";
-}
-
-int commuteMinutes(CampusPlace from, CampusPlace to) {
-    if (from == to || from == CampusPlace::Campus || to == CampusPlace::Campus)
-        return 0;
-
-    const std::string a = campusPlaceKey(from);
-    const std::string b = campusPlaceKey(to);
-    const auto matches = [&](const std::string& lhs, const std::string& rhs) {
-        return (a == lhs && b == rhs) || (a == rhs && b == lhs);
-    };
-
-    if (matches("dormitory", "cafeteria")) return 5;
-    if (matches("dormitory", "classroom")) return 15;
-    if (matches("dormitory", "library")) return 10;
-    if (matches("dormitory", "gym")) return 10;
-    if (matches("dormitory", "store")) return 5;
-    if (matches("cafeteria", "classroom")) return 10;
-    if (matches("cafeteria", "library")) return 5;
-    if (matches("cafeteria", "gym")) return 5;
-    if (matches("cafeteria", "store")) return 5;
-    if (matches("classroom", "library")) return 5;
-    if (matches("classroom", "gym")) return 10;
-    if (matches("classroom", "store")) return 10;
-    if (matches("library", "gym")) return 10;
-    if (matches("library", "store")) return 5;
-    if (matches("gym", "store")) return 5;
-    return 10;
-}
-
-std::string formatClockMinute(int minuteOfDay) {
-    const int minute = ((minuteOfDay % (24 * 60)) + (24 * 60)) % (24 * 60);
-    std::ostringstream ss;
-    ss << std::setw(2) << std::setfill('0') << (minute / 60)
-       << ":" << std::setw(2) << (minute % 60);
-    return ss.str();
-}
-
-std::string durationLabel(int minutes) {
-    if (minutes < 60) return cls::format("activity.duration.minutes", {{"minutes", std::to_string(minutes)}});
-    const int hours = minutes / 60;
-    const int restMinutes = minutes % 60;
-    if (restMinutes == 0) {
-        return cls::format("activity.duration.hours", {{"hours", std::to_string(hours)}});
-    }
-    return cls::format("activity.duration.hours_minutes",
-        {{"hours", std::to_string(hours)}, {"minutes", std::to_string(restMinutes)}});
-}
-
-std::string activityKeyFor(const std::string& title, const std::string& body) {
-    return title + "\n" + body;
-}
-
-int updateActivityStreak(HiddenMap& hidden, const std::string& activityKey) {
-    if (!hidden.is_object()) hidden = HiddenMap::object();
-
-    std::string lastActivity;
-    if (hidden.contains(kLastActivityIdKey) && hidden[kLastActivityIdKey].is_string()) {
-        lastActivity = hidden[kLastActivityIdKey].get<std::string>();
-    }
-
-    int previousStreak = 0;
-    if (hidden.contains(kActivityStreakKey) && hidden[kActivityStreakKey].is_number_integer()) {
-        previousStreak = hidden[kActivityStreakKey].get<int>();
-    }
-
-    const int streak = lastActivity == activityKey
-        ? std::min(previousStreak + 1, 99)
-        : 1;
-    hidden[kLastActivityIdKey] = activityKey;
-    hidden[kActivityStreakKey] = streak;
-    return streak;
-}
-
-void resetActivityStreak(HiddenMap& hidden) {
-    if (!hidden.is_object()) hidden = HiddenMap::object();
-    hidden[kLastActivityIdKey] = "none";
-    hidden[kActivityStreakKey] = 0;
-}
-
-std::string appendRepeatNotice(const std::string& body, int streak) {
-    if (streak <= 1) return body;
-    return body + "\n\n" + cls::format("activity.repeat_penalty",
-        {{"streak", std::to_string(streak)}});
-}
-
-} // namespace
 
 // 数据 struct 已拆离至独立 header：
-//   CombatResult   → src/core/CombatResult.h
-//   SceneTransition → src/core/SceneTransition.h
-//   TimeSkipFlash  → src/core/TimeSkipFlash.h
+//   CombatResult / SceneTransition / TimeSkipFlash → src/core/Types.h
 //   ActivityNotice → src/ui/ActivityNotice.h
 //   ChoicePrompt   → src/ui/ChoicePrompt.h
-
-// ──────────────────────────────────────────────────────────────
-// 根据情绪类型获取对应玩家属性值（用于战斗检定）
-// ──────────────────────────────────────────────────────────────
-// statForEmotion / actionNameForEmotion 已拆离至 src/entity/CombatHelper.h
+//   CombatHelper   → src/entity/CombatHelper.h
 
 // ──────────────────────────────────────────────────────────────
 // 渲染当前属性面板（所有模式下都在顶部显示）
@@ -382,35 +249,7 @@ int main() {
     int settlementPage = 0;
     SettlementResult settlementResult;
 
-    struct PendingTimedActivity {
-        bool active = false;
-        int baseMinutes = 0;
-        Attributes delta{};
-        HiddenMap hiddenDelta = HiddenMap::object();
-        std::string title;
-        std::string body;
-        std::string activityId;
-        bool hasHidden = false;
-
-        void clear() {
-            active = false;
-            baseMinutes = 0;
-            delta = Attributes{};
-            hiddenDelta = HiddenMap::object();
-            title.clear();
-            body.clear();
-            activityId.clear();
-            hasHidden = false;
-        }
-    };
     PendingTimedActivity pendingTimedActivity;
-    struct PendingSleep {
-        bool active = false;
-
-        void clear() {
-            active = false;
-        }
-    };
     PendingSleep pendingSleep;
     int selectedLibraryBook = 0;
     std::array<int, 4> libraryBookProgress = {0, 0, 0, 0};
@@ -609,249 +448,24 @@ int main() {
         return false;
     };
 
-    auto executeSleep = [&ctx, &showTimedResult, &maybeFinalizeRun, &settlementActive](int requestedMinutes, bool explicitAlarm) {
-        auto& hidden = ctx.player.getHidden();
-        normalizeHidden(hidden);
-
-        int targetMinutes = requestedMinutes > 0
-            ? requestedMinutes
-            : hidden.value("lastSleepMinutes", kDefaultSleepMinutes);
-        targetMinutes = std::clamp(targetMinutes, 60, 12 * 60);
-
-        bool overslept = false;
-        if (explicitAlarm && targetMinutes < 6 * 60) {
-            const int seed = ctx.timeSystem.getDay() * 97 + normalizedMinute(ctx.timeSystem.getMinuteOfDay()) * 13
-                + hidden.value("consecutiveNoSleepDays", 0) * 31;
-            if (seed % 100 < 65) {
-                targetMinutes = kOversleepFloorMinutes;
-                overslept = true;
-            }
-        }
-
-        const int startDay = ctx.timeSystem.getDay();
-        const int sleptMinutes = ctx.timeSystem.sleepForMinutes(targetMinutes);
-        const int sleptHours = sleptMinutes / 60;
-        const int sleptRestMinutes = sleptMinutes % 60;
-
-        int sanGain = std::min(45, sleptMinutes / 12);
-        int energyGain = std::min(70, sleptMinutes / 8);
-        int healthDelta = 0;
-        int lateNightRelief = -5;
-        if (sleptMinutes < 6 * 60) {
-            sanGain = std::max(0, sanGain - 8);
-            energyGain = std::max(5, energyGain - 12);
-            healthDelta = -5;
-            lateNightRelief = 1;
-        } else if (sleptMinutes < kMinimumHealthySleepMinutes) {
-            healthDelta = -2;
-            lateNightRelief = -2;
-        }
-
-        if (startDay != ctx.timeSystem.getDay()) {
-            ctx.player.dailyAttributeCheck();
-        }
-
-        HiddenMap sleepDelta = HiddenMap::object();
-        sleepDelta["lastSleepMinutes"] = sleptMinutes;
-        sleepDelta["alarmSleepMinutes"] = targetMinutes;
-        sleepDelta["consecutiveNoSleepDays"] = 0;
-        sleepDelta["lastSleepDay"] = ctx.timeSystem.getDay();
-        sleepDelta["lateNightLevel"] = lateNightRelief;
-        if (healthDelta != 0) sleepDelta["healthIndex"] = healthDelta;
-        mergeHidden(hidden, sleepDelta);
-
-        ctx.player.modifyAttributes(Attributes{.energy = energyGain, .san = sanGain});
-        resetActivityStreak(hidden);
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), hidden);
-        ctx.player.setPosition(480.0f, 276.0f);
-        ctx.player.stopMovement();
-        ctx.currentPlace = CampusPlace::Dormitory;
-        ctx.currentMap = ctx.dormitoryMap;
-        ctx.gamePlayDay = ctx.timeSystem.getDay();
-        ctx.gamesPlayedToday = 0;
-
-        std::ostringstream body;
-        if (ctx.timeSystem.isFinished()) {
-            body << cls::text("sleep.semester_complete") << "\n";
-        }
-        body << cls::format("sleep.result",
-            {{"hours", std::to_string(sleptHours)},
-             {"minutes", std::to_string(sleptRestMinutes)},
-             {"energy", std::to_string(energyGain)},
-             {"san", std::to_string(sanGain)}});
-        if (overslept) {
-            body << "\n" << cls::text("sleep.overslept");
-        }
-        if (sleptMinutes < kMinimumHealthySleepMinutes) {
-            body << "\n" << cls::text("sleep.short_penalty");
-        }
-
-        ctx.timeSkipFlash.start(cls::text("time.sleeping"));
-        maybeFinalizeRun();
-        if (!settlementActive) {
-            showTimedResult(ctx.timeSystem.isFinished()
-                ? cls::text("notice.days_complete")
-                : (startDay == ctx.timeSystem.getDay() ? cls::text("sleep.result.title") : cls::text("notice.new_day")),
-                body.str());
-        }
-    };
-
-    auto sleepFromDormitory = [&ctx, &pendingSleep]() {
-        if (!ctx.timeSystem.canSleep()) {
-            ctx.activityNotice.show(cls::text("notice.too_early"),
-                cls::text("sleep.too_early"));
-            return;
-        }
-        auto& hidden = ctx.player.getHidden();
-        normalizeHidden(hidden);
-        const int previousSleep = hidden.value("lastSleepMinutes", kDefaultSleepMinutes);
-        pendingSleep.active = true;
-        ctx.mealChoicePrompt.show(
-            cls::text("sleep.alarm.title"),
-            cls::format("sleep.alarm.body", {{"last", durationLabel(previousSleep)}}),
-            std::vector<std::string>{
-                cls::text("sleep.alarm.option_default"),
-                cls::text("sleep.alarm.option_7_5h"),
-                cls::text("sleep.alarm.option_6h"),
-                cls::text("sleep.alarm.option_5h")
-            },
-            kSleepPromptPurpose,
-            std::vector<int>{0, kDefaultSleepMinutes, 6 * 60, 5 * 60});
-    };
-
-    auto markNoSleepForSkippedDays = [&ctx]() {
-        auto& hidden = ctx.player.getHidden();
-        normalizeHidden(hidden);
-        const int currentDay = ctx.timeSystem.getDay();
-        const int lastSleepDay = hidden.value("lastSleepDay", 0);
-        if (currentDay > lastSleepDay + 1) {
-            HiddenMap delta = HiddenMap::object();
-            delta["consecutiveNoSleepDays"] = hidden.value("consecutiveNoSleepDays", 0)
-                + (currentDay - lastSleepDay - 1);
-            delta["lastSleepDay"] = currentDay - 1;
-            mergeHidden(hidden, delta);
-        }
-    };
-
-    auto executeTimedActivity = [&ctx, &checkEventTriggers, &showTimedResult, &maybeFinalizeRun, &markNoSleepForSkippedDays](
-            int baseMinutes, int requestedMinutes, const Attributes& delta,
-            const HiddenMap& hiddenDelta, bool hasHidden,
-            const std::string& title, const std::string& body,
-            const std::string& activityId) {
-        const int startMinute = ctx.timeSystem.getMinuteOfDay();
-        const int startDay = ctx.timeSystem.getDay();
-        int actualMinutes = std::clamp(requestedMinutes, kMinActivityMinutes, kMaxActivityMinutes);
-        const int rollCallMinute = ctx.timeSystem.getRollCallMinute();
-        const bool interruptedByRollCall = !ctx.timeSystem.isClassPrompted()
-            && ctx.currentPlace != CampusPlace::Classroom
-            && startDay == ctx.timeSystem.getDay()
-            && startMinute < rollCallMinute
-            && startMinute + actualMinutes >= rollCallMinute;
-        if (interruptedByRollCall) {
-            actualMinutes = std::max(0, rollCallMinute - startMinute);
-        }
-
-        const int prev = ctx.timeSystem.advanceMinutes(actualMinutes);
-        if (ctx.timeSystem.getDay() != startDay) {
-            markNoSleepForSkippedDays();
-            ctx.player.dailyAttributeCheck();
-            ctx.gamePlayDay = ctx.timeSystem.getDay();
-            ctx.gamesPlayedToday = 0;
-        }
-        if (actualMinutes <= 0) {
-            if (interruptedByRollCall && checkEventTriggers(prev)) {
-                maybeFinalizeRun();
-                return;
-            }
-            showTimedResult(title, body);
-            return;
-        }
-
-        const std::string activityKey = activityId.empty() ? activityKeyFor(title, body) : activityId;
-        const int streak = updateActivityStreak(ctx.player.getHidden(), activityKey);
-        const Attributes durationDelta = scaleAttributesByDuration(delta, actualMinutes, baseMinutes);
-        const Attributes adjustedDelta = adjustAttributesForRepetition(durationDelta, streak);
-        ctx.player.modifyAttributes(adjustedDelta);
-        if (hasHidden) {
-            const HiddenMap durationHiddenDelta = scaleHiddenByDuration(hiddenDelta, actualMinutes, baseMinutes);
-            const HiddenMap adjustedHiddenDelta = adjustHiddenForRepetition(durationHiddenDelta, streak);
-            if (!adjustedHiddenDelta.is_null()) {
-                mergeHidden(ctx.player.getHidden(), adjustedHiddenDelta);
-            }
-        }
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (maybeFinalizeRun()) return;
-
-        if (interruptedByRollCall) {
-            if (checkEventTriggers(prev)) {
-                maybeFinalizeRun();
-                return;
-            }
-        }
-
-        std::string resultBody = body;
-        resultBody += "\n\n" + cls::format("activity.duration_result",
-            {{"minutes", std::to_string(actualMinutes)}, {"target", std::to_string(requestedMinutes)}});
-        showTimedResult(title, appendRepeatNotice(resultBody, streak));
-        checkEventTriggers(prev);
-        maybeFinalizeRun();
-    };
-
-    auto promptTimedActivityDuration = [&ctx, &pendingTimedActivity](
-            int minutes, const Attributes& delta, const HiddenMap& hiddenDelta, bool hasHidden,
-            const std::string& title, const std::string& body, const std::string& activityId) {
-        pendingTimedActivity.active = true;
-        pendingTimedActivity.baseMinutes = std::max(1, minutes);
-        pendingTimedActivity.delta = delta;
-        pendingTimedActivity.hiddenDelta = hiddenDelta;
-        pendingTimedActivity.title = title;
-        pendingTimedActivity.body = body;
-        pendingTimedActivity.activityId = activityId;
-        pendingTimedActivity.hasHidden = hasHidden;
-
-        const int initialMinutes = std::clamp(
-            ((minutes + kMinActivityMinutes / 2) / kMinActivityMinutes) * kMinActivityMinutes,
-            kMinActivityMinutes,
-            kMaxActivityMinutes);
-        ctx.mealChoicePrompt.showRange(
-            cls::text("activity.duration.title"),
-            cls::format("activity.duration.body",
-                {{"activity", title}, {"base", durationLabel(minutes)}}),
-            kDurationPromptPurpose,
-            initialMinutes,
-            kMinActivityMinutes,
-            kMaxActivityMinutes,
-            kMinActivityMinutes);
-    };
-
-    auto runTimedActivity = [&executeTimedActivity, &promptTimedActivityDuration](
-            int minutes, const Attributes& delta,
+    ctx.runTimedActivity = [&ctx, &pendingTimedActivity](int minutes, const Attributes& delta,
             const std::string& title, const std::string& body,
             const std::string& activityId, bool customDuration) {
-        if (customDuration) {
-            promptTimedActivityDuration(minutes, delta, HiddenMap::object(), false, title, body, activityId);
-            return;
-        }
-        executeTimedActivity(minutes, minutes, delta, HiddenMap::object(), false, title, body, activityId);
+        runTimedActivity(ctx, pendingTimedActivity, minutes, delta, title, body, activityId, customDuration);
     };
 
-    auto runTimedActivityWithHidden = [&executeTimedActivity, &promptTimedActivityDuration](
-            int minutes, const Attributes& delta, const HiddenMap& hiddenDelta,
+    ctx.runTimedActivityWithHidden = [&ctx, &pendingTimedActivity](int minutes, const Attributes& delta,
+            const HiddenMap& hiddenDelta,
             const std::string& title, const std::string& body,
             const std::string& activityId, bool customDuration) {
-        if (customDuration) {
-            promptTimedActivityDuration(minutes, delta, hiddenDelta, true, title, body, activityId);
-            return;
-        }
-        executeTimedActivity(minutes, minutes, delta, hiddenDelta, true, title, body, activityId);
+        runTimedActivityWithHidden(ctx, pendingTimedActivity, minutes, delta, hiddenDelta, title, body, activityId, customDuration);
     };
 
-    ctx.runTimedActivity = runTimedActivity;
-    ctx.runTimedActivityWithHidden = runTimedActivityWithHidden;
     ctx.showTimedResult = showTimedResult;
     ctx.checkEventTriggers = checkEventTriggers;
-    ctx.sleepFromDormitory = sleepFromDormitory;
+    ctx.sleepFromDormitory = [&ctx, &pendingSleep]() {
+        sleepFromDormitory(ctx, pendingSleep);
+    };
     ctx.finalizeStateChange = maybeFinalizeRun;
 
     // ── 薄封装 lambda ──────────────────────────────────────────
@@ -891,7 +505,7 @@ int main() {
     };
 
     auto startMapTransition = [&ctx, &sceneTransition, &canEnterPlace, &checkEventTriggers,
-                               &maybeFinalizeRun, &markNoSleepForSkippedDays](const MapPortal& portal) {
+                               &maybeFinalizeRun](const MapPortal& portal) {
         if (!canEnterPlace(portal.target)) return;
 
         auto& hidden = ctx.player.getHidden();
@@ -918,7 +532,7 @@ int main() {
             const int prev = ctx.timeSystem.advanceMinutes(travelMinutes);
             ctx.timeSkipFlash.start(cls::format("time.commuting", {{"minutes", std::to_string(travelMinutes)}}));
             if (ctx.timeSystem.getDay() != startDay) {
-                markNoSleepForSkippedDays();
+                markNoSleepForSkippedDays(ctx);
                 ctx.player.dailyAttributeCheck();
                 ctx.gamePlayDay = ctx.timeSystem.getDay();
                 ctx.gamesPlayedToday = 0;
@@ -1224,7 +838,7 @@ int main() {
                                 const auto pending = pendingTimedActivity;
                                 pendingTimedActivity.clear();
                                 mealChoicePrompt.clear();
-                                executeTimedActivity(
+                                executeTimedActivity(ctx,
                                     pending.baseMinutes, selectedMinutes, pending.delta,
                                     pending.hiddenDelta, pending.hasHidden,
                                     pending.title, pending.body, pending.activityId);
@@ -1250,7 +864,7 @@ int main() {
                             const bool explicitAlarm = selectedMinutes > 0;
                             pendingSleep.clear();
                             mealChoicePrompt.clear();
-                            executeSleep(selectedMinutes, explicitAlarm);
+                            executeSleep(ctx, settlementActive, selectedMinutes, explicitAlarm);
                         } else if (keyEv->code == sf::Keyboard::Key::Escape) {
                             pendingSleep.clear();
                             mealChoicePrompt.clear();

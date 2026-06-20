@@ -1,6 +1,7 @@
 #ifndef CLS_CORE_TIMESYSTEM_H
 #define CLS_CORE_TIMESYSTEM_H
 
+#include "core/Localization.h"
 #include <string>
 
 enum class TimePhase {
@@ -68,5 +69,43 @@ private:
     bool classResolved = false;
     bool finished = false;
 };
+
+// ── 时间工具函数 ──────────────────────────────────────
+
+constexpr int kMinutesPerDay = 24 * 60;
+
+/** @brief 将分钟数归一化到 [0, 1440) 范围 */
+inline int normalizedMinute(int minute) {
+    int result = minute % kMinutesPerDay;
+    if (result < 0) result += kMinutesPerDay;
+    return result;
+}
+
+/** @brief 判断 minute 是否在 [start, end) 时钟窗口内（支持跨日） */
+inline bool isWithinClockWindow(int minute, int start, int end) {
+    minute = normalizedMinute(minute);
+    start = normalizedMinute(start);
+    end = normalizedMinute(end);
+    if (start <= end) return minute >= start && minute < end;
+    return minute >= start || minute < end;
+}
+
+/** @brief 从 TimeSystem 计算绝对游戏分钟（从第 1 天 00:00 起） */
+inline int absoluteGameMinute(const TimeSystem& timeSystem) {
+    return (timeSystem.getDay() - 1) * kMinutesPerDay
+        + normalizedMinute(timeSystem.getMinuteOfDay());
+}
+
+/** @brief 将分钟数格式化为可读时长文本 */
+inline std::string durationLabel(int minutes) {
+    if (minutes < 60)
+        return cls::format("activity.duration.minutes", {{"minutes", std::to_string(minutes)}});
+    const int hours = minutes / 60;
+    const int rest = minutes % 60;
+    if (rest == 0)
+        return cls::format("activity.duration.hours", {{"hours", std::to_string(hours)}});
+    return cls::format("activity.duration.hours_minutes",
+        {{"hours", std::to_string(hours)}, {"minutes", std::to_string(rest)}});
+}
 
 #endif // CLS_CORE_TIMESYSTEM_H

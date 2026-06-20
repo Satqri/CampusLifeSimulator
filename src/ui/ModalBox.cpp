@@ -1,5 +1,5 @@
 #include "ui/ModalBox.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 #include "map/MapPortal.h"
 
 ModalBox::ModalBox(sf::Font& font) : mFont(font) {}

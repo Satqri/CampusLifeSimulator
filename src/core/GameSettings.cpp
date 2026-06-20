@@ -1,5 +1,5 @@
 #include "core/GameSettings.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 #include <algorithm>
 #include <filesystem>

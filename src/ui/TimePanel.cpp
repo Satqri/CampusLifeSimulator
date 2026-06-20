@@ -1,6 +1,6 @@
 #include "ui/TimePanel.h"
 #include "core/Localization.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 #include "core/TimeSystem.h"
 
 TimePanel::TimePanel(sf::Font& font) : mFont(font) {}

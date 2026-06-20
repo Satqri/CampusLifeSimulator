@@ -1,5 +1,5 @@
 #include "map/ConvenienceStoreInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 ConvenienceStoreInterior::ConvenienceStoreInterior() {
     interactions = loadInteractionsFromJson(

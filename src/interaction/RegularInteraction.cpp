@@ -3,7 +3,7 @@
 #include "core/GameContext.h"
 #include "core/CharacterState.h"
 #include "core/Localization.h"
-#include "core/LibraryConfig.h"
+#include "config/LibraryConfig.h"
 
 #include <sstream>
 
@@ -23,17 +23,6 @@ bool hasJoinedInnovation(GameContext& ctx) {
     const auto& hidden = ctx.player.getHidden();
     return hidden.value("innovationJoined", false)
         || hidden.value("innovationStage", 0) > 0;
-}
-
-int normalizedMinute(int minute) {
-    constexpr int kMinutesPerDay = 24 * 60;
-    int result = minute % kMinutesPerDay;
-    if (result < 0) result += kMinutesPerDay;
-    return result;
-}
-
-int absoluteGameMinute(const TimeSystem& timeSystem) {
-    return (timeSystem.getDay() - 1) * 24 * 60 + normalizedMinute(timeSystem.getMinuteOfDay());
 }
 
 void runAndMergeHidden(GameContext& ctx, int minutes, const Attributes& delta,

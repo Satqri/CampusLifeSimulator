@@ -1,5 +1,5 @@
 #include "map/GymInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 #include "core/Localization.h"
 
 #include <string>

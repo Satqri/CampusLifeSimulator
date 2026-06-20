@@ -1,5 +1,5 @@
 #include "map/DormitoryInterior.h"
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 DormitoryInterior::DormitoryInterior() {
     interactions = loadInteractionsFromJson(
