@@ -203,6 +203,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"notice.minigame_good_body", {"Solid timing. SAN +6, Energy +4.", "节奏不错。SAN +6，精力 +4。"}},
     {"notice.minigame_messy_body", {"You still relaxed a little. SAN +2, Energy +1.", "虽然失误了，但还是放松了一点。SAN +2，精力 +1。"}},
     {"notice.minigame_timeout_body", {"You played too long without focus. SAN +1, Energy -2.", "玩了太久却没投入状态。SAN +1，精力 -2。"}},
+    {"activity.repeat_penalty", {"Repeating the same activity {streak} times in a row reduced its gains and intensified its drawbacks.", "你连续第 {streak} 次做同一项活动，正面收益降低，负面影响加重。"}},
     {"notice.campus_square", {"Campus Square", "校园广场"}},
     {"notice.campus_square.subtitle", {"The main paths open again; choose where the day goes next.", "主路再次展开，选择接下来一天要去哪里。"}},
     {"notice.study_complete", {"Study Complete", "学习完成"}},

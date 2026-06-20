@@ -66,6 +66,8 @@ inline int clampHiddenInteger(const std::string& key, int value) {
     if (key == "clubContribution" || key == "clubRelation") return std::clamp(value, -10, 25);
     if (key == "clubShowcaseScore") return std::clamp(value, -20, 40);
     if (key == "lateNightLevel" || key == "gameAddiction") return std::clamp(value, 0, 60);
+    if (key == "lowEnergyDays" || key == "lowHealthDays") return std::clamp(value, 0, 14);
+    if (key == "activityStreak") return std::clamp(value, 0, 99);
     if (key == "friendStage" || key == "clubStage") return std::clamp(value, -1, 4);
     if (key == "innovationStage") return std::clamp(value, -1, 5);
     if (key.rfind("_event_", 0) == 0 && key.ends_with("_count")) return std::clamp(value, 0, 99);

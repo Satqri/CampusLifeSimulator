@@ -35,9 +35,9 @@
         },
         {
           "kind": "stat",
-          "stat": "energy",
-          "op": "<=",
-          "value": 0
+          "stat": "lowEnergyDays",
+          "op": ">=",
+          "value": 3
         }
       ],
       "require": "any",

@@ -74,6 +74,9 @@ public:
      */
     void dailyAttributeCheck();
 
+    /** @brief 从隐藏变量恢复跨天低属性计数（读档/调试后使用） */
+    void syncDailyCountersFromHidden();
+
     /**
      * @brief 检测 SAN 值是否处于危险水平
      * @return true 当 SAN < 30

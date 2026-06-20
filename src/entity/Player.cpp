@@ -174,6 +174,7 @@ void Player::dailyAttributeCheck() {
     // 长期低体力 → 扣健康
     if (attributes.energy < kLowThreshold) {
         lowEnergyDays++;
+        mHidden["lowEnergyDays"] = lowEnergyDays;
         if (lowEnergyDays >= kConsecutiveDays) {
             HiddenMap hiddenDelta = HiddenMap::object();
             hiddenDelta["healthIndex"] = -kHealthPenalty;
@@ -181,12 +182,14 @@ void Player::dailyAttributeCheck() {
         }
     } else {
         lowEnergyDays = 0;
+        mHidden["lowEnergyDays"] = 0;
     }
 
     // 长期低健康 → 扣 SAN/知识/社交
     syncVisibleHealthFromHidden(attributes, mHidden);
     if (attributes.health < kLowThreshold) {
         lowHealthDays++;
+        mHidden["lowHealthDays"] = lowHealthDays;
         if (lowHealthDays >= kConsecutiveDays) {
             attributes.san      -= kSanPenalty;
             attributes.academic -= kAcademicPenalty;
@@ -194,6 +197,7 @@ void Player::dailyAttributeCheck() {
         }
     } else {
         lowHealthDays = 0;
+        mHidden["lowHealthDays"] = 0;
     }
 
     const int lateNightLevel = mHidden.value("lateNightLevel", 0);
@@ -215,6 +219,12 @@ void Player::dailyAttributeCheck() {
 
     clampAttributes();
     syncVisibleHealthFromHidden(attributes, mHidden);
+}
+
+void Player::syncDailyCountersFromHidden() {
+    normalizeHidden(mHidden);
+    lowEnergyDays = mHidden.value("lowEnergyDays", 0);
+    lowHealthDays = mHidden.value("lowHealthDays", 0);
 }
 
 bool Player::isSanCritical() const {

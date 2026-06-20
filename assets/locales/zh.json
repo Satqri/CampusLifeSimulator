@@ -897,6 +897,7 @@
   "activity.cafeteria.eat_at_table": "你坐下来吃完了这顿饭。身体恢复了一些，时间也悄悄过去了。",
   "activity.cafeteria.not_enough_gold": "你的钱不够这份餐食。换个便宜点的，或者先去赚点钱。",
   "activity.cafeteria.meal_choice_result": "你吃完了 {meal}，花掉 {cost} 金币。一顿热饭让 SAN 和精力都恢复了一些。",
+  "activity.repeat_penalty": "你连续第 {streak} 次做同一项活动，正面收益降低，负面影响加重。",
   "prompt.choice12": "按 1 或 2",
   "prompt.choice123": "按 1、2 或 3",
   "prompt.choice1234": "按 1、2、3 或 4",

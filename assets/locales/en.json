@@ -897,6 +897,7 @@
   "activity.cafeteria.eat_at_table": "",
   "activity.cafeteria.not_enough_gold": "",
   "activity.cafeteria.meal_choice_result": "",
+  "activity.repeat_penalty": "Repeating the same activity {streak} times in a row reduced its gains and intensified its drawbacks.",
   "prompt.choice12": "",
   "prompt.choice123": "",
   "prompt.choice1234": "",
