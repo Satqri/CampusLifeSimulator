@@ -5,12 +5,26 @@
 ConvenienceStoreInterior::ConvenienceStoreInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/store.json"));
-    initObstaclesFromInteractions();
 
     if (mShelfTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/shelf.png")))
         mShelfSprite = std::make_unique<sf::Sprite>(mShelfTexture);
     if (mCashRegisterTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/cash_register.png")))
         mCashRegisterSprite = std::make_unique<sf::Sprite>(mCashRegisterTexture);
+
+    // 碰撞区适配精灵实际尺寸
+    if (mShelfSprite) {
+        const auto s = mShelfTexture.getSize();
+        const float h = s.y * 156.0f / static_cast<float>(s.x);
+        updateInteractionArea("store_shelf", sf::FloatRect({170.0f, 160.0f}, {156.0f, h}));
+        updateInteractionArea("store_drink_fridge", sf::FloatRect({590.0f, 160.0f}, {156.0f, h}));
+    }
+    if (mCashRegisterSprite) {
+        const auto s = mCashRegisterTexture.getSize();
+        const float w = s.x * 70.0f / static_cast<float>(s.y);
+        updateInteractionArea("store_counter", sf::FloatRect({640.0f, 360.0f}, {w, 70.0f}));
+    }
+
+    initObstaclesFromInteractions();
 }
 
 void ConvenienceStoreInterior::render(sf::RenderWindow& window) {

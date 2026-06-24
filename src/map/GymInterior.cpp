@@ -7,12 +7,28 @@
 GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/gym.json"));
-    initObstaclesFromInteractions();
 
     if (mTreadmillTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill.png")))
         mTreadmillSprite = std::make_unique<sf::Sprite>(mTreadmillTexture);
     if (mDumbbellTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/dumbbell.png")))
         mDumbbellSprite = std::make_unique<sf::Sprite>(mDumbbellTexture);
+
+    // 碰撞区适配精灵实际尺寸
+    if (mTreadmillSprite) {
+        const auto s = mTreadmillTexture.getSize();
+        const float w = s.x * 76.0f / static_cast<float>(s.y);
+        updateInteractionArea("gym_treadmill_0", sf::FloatRect({128.0f, 118.0f}, {w, 76.0f}));
+        updateInteractionArea("gym_treadmill_1", sf::FloatRect({610.0f, 118.0f}, {w, 76.0f}));
+    }
+    if (mDumbbellSprite) {
+        const auto s = mDumbbellTexture.getSize();
+        const float w = s.x * 58.0f / static_cast<float>(s.y);
+        for (int i = 0; i < 4; ++i)
+            updateInteractionArea("gym_barbell_" + std::to_string(i),
+                sf::FloatRect({168.0f + i * 170.0f, 315.0f}, {w, 58.0f}));
+    }
+
+    initObstaclesFromInteractions();
 }
 
 void GymInterior::render(sf::RenderWindow& window) {

@@ -5,10 +5,21 @@
 ClassroomInterior::ClassroomInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/classroom.json"));
-    initObstaclesFromInteractions();
 
     if (mBlackboardTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/blackboard.png")))
         mBlackboardSprite = std::make_unique<sf::Sprite>(mBlackboardTexture);
+
+    // 碰撞区适配精灵实际尺寸（黑板 250×150，居中）
+    if (mBlackboardSprite) {
+        const auto s = mBlackboardTexture.getSize();
+        const float scale = 150.0f / static_cast<float>(s.y);
+        const float scaledW = s.x * scale;
+        const float offsetX = (520.0f - scaledW) / 2.0f;
+        updateInteractionArea("classroom_board",
+            sf::FloatRect({220.0f + offsetX, 82.0f}, {scaledW, 150.0f}));
+    }
+
+    initObstaclesFromInteractions();
 }
 
 void ClassroomInterior::render(sf::RenderWindow& window) {

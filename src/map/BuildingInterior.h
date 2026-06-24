@@ -58,6 +58,16 @@ public:
         }
     }
 
+    /** @brief 按 actionId 更新交互点区域（用于精灵尺寸适配） */
+    void updateInteractionArea(const std::string& actionId, sf::FloatRect newArea) {
+        for (auto& ip : interactions) {
+            if (ip.actionId == actionId) {
+                ip.area = newArea;
+                return;
+            }
+        }
+    }
+
     void setFont(const sf::Font* f) { font = f; }
 
     /**

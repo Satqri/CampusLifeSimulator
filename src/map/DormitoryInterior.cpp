@@ -5,7 +5,6 @@
 DormitoryInterior::DormitoryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/dormitory.json"));
-    initObstaclesFromInteractions();
 
     if (mBedTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/bed.png")))
         mBedSprite = std::make_unique<sf::Sprite>(mBedTexture);
@@ -13,6 +12,29 @@ DormitoryInterior::DormitoryInterior() {
         mDeskPcSprite = std::make_unique<sf::Sprite>(mDeskPcTexture);
     if (mCarpetTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/carpet.png")))
         mCarpetSprite = std::make_unique<sf::Sprite>(mCarpetTexture);
+
+    // 碰撞区适配精灵实际尺寸
+    if (mBedSprite) {
+        const auto s = mBedTexture.getSize();
+        const float scale = 70.0f / static_cast<float>(s.y);
+        updateInteractionArea("dormitory_bed", sf::FloatRect({90.0f, 108.0f}, {s.x * scale, 70.0f}));
+    }
+    if (mDeskPcSprite) {
+        const auto s = mDeskPcTexture.getSize();
+        const float scale = 150.0f / static_cast<float>(s.x);
+        updateInteractionArea("dormitory_desk", sf::FloatRect({636.0f, 112.0f}, {150.0f, s.y * scale}));
+        // games 区域缩小到精灵覆盖不到的下半部分
+        updateInteractionArea("dormitory_games", sf::FloatRect({660.0f, 224.0f}, {168.0f, 28.0f}));
+    }
+    if (mCarpetSprite) {
+        const auto s = mCarpetTexture.getSize();
+        const float scale = 110.0f / static_cast<float>(s.y);
+        const float scaledW = s.x * scale;
+        const float offsetX = (230.0f - scaledW) / 2.0f;
+        updateInteractionArea("dormitory_rug", sf::FloatRect({365.0f + offsetX, 285.0f}, {scaledW, 110.0f}));
+    }
+
+    initObstaclesFromInteractions();
 }
 
 void DormitoryInterior::render(sf::RenderWindow& window) {

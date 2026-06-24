@@ -1,14 +1,25 @@
 #include "map/LibraryInterior.h"
 #include "utils/AssetPath.h"
 #include <filesystem>
+#include <string>
 
 LibraryInterior::LibraryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/library.json"));
-    initObstaclesFromInteractions();
 
     if (mBookshelfTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/bookshelf.png")))
         mBookshelfSprite = std::make_unique<sf::Sprite>(mBookshelfTexture);
+
+    // 碰撞区适配精灵实际尺寸（书架精灵 92×93，仅顶部一个）
+    if (mBookshelfSprite) {
+        const auto s = mBookshelfTexture.getSize();
+        const float h = s.y * 92.0f / static_cast<float>(s.x);
+        for (int i = 0; i < 4; ++i)
+            updateInteractionArea("library_shelf_" + std::to_string(i),
+                sf::FloatRect({72.0f + i * 220.0f, 92.0f}, {92.0f, h}));
+    }
+
+    initObstaclesFromInteractions();
 }
 
 void LibraryInterior::render(sf::RenderWindow& window) {
