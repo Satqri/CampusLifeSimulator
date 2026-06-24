@@ -145,3 +145,14 @@ void BuildingInterior::drawLabel(sf::RenderWindow& window, const std::string& te
     label.setPosition(position);
     window.draw(label);
 }
+
+void BuildingInterior::drawObstacleOutlines(sf::RenderWindow& window) const {
+    for (const auto& ob : obstacles) {
+        sf::RectangleShape outline(ob.size);
+        outline.setPosition(ob.position);
+        outline.setFillColor(sf::Color::Transparent);
+        outline.setOutlineColor(sf::Color(255, 80, 80, 180));
+        outline.setOutlineThickness(1.5f);
+        window.draw(outline);
+    }
+}

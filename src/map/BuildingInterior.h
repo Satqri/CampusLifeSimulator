@@ -114,6 +114,9 @@ protected:
     /** @brief 绘制半透明传送门标记覆盖层 */
     void drawPortalMarkers(sf::RenderWindow& window) const;
 
+    /** @brief 调试用：绘制所有障碍物边框 */
+    void drawObstacleOutlines(sf::RenderWindow& window) const;
+
     /** @brief 绘制文字标签 */
     void drawLabel(sf::RenderWindow& window, const std::string& text,
                    sf::Vector2f position, unsigned int size = 13) const;

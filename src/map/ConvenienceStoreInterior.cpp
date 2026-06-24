@@ -69,6 +69,7 @@ void ConvenienceStoreInterior::render(sf::RenderWindow& window) {
     }
 
     drawExitPortal(window);
+    drawObstacleOutlines(window);
     drawPortalMarkers(window);
 }
 

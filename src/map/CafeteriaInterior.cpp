@@ -59,6 +59,7 @@ void CafeteriaInterior::render(sf::RenderWindow& window) {
     }
 
     drawExitPortal(window);
+    drawObstacleOutlines(window);
     drawPortalMarkers(window);
 }
 
