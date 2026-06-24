@@ -1,27 +1,43 @@
 #include "map/LibraryInterior.h"
 #include "utils/AssetPath.h"
+#include <filesystem>
 
 LibraryInterior::LibraryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/library.json"));
     initObstaclesFromInteractions();
+
+    if (mBookshelfTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/bookshelf.png")))
+        mBookshelfSprite = std::make_unique<sf::Sprite>(mBookshelfTexture);
 }
 
 void LibraryInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(92, 78, 56));
 
+    // 书架 x4
     for (int i = 0; i < 4; ++i) {
-        sf::RectangleShape shelf({92.0f, 330.0f});
-        shelf.setPosition({72.0f + i * 220.0f, 92.0f});
-        shelf.setFillColor(sf::Color(82, 58, 36));
-        window.draw(shelf);
+        if (mBookshelfSprite) {
+            const auto size = mBookshelfTexture.getSize();
+            const float scale = 92.0f / static_cast<float>(size.x);
+            sf::Sprite s(*mBookshelfSprite);
+            s.setScale({scale, scale});
+            s.setPosition({72.0f + i * 220.0f, 92.0f});
+            window.draw(s);
+        } else {
+            sf::RectangleShape shelf({92.0f, 330.0f});
+            shelf.setPosition({72.0f + i * 220.0f, 92.0f});
+            shelf.setFillColor(sf::Color(82, 58, 36));
+            window.draw(shelf);
+        }
     }
 
+    // 桌子
     sf::RectangleShape table({180.0f, 64.0f});
     table.setPosition({390.0f, 260.0f});
     table.setFillColor(sf::Color(132, 92, 52));
     window.draw(table);
 
+    // 台灯 x6
     for (int i = 0; i < 6; ++i) {
         sf::RectangleShape lamp({12.0f, 22.0f});
         lamp.setPosition({226.0f + i * 100.0f, 154.0f + (i % 2) * 180.0f});

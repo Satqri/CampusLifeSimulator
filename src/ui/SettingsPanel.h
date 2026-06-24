@@ -5,6 +5,7 @@
 #include "ui/UIComponent.h"
 
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include <string>
 
 /**
@@ -51,6 +52,8 @@ private:
     const cls::GameSettings* settings = nullptr;
     sf::RectangleShape background;
     sf::RectangleShape panel;
+    sf::Texture mPanelTexture;
+    std::unique_ptr<sf::Sprite> mPanelSprite;
     int selectedIndex = 0;
     bool overlayMode = false;
     bool editing = false;

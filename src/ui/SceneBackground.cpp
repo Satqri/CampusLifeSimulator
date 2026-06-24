@@ -5,12 +5,12 @@
 #include <filesystem>
 
 SceneBackground::SceneBackground() {
-    load(SceneBackgroundType::Dormitory, "assets/backgrounds/dormitory.png");
-    load(SceneBackgroundType::Gym, "assets/backgrounds/gym.png");
-    load(SceneBackgroundType::Library, "assets/backgrounds/library.png");
-    load(SceneBackgroundType::Classroom, "assets/backgrounds/classroom.png");
-    load(SceneBackgroundType::Cafeteria, "assets/backgrounds/cafeteria.png");
-    load(SceneBackgroundType::Store, "assets/backgrounds/store.png");
+    load(SceneBackgroundType::Dormitory, "assets/image/backgrounds/dormitory.png");
+    load(SceneBackgroundType::Gym, "assets/image/backgrounds/gym.png");
+    load(SceneBackgroundType::Library, "assets/image/backgrounds/library.png");
+    load(SceneBackgroundType::Classroom, "assets/image/backgrounds/classroom.png");
+    load(SceneBackgroundType::Cafeteria, "assets/image/backgrounds/cafeteria.png");
+    load(SceneBackgroundType::Store, "assets/image/backgrounds/convenience_store.png");
 }
 
 void SceneBackground::update(float deltaTime) {

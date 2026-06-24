@@ -222,7 +222,7 @@ int main() {
     }
 
     // ── 创建 Entity 对象 ─────────────────────────────────────
-    TitleScreen titleScreen(font, "assets/ui/campus_title_bg.png");
+    TitleScreen titleScreen(font, "assets/image/ui/title/campus_title_bg.png");
     DifficultyPanel difficultyPanel(font);
     SettingsPanel settingsPanel(font);
     HelpPanel helpPanel(font);
@@ -241,6 +241,12 @@ int main() {
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
+    sf::Texture endingGoodTexture;
+    sf::Texture endingBadTexture;
+    const bool endingGoodLoaded = endingGoodTexture.loadFromFile(cls::resolveAssetPath("assets/image/ui/endings/good_ending.png"));
+    const bool endingBadLoaded = endingBadTexture.loadFromFile(cls::resolveAssetPath("assets/image/ui/endings/bad_ending.png"));
+    (void)endingGoodLoaded;
+    (void)endingBadLoaded;
     DebugSandboxPanel debugSandbox(font);
     GameScreen screen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
@@ -1086,9 +1092,12 @@ int main() {
                     : (settlementPage == 1 ? cls::text("quest.earned_titles") : cls::text("quest.semester_summary"));
                 modalBox.setContent(title, buildSettlementBody(settlementResult, settlementPage),
                                     cls::text("quest.return_title"));
+                const bool isBadEnding = settlementResult.ending.type == "game_over";
+                modalBox.setFullscreenTexture(isBadEnding ? &endingBadTexture : &endingGoodTexture);
             } else {
                 modalBox.setContent(activityNotice.title, activityNotice.body,
                                     cls::text("ui.press_enter_continue"));
+                modalBox.setFullscreenTexture(nullptr);
             }
             modalBox.render(window);
         }

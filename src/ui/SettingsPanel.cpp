@@ -1,9 +1,11 @@
 #include "ui/SettingsPanel.h"
 #include "core/Localization.h"
 #include "utils/TextUtils.h"
+#include "utils/AssetPath.h"
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 
 SettingsPanel::SettingsPanel(sf::Font& fontRef)
     : font(fontRef)
@@ -14,6 +16,11 @@ SettingsPanel::SettingsPanel(sf::Font& fontRef)
     panel.setFillColor(sf::Color(20, 26, 36, 238));
     panel.setOutlineColor(sf::Color(114, 138, 168));
     panel.setOutlineThickness(2.0f);
+
+    const std::string resolved = cls::resolveAssetPath("assets/image/ui/settings/settings_popup.png");
+    if (std::filesystem::exists(resolved) && mPanelTexture.loadFromFile(resolved)) {
+        mPanelSprite = std::make_unique<sf::Sprite>(mPanelTexture);
+    }
 }
 
 void SettingsPanel::setSettings(const cls::GameSettings* value) {
@@ -33,7 +40,17 @@ void SettingsPanel::render(sf::RenderWindow& window) {
 
     background.setFillColor(overlayMode ? sf::Color(6, 8, 14, 190) : sf::Color(14, 18, 28));
     window.draw(background);
-    window.draw(panel);
+
+    if (mPanelSprite) {
+        const auto size = mPanelTexture.getSize();
+        const float scale = 390.0f / static_cast<float>(size.y);
+        mPanelSprite->setScale({scale, scale});
+        const float scaledW = size.x * scale;
+        mPanelSprite->setPosition({100.0f + (760.0f - scaledW) / 2.0f, 78.0f});
+        window.draw(*mPanelSprite);
+    } else {
+        window.draw(panel);
+    }
 
     sf::Text title = cls::makeText(font, cls::text("settings.title"), 30);
     title.setFillColor(sf::Color::White);

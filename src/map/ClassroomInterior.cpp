@@ -1,20 +1,37 @@
 #include "map/ClassroomInterior.h"
 #include "utils/AssetPath.h"
+#include <filesystem>
 
 ClassroomInterior::ClassroomInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/classroom.json"));
     initObstaclesFromInteractions();
+
+    if (mBlackboardTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/blackboard.png")))
+        mBlackboardSprite = std::make_unique<sf::Sprite>(mBlackboardTexture);
 }
 
 void ClassroomInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(116, 126, 112));
 
-    sf::RectangleShape board({520.0f, 58.0f});
-    board.setPosition({220.0f, 82.0f});
-    board.setFillColor(sf::Color(34, 78, 68));
-    window.draw(board);
+    // 黑板
+    if (mBlackboardSprite) {
+        const auto size = mBlackboardTexture.getSize();
+        const float scale = 150.0f / static_cast<float>(size.y);
+        const float scaledW = size.x * scale;
+        const float offsetX = (520.0f - scaledW) / 2.0f;
+        sf::Sprite s(*mBlackboardSprite);
+        s.setScale({scale, scale});
+        s.setPosition({220.0f + offsetX, 82.0f});
+        window.draw(s);
+    } else {
+        sf::RectangleShape board({520.0f, 58.0f});
+        board.setPosition({220.0f, 82.0f});
+        board.setFillColor(sf::Color(34, 78, 68));
+        window.draw(board);
+    }
 
+    // 课桌 3x5
     for (int row = 0; row < 3; ++row) {
         for (int col = 0; col < 5; ++col) {
             sf::RectangleShape desk({72.0f, 34.0f});

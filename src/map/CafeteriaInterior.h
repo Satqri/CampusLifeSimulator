@@ -2,6 +2,8 @@
 #define CLS_MAP_CAFETERIAINTERIOR_H
 
 #include "map/BuildingInterior.h"
+#include <SFML/Graphics.hpp>
+#include <memory>
 
 /**
  * @class CafeteriaInterior
@@ -14,6 +16,10 @@ public:
     void render(sf::RenderWindow& window) override;
     std::vector<MapPortal> getPortals() const override;
     CampusPlace getPlace() const override { return CampusPlace::Cafeteria; }
+
+private:
+    sf::Texture mCounterTexture;
+    std::unique_ptr<sf::Sprite> mCounterSprite;
 };
 
 #endif // CLS_MAP_CAFETERIAINTERIOR_H

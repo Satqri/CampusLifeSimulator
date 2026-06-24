@@ -3,6 +3,7 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <memory>
 
 class Player;
@@ -26,11 +27,18 @@ public:
 
 private:
     void drawBuilding(sf::RenderWindow& window, const MapPortal& portal,
-                      const std::string& label, sf::Color body, sf::Color roof);
+                      const std::string& label, const sf::Sprite* buildingSprite = nullptr);
 
     sf::Texture outdoorTiles;
     bool outdoorTilesLoaded;
     const TimeSystem* timeSystem = nullptr;
+
+    static constexpr int kBuildingCount = 5;
+    std::array<sf::Texture, kBuildingCount> mBuildingTextures;
+    std::array<std::unique_ptr<sf::Sprite>, kBuildingCount> mBuildingSprites;
+
+    void loadBuildingTexture(int index, const std::string& relativePath);
+    const sf::Sprite* getBuildingSprite(CampusPlace place) const;
 
     void drawPixlabSprite(sf::RenderWindow& window, const sf::IntRect& textureRect,
                           sf::Vector2f position, float scale = 1.0f);

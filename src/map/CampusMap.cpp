@@ -4,6 +4,7 @@
 #include "utils/TextUtils.h"
 #include "core/TimeSystem.h"
 #include "entity/Player.h"
+#include <filesystem>
 
 static bool loadTextureFromCandidates(sf::Texture& texture, const std::string& relativePath) {
     return texture.loadFromFile(cls::resolveAssetPath(relativePath));
@@ -11,7 +12,13 @@ static bool loadTextureFromCandidates(sf::Texture& texture, const std::string& r
 
 CampusMap::CampusMap() {
     outdoorTilesLoaded = loadTextureFromCandidates(
-        outdoorTiles, "assets/tilesets/pixlab24_topdown_tileset.png");
+        outdoorTiles, "assets/image/tilesets/pixlab24_topdown_tileset.png");
+
+    loadBuildingTexture(0, "assets/image/buildings/building_dormitory.png");
+    loadBuildingTexture(1, "assets/image/buildings/building_gym.png");
+    loadBuildingTexture(2, "assets/image/buildings/building_library.png");
+    loadBuildingTexture(3, "assets/image/buildings/building_classroom.png");
+    loadBuildingTexture(4, "assets/image/buildings/building_cafeteria.png");
 
     interactions = {
         InteractionPoint{sf::FloatRect({392.0f, 182.0f}, {176.0f, 152.0f}), "campus_square",
@@ -40,29 +47,42 @@ void CampusMap::drawPixlabSprite(sf::RenderWindow& window, const sf::IntRect& te
 }
 
 void CampusMap::drawBuilding(sf::RenderWindow& window, const MapPortal& portal,
-                              const std::string& label, sf::Color body, sf::Color roof) {
+                              const std::string& label, const sf::Sprite* buildingSprite) {
     sf::RectangleShape shadow({portal.area.size.x + 12.0f, portal.area.size.y + 12.0f});
     shadow.setPosition({portal.area.position.x + 6.0f, portal.area.position.y + 8.0f});
     shadow.setFillColor(sf::Color(20, 28, 24, 90));
     window.draw(shadow);
 
-    sf::RectangleShape roofShape({portal.area.size.x + 18.0f, 24.0f});
-    roofShape.setPosition({portal.area.position.x - 9.0f, portal.area.position.y - 18.0f});
-    roofShape.setFillColor(roof);
-    window.draw(roofShape);
+    if (buildingSprite) {
+        const auto texSize = buildingSprite->getTexture().getSize();
+        if (texSize.y > 0) {
+            const float scale = portal.area.size.y / static_cast<float>(texSize.y);
+            const float scaledW = texSize.x * scale;
+            const float offsetX = (portal.area.size.x - scaledW) / 2.0f;
+            sf::Sprite s(*buildingSprite);
+            s.setScale({scale, scale});
+            s.setPosition({portal.area.position.x + offsetX, portal.area.position.y});
+            window.draw(s);
+        }
+    } else {
+        sf::RectangleShape roofShape({portal.area.size.x + 18.0f, 24.0f});
+        roofShape.setPosition({portal.area.position.x - 9.0f, portal.area.position.y - 18.0f});
+        roofShape.setFillColor(sf::Color(146, 74, 60));
+        window.draw(roofShape);
 
-    sf::RectangleShape bodyShape(portal.area.size);
-    bodyShape.setPosition(portal.area.position);
-    bodyShape.setFillColor(body);
-    bodyShape.setOutlineColor(sf::Color(78, 68, 48));
-    bodyShape.setOutlineThickness(2.0f);
-    window.draw(bodyShape);
+        sf::RectangleShape bodyShape(portal.area.size);
+        bodyShape.setPosition(portal.area.position);
+        bodyShape.setFillColor(sf::Color(176, 112, 72));
+        bodyShape.setOutlineColor(sf::Color(78, 68, 48));
+        bodyShape.setOutlineThickness(2.0f);
+        window.draw(bodyShape);
 
-    sf::RectangleShape door({34.0f, 32.0f});
-    door.setPosition({portal.area.position.x + portal.area.size.x / 2.0f - 17.0f,
-                      portal.area.position.y + portal.area.size.y - 32.0f});
-    door.setFillColor(sf::Color(72, 48, 34));
-    window.draw(door);
+        sf::RectangleShape door({34.0f, 32.0f});
+        door.setPosition({portal.area.position.x + portal.area.size.x / 2.0f - 17.0f,
+                          portal.area.position.y + portal.area.size.y - 32.0f});
+        door.setFillColor(sf::Color(72, 48, 34));
+        window.draw(door);
+    }
 
     drawLabel(window, label, {portal.area.position.x + 14.0f, portal.area.position.y + 14.0f});
 }
@@ -170,12 +190,12 @@ void CampusMap::render(sf::RenderWindow& window) {
 
     // 建筑
     const auto portals = getPortals();
-    drawBuilding(window, portals[0], cls::text("map.dorm.short"), sf::Color(176, 112, 72), sf::Color(146, 74, 60));
-    drawBuilding(window, portals[1], cls::text("map.gym"), sf::Color(90, 134, 112), sf::Color(48, 92, 78));
-    drawBuilding(window, portals[2], cls::text("map.library"), sf::Color(126, 136, 154), sf::Color(72, 88, 112));
-    drawBuilding(window, portals[3], cls::text("map.classroom"), sf::Color(190, 164, 98), sf::Color(134, 86, 54));
-    drawBuilding(window, portals[4], cls::text("map.cafeteria"), sf::Color(190, 132, 78), sf::Color(154, 78, 48));
-    drawBuilding(window, portals[5], cls::text("map.store"), sf::Color(112, 132, 184), sf::Color(78, 98, 152));
+    drawBuilding(window, portals[0], cls::text("map.dorm.short"), getBuildingSprite(CampusPlace::Dormitory));
+    drawBuilding(window, portals[1], cls::text("map.gym"),         getBuildingSprite(CampusPlace::Gym));
+    drawBuilding(window, portals[2], cls::text("map.library"),     getBuildingSprite(CampusPlace::Library));
+    drawBuilding(window, portals[3], cls::text("map.classroom"),   getBuildingSprite(CampusPlace::Classroom));
+    drawBuilding(window, portals[4], cls::text("map.cafeteria"),   getBuildingSprite(CampusPlace::Cafeteria));
+    drawBuilding(window, portals[5], cls::text("map.store"),       nullptr);
     drawTimeLighting(window);
 
     const bool lampGlow = timeSystem
@@ -236,6 +256,25 @@ void CampusMap::render(sf::RenderWindow& window) {
 
 void CampusMap::renderPlayer(sf::RenderWindow& window, Player& player) {
     player.render(window);
+}
+
+void CampusMap::loadBuildingTexture(int index, const std::string& relativePath) {
+    const std::string resolved = cls::resolveAssetPath(relativePath);
+    if (!std::filesystem::exists(resolved)) return;
+    if (mBuildingTextures[index].loadFromFile(resolved)) {
+        mBuildingSprites[index] = std::make_unique<sf::Sprite>(mBuildingTextures[index]);
+    }
+}
+
+const sf::Sprite* CampusMap::getBuildingSprite(CampusPlace place) const {
+    switch (place) {
+        case CampusPlace::Dormitory: return mBuildingSprites[0].get();
+        case CampusPlace::Gym:       return mBuildingSprites[1].get();
+        case CampusPlace::Library:   return mBuildingSprites[2].get();
+        case CampusPlace::Classroom: return mBuildingSprites[3].get();
+        case CampusPlace::Cafeteria: return mBuildingSprites[4].get();
+        default: return nullptr;
+    }
 }
 
 std::vector<MapPortal> CampusMap::getPortals() const {

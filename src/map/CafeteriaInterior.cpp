@@ -1,20 +1,37 @@
 #include "map/CafeteriaInterior.h"
 #include "utils/AssetPath.h"
+#include <filesystem>
 
 CafeteriaInterior::CafeteriaInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/cafeteria.json"));
     initObstaclesFromInteractions();
+
+    if (mCounterTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/shelf.png")))
+        mCounterSprite = std::make_unique<sf::Sprite>(mCounterTexture);
 }
 
 void CafeteriaInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(150, 114, 72));
 
-    sf::RectangleShape counter({760.0f, 70.0f});
-    counter.setPosition({100.0f, 94.0f});
-    counter.setFillColor(sf::Color(176, 104, 58));
-    window.draw(counter);
+    // 柜台
+    if (mCounterSprite) {
+        const auto size = mCounterTexture.getSize();
+        const float scale = 70.0f / static_cast<float>(size.y);
+        const float scaledW = size.x * scale;
+        const float offsetX = (760.0f - scaledW) / 2.0f;
+        sf::Sprite s(*mCounterSprite);
+        s.setScale({scale, scale});
+        s.setPosition({100.0f + offsetX, 94.0f});
+        window.draw(s);
+    } else {
+        sf::RectangleShape counter({760.0f, 70.0f});
+        counter.setPosition({100.0f, 94.0f});
+        counter.setFillColor(sf::Color(176, 104, 58));
+        window.draw(counter);
+    }
 
+    // 餐盘 x7
     for (int i = 0; i < 7; ++i) {
         sf::CircleShape tray(12.0f);
         tray.setPosition({132.0f + i * 100.0f, 116.0f});
@@ -22,6 +39,7 @@ void CafeteriaInterior::render(sf::RenderWindow& window) {
         window.draw(tray);
     }
 
+    // 餐桌 x5
     for (int i = 0; i < 5; ++i) {
         sf::RectangleShape table({84.0f, 58.0f});
         table.setPosition({130.0f + i * 160.0f, 278.0f});
