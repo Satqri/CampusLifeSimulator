@@ -23,8 +23,6 @@ DormitoryInterior::DormitoryInterior() {
         const auto s = mDeskPcTexture.getSize();
         const float scale = 150.0f / static_cast<float>(s.x);
         updateInteractionArea("dormitory_desk", sf::FloatRect({636.0f, 112.0f}, {150.0f, s.y * scale}));
-        // games 区域缩小到精灵覆盖不到的下半部分
-        updateInteractionArea("dormitory_games", sf::FloatRect({660.0f, 224.0f}, {168.0f, 28.0f}));
     }
     if (mCarpetSprite) {
         const auto s = mCarpetTexture.getSize();

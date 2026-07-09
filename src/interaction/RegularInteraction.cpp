@@ -56,33 +56,41 @@ std::string bookSkillKey(const std::string& skill) {
 
 namespace RegularInteraction {
 
-bool handle(GameContext& ctx, const InteractionPoint& ip) {
-    const std::string& actionId = ip.actionId;
-
-    if (actionId == "dormitory_desk") {
-        if (hasJoinedInnovation(ctx) && isEveningOrNight(ctx.timeSystem)) {
-            runAndMergeHidden(ctx, 75, Attributes{.energy = -12, .san = -8, .academic = 5},
-                HiddenMap{{"innovationProgress", 6}, {"lateNightLevel", 2}},
-                cls::text("notice.study_complete"),
-                cls::text("activity.dormitory_desk.innovation"),
-                actionId);
-            return true;
-        }
-
-        runAndMergeHidden(ctx, 60, Attributes{.energy = -10, .san = -5, .academic = 8}, HiddenMap::object(),
+bool handleDormitoryDeskStudy(GameContext& ctx, const std::string& actionId) {
+    if (hasJoinedInnovation(ctx) && isEveningOrNight(ctx.timeSystem)) {
+        runAndMergeHidden(ctx, 75, Attributes{.energy = -12, .san = -8, .academic = 5},
+            HiddenMap{{"innovationProgress", 6}, {"lateNightLevel", 2}},
             cls::text("notice.study_complete"),
-            cls::text("activity.dormitory_desk.study"),
+            cls::text("activity.dormitory_desk.innovation"),
             actionId);
         return true;
     }
 
+    runAndMergeHidden(ctx, 60, Attributes{.energy = -10, .san = -5, .academic = 8}, HiddenMap::object(),
+        cls::text("notice.study_complete"),
+        cls::text("activity.dormitory_desk.study"),
+        actionId);
+    return true;
+}
+
+bool handleDormitoryGames(GameContext& ctx, const std::string& actionId) {
+    runAndMergeHidden(ctx, 45, Attributes{.energy = -5, .san = 10, .academic = -2},
+        HiddenMap{{"gameAddiction", 4}, {"lateNightLevel", 3}, {"healthIndex", -3}},
+        cls::text("notice.game_break_complete"),
+        cls::text("activity.dormitory_games"),
+        actionId);
+    return true;
+}
+
+bool handle(GameContext& ctx, const InteractionPoint& ip) {
+    const std::string& actionId = ip.actionId;
+
+    if (actionId == "dormitory_desk") {
+        return handleDormitoryDeskStudy(ctx, actionId);
+    }
+
     if (actionId == "dormitory_games") {
-        runAndMergeHidden(ctx, 45, Attributes{.energy = -5, .san = 10, .academic = -2},
-            HiddenMap{{"gameAddiction", 4}, {"lateNightLevel", 3}, {"healthIndex", -3}},
-            cls::text("notice.game_break_complete"),
-            cls::text("activity.dormitory_games"),
-            actionId);
-        return true;
+        return handleDormitoryGames(ctx, actionId);
     }
 
     if (actionId == "dormitory_rug") {

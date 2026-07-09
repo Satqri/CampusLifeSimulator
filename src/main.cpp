@@ -38,6 +38,8 @@
 #include "ui/ModalBox.h"
 #include "ui/TimePanel.h"
 #include "entity/Player.h"
+
+constexpr char kDormitoryDeskPromptPurpose[] = "dormitory_desk_choice";
 #include "entity/Enemy.h"
 #include "map/MapPortal.h"
 #include "map/BuildingInterior.h"
@@ -593,6 +595,17 @@ int main() {
         CafeteriaInteraction::resolveMealChoice(ctx, mealIndex);
     };
 
+    auto resolveDormitoryDeskChoice = [&ctx, &eventRunner](int choiceIndex) {
+        if (choiceIndex == 0) {
+            RegularInteraction::handleDormitoryDeskStudy(ctx, "dormitory_desk");
+            return;
+        }
+        if (choiceIndex == 1) {
+            if (eventRunner.triggerByAction("dormitory_games", ctx)) return;
+            RegularInteraction::handleDormitoryGames(ctx, "dormitory_games");
+        }
+    };
+
     auto canTriggerInteraction = [&ctx](const InteractionPoint& ip) {
         const std::string& actionId = ip.actionId;
         const int minute = normalizedMinute(ctx.timeSystem.getMinuteOfDay());
@@ -621,8 +634,20 @@ int main() {
         return false;
     };
 
-    auto handleInteraction = [&ctx, &eventRunner, &canTriggerInteraction](const InteractionPoint& ip) {
+    auto handleInteraction = [&ctx, &eventRunner, &canTriggerInteraction, &mealChoicePrompt](const InteractionPoint& ip) {
         if (!canTriggerInteraction(ip)) return;
+        if (ip.actionId == "dormitory_desk") {
+            mealChoicePrompt.show(
+                cls::text("prompt.dormitory_desk.title"),
+                cls::text("prompt.dormitory_desk.body"),
+                std::vector<std::string>{
+                    cls::text("prompt.dormitory_desk.study"),
+                    cls::text("prompt.dormitory_desk.games")
+                },
+                kDormitoryDeskPromptPurpose,
+                std::vector<int>{0, 1});
+            return;
+        }
         if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
         if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.displayLabel())) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
@@ -873,6 +898,21 @@ int main() {
                             executeSleep(ctx, settlementActive, selectedMinutes, explicitAlarm);
                         } else if (keyEv->code == sf::Keyboard::Key::Escape) {
                             pendingSleep.clear();
+                            mealChoicePrompt.clear();
+                        }
+                        continue;
+                    }
+
+                    if (mealChoicePrompt.purpose == kDormitoryDeskPromptPurpose) {
+                        auto choiceIndex = [&]() {
+                            if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) return 0;
+                            if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) return 1;
+                            return -1;
+                        }();
+                        if (choiceIndex >= 0) {
+                            mealChoicePrompt.clear();
+                            resolveDormitoryDeskChoice(choiceIndex);
+                        } else if (keyEv->code == sf::Keyboard::Key::Escape) {
                             mealChoicePrompt.clear();
                         }
                         continue;
