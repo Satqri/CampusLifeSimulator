@@ -212,6 +212,26 @@ void renderQuestContent(sf::RenderWindow& window, ModalBox& modalBox, MainQuest*
     modalBox.render(window);
 }
 
+namespace {
+
+std::string settlementText(const std::string& key, const std::string& fallback) {
+    return key.empty() ? fallback : cls::text(key);
+}
+
+void appendEndingLine(std::ostringstream& body, const EndingDefinition& ending) {
+    body << settlementText(ending.nameKey, ending.name);
+    const std::string tagline = settlementText(ending.taglineKey, ending.tagline);
+    if (!tagline.empty()) body << " - " << tagline;
+}
+
+const EndingDefinition* primaryEndingFor(const SettlementResult& result) {
+    if (!result.achievedEndings.empty()) return &result.achievedEndings.front();
+    if (!result.ending.id.empty()) return &result.ending;
+    return nullptr;
+}
+
+} // namespace
+
 
 void applyDifficulty(Player& player, Difficulty difficulty) {
     switch (difficulty) {
@@ -610,10 +630,23 @@ int main() {
     auto buildSettlementBody = [&](const SettlementResult& result, int page) {
         std::ostringstream body;
         if (page == 0) {
-            body << (result.ending.nameKey.empty() ? result.ending.name : cls::text(result.ending.nameKey));
-            const std::string tagline = result.ending.taglineKey.empty() ? result.ending.tagline : cls::text(result.ending.taglineKey);
-            if (!tagline.empty()) body << "\n" << tagline;
-            body << "\n\n" << (result.ending.descriptionKey.empty() ? result.ending.description : cls::text(result.ending.descriptionKey));
+            const auto* primaryEnding = primaryEndingFor(result);
+            if (primaryEnding) {
+                if (result.achievedEndings.size() > 1) {
+                    body << cls::text("settlement.primary_ending") << "\n";
+                }
+                appendEndingLine(body, *primaryEnding);
+                body << "\n\n" << settlementText(primaryEnding->descriptionKey, primaryEnding->description);
+
+                if (result.achievedEndings.size() > 1) {
+                    body << "\n\n" << cls::text("settlement.also_achieved") << ":\n";
+                    for (std::size_t i = 1; i < result.achievedEndings.size(); ++i) {
+                        body << "- ";
+                        appendEndingLine(body, result.achievedEndings[i]);
+                        body << "\n";
+                    }
+                }
+            }
             body << "\n\n" << cls::text("quest.return_title");
             return body.str();
         }
@@ -1354,7 +1387,7 @@ int main() {
                     : (settlementPage == 1 ? cls::text("quest.earned_titles") : cls::text("quest.semester_summary"));
                 modalBox.setContent(title, buildSettlementBody(settlementResult, settlementPage),
                                     cls::text("quest.return_title"));
-                const bool isBadEnding = settlementResult.ending.type == "game_over";
+                const bool isBadEnding = settlementResult.gameOver;
                 modalBox.setFullscreenTexture(isBadEnding ? &endingBadTexture : &endingGoodTexture);
             } else {
                 modalBox.setContent(activityNotice.title, activityNotice.body,

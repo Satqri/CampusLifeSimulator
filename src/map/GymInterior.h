@@ -14,10 +14,14 @@ public:
     CampusPlace getPlace() const override { return CampusPlace::Gym; }
 
 private:
-    sf::Texture mTreadmillTexture;
-    sf::Texture mDumbbellTexture;
-    std::unique_ptr<sf::Sprite> mTreadmillSprite;
-    std::unique_ptr<sf::Sprite> mDumbbellSprite;
+    sf::Texture mTreadmillLeftTexture;
+    sf::Texture mTreadmillRightTexture;
+    sf::Texture mDumbbellTextures[4];
+    sf::Texture mFrontDeskTexture;
+    std::unique_ptr<sf::Sprite> mTreadmillLeftSprite;
+    std::unique_ptr<sf::Sprite> mTreadmillRightSprite;
+    std::unique_ptr<sf::Sprite> mDumbbellSprites[4];
+    std::unique_ptr<sf::Sprite> mFrontDeskSprite;
 };
 
 #endif // CLS_MAP_GYMINTERIOR_H

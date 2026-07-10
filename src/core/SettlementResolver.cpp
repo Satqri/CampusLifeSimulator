@@ -33,6 +33,13 @@ std::string localizedValue(const std::string& key, const std::string& fallback) 
     return fallback;
 }
 
+void appendEndingLine(std::ostringstream& out, const EndingDefinition& ending) {
+    const std::string endingName = localizedValue(ending.nameKey, ending.name);
+    const std::string endingTagline = localizedValue(ending.taglineKey, ending.tagline);
+    out << endingName;
+    if (!endingTagline.empty()) out << " - " << endingTagline;
+}
+
 bool compareJsonValues(const json& actual, const std::string& op, const json& expected) {
     if (actual.is_number() && expected.is_number()) {
         const int lhs = actual.get<int>();
@@ -165,6 +172,7 @@ SettlementResult SettlementResolver::resolveImmediate(const Player& player) cons
             result.resolved = true;
             result.gameOver = ending.type == "game_over";
             result.ending = ending;
+            result.achievedEndings.push_back(ending);
             result.summary = buildSummary(player, result);
             return result;
         }
@@ -174,15 +182,29 @@ SettlementResult SettlementResolver::resolveImmediate(const Player& player) cons
 
 SettlementResult SettlementResolver::resolveFinal(const Player& player) const {
     SettlementResult result;
+    const EndingDefinition* defaultEnding = nullptr;
 
     for (const auto& ending : mEndings) {
         if (ending.trigger == "immediate") continue;
-        if (ending.type == "default" || evaluateConditionsJson(ending.conditions, ending.requireMode, player)) {
-            result.ending = ending;
-            result.resolved = true;
-            result.gameOver = ending.type == "game_over";
-            break;
+        if (ending.type == "default") {
+            defaultEnding = &ending;
+            continue;
         }
+        if (evaluateConditionsJson(ending.conditions, ending.requireMode, player)) {
+            result.achievedEndings.push_back(ending);
+        }
+    }
+
+    if (result.achievedEndings.empty() && defaultEnding) {
+        result.achievedEndings.push_back(*defaultEnding);
+    }
+    if (!result.achievedEndings.empty()) {
+        result.ending = result.achievedEndings.front();
+        result.resolved = true;
+        result.gameOver = std::any_of(result.achievedEndings.begin(), result.achievedEndings.end(),
+            [](const EndingDefinition& ending) {
+                return ending.type == "game_over";
+            });
     }
 
     for (const auto& title : mTitleDefs) {
@@ -197,13 +219,29 @@ SettlementResult SettlementResolver::resolveFinal(const Player& player) const {
 
 std::string SettlementResolver::buildSummary(const Player& player, const SettlementResult& result) const {
     std::ostringstream summary;
-    const std::string endingName = localizedValue(result.ending.nameKey, result.ending.name);
-    const std::string endingTagline = localizedValue(result.ending.taglineKey, result.ending.tagline);
-    const std::string endingDescription = localizedValue(result.ending.descriptionKey, result.ending.description);
+    const auto& endings = result.achievedEndings;
+    const EndingDefinition* primaryEnding = nullptr;
+    if (!endings.empty()) primaryEnding = &endings.front();
+    else if (!result.ending.id.empty()) primaryEnding = &result.ending;
 
-    summary << endingName;
-    if (!endingTagline.empty()) summary << " - " << endingTagline;
-    summary << "\n\n" << endingDescription;
+    if (primaryEnding) {
+        if (endings.size() > 1) {
+            summary << cls::text("settlement.primary_ending") << ": ";
+        }
+        appendEndingLine(summary, *primaryEnding);
+        const std::string endingDescription = localizedValue(
+            primaryEnding->descriptionKey, primaryEnding->description);
+        summary << "\n\n" << endingDescription;
+
+        if (endings.size() > 1) {
+            summary << "\n\n" << cls::text("settlement.also_achieved") << ":\n";
+            for (std::size_t i = 1; i < endings.size(); ++i) {
+                summary << "- ";
+                appendEndingLine(summary, endings[i]);
+                summary << "\n";
+            }
+        }
+    }
     summary << "\n\n" << cls::text("settlement.final_stats") << ": "
             << cls::text("hud.energy") << " " << player.getAttributes().energy
             << " / " << cls::text("hud.gold") << " " << player.getAttributes().gold

@@ -1,32 +1,27 @@
 #include "map/GymInterior.h"
 #include "utils/AssetPath.h"
 #include "core/Localization.h"
-#include <filesystem>
+#include <algorithm>
+#include <array>
 #include <string>
 
 GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/gym.json"));
 
-    if (mTreadmillTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill.png")))
-        mTreadmillSprite = std::make_unique<sf::Sprite>(mTreadmillTexture);
-    if (mDumbbellTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/dumbbell.png")))
-        mDumbbellSprite = std::make_unique<sf::Sprite>(mDumbbellTexture);
+    if (mTreadmillLeftTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill_left.png")))
+        mTreadmillLeftSprite = std::make_unique<sf::Sprite>(mTreadmillLeftTexture);
+    if (mTreadmillRightTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill_right.png")))
+        mTreadmillRightSprite = std::make_unique<sf::Sprite>(mTreadmillRightTexture);
 
-    // 碰撞区适配精灵实际尺寸
-    if (mTreadmillSprite) {
-        const auto s = mTreadmillTexture.getSize();
-        const float w = s.x * 76.0f / static_cast<float>(s.y);
-        updateInteractionArea("gym_treadmill_0", sf::FloatRect({128.0f, 118.0f}, {w, 76.0f}));
-        updateInteractionArea("gym_treadmill_1", sf::FloatRect({610.0f, 118.0f}, {w, 76.0f}));
+    for (int i = 0; i < 4; ++i) {
+        const std::string path = cls::resolveAssetPath("assets/image/scenery/dumbbell_" + std::to_string(i) + ".png");
+        if (mDumbbellTextures[i].loadFromFile(path))
+            mDumbbellSprites[i] = std::make_unique<sf::Sprite>(mDumbbellTextures[i]);
     }
-    if (mDumbbellSprite) {
-        const auto s = mDumbbellTexture.getSize();
-        const float w = s.x * 58.0f / static_cast<float>(s.y);
-        for (int i = 0; i < 4; ++i)
-            updateInteractionArea("gym_barbell_" + std::to_string(i),
-                sf::FloatRect({168.0f + i * 170.0f, 315.0f}, {w, 58.0f}));
-    }
+
+    if (mFrontDeskTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/front_desk.png")))
+        mFrontDeskSprite = std::make_unique<sf::Sprite>(mFrontDeskTexture);
 
     initObstaclesFromInteractions();
 }
@@ -42,32 +37,55 @@ void GymInterior::render(sf::RenderWindow& window) {
     window.draw(rubberZone);
 
     // 跑步机 x2
-    for (const sf::Vector2f pos : {sf::Vector2f{128.0f, 118.0f}, sf::Vector2f{610.0f, 118.0f}}) {
-        if (mTreadmillSprite) {
-            const auto size = mTreadmillTexture.getSize();
-            const float scale = 76.0f / static_cast<float>(size.y);
-            sf::Sprite s(*mTreadmillSprite);
+    const std::array<std::unique_ptr<sf::Sprite>*, 2> treadmillSprites = {&mTreadmillLeftSprite, &mTreadmillRightSprite};
+    const std::array<sf::Vector2f, 2> treadmillPositions = {sf::Vector2f{150.0f, 118.0f}, sf::Vector2f{610.0f, 118.0f}};
+    const std::array<sf::Vector2f, 2> treadmillSizes = {sf::Vector2f{150.0f, 180.0f}, sf::Vector2f{150.0f, 180.0f}};
+    for (int i = 0; i < 2; ++i) {
+        const auto& spritePtr = *treadmillSprites[i];
+        const auto boxPos = treadmillPositions[i];
+        const auto boxSize = treadmillSizes[i];
+        if (spritePtr) {
+            const auto size = (i == 0 ? mTreadmillLeftTexture : mTreadmillRightTexture).getSize();
+            const float maxWidth = boxSize.x;
+            const float maxHeight = boxSize.y;
+            const float scale = std::min(maxWidth / static_cast<float>(size.x), maxHeight / static_cast<float>(size.y));
+            sf::Sprite s(*spritePtr);
             s.setScale({scale, scale});
-            s.setPosition(pos);
+            const auto scaledSize = sf::Vector2f(size.x * scale, size.y * scale);
+            s.setPosition({boxPos.x + (boxSize.x - scaledSize.x) / 2.0f, boxPos.y + (boxSize.y - scaledSize.y) / 2.0f});
             window.draw(s);
         } else {
-            sf::RectangleShape frame({190.0f, 76.0f});
-            frame.setPosition(pos);
+            sf::RectangleShape frame(boxSize);
+            frame.setPosition(boxPos);
             frame.setFillColor(sf::Color(36, 44, 46));
             frame.setOutlineColor(sf::Color(150, 170, 158));
             frame.setOutlineThickness(3.0f);
             window.draw(frame);
 
-            sf::RectangleShape belt({138.0f, 32.0f});
-            belt.setPosition({pos.x + 26.0f, pos.y + 22.0f});
+            sf::RectangleShape belt({boxSize.x - 62.0f, 40.0f});
+            belt.setPosition({boxPos.x + 30.0f, boxPos.y + 26.0f});
             belt.setFillColor(sf::Color(22, 24, 27));
             window.draw(belt);
 
             sf::RectangleShape console({38.0f, 18.0f});
-            console.setPosition({pos.x + 76.0f, pos.y - 8.0f});
+            console.setPosition({boxPos.x + 76.0f, boxPos.y - 8.0f});
             console.setFillColor(sf::Color(96, 142, 132));
             window.draw(console);
         }
+    }
+
+    // 前台
+    const sf::Vector2f frontDeskPos{392.0f, 70.0f};
+    const sf::Vector2f frontDeskSize{180.0f, 120.0f};
+    if (mFrontDeskSprite) {
+        const auto size = mFrontDeskTexture.getSize();
+        const float scale = std::min(frontDeskSize.x / static_cast<float>(size.x), frontDeskSize.y / static_cast<float>(size.y));
+        sf::Sprite s(*mFrontDeskSprite);
+        s.setScale({scale, scale});
+        const auto scaledSize = sf::Vector2f(size.x * scale, size.y * scale);
+        s.setPosition({frontDeskPos.x + (frontDeskSize.x - scaledSize.x) / 2.0f,
+                      frontDeskPos.y + (frontDeskSize.y - scaledSize.y) / 2.0f});
+        window.draw(s);
     }
 
     // 杠铃站 x4
@@ -75,12 +93,15 @@ void GymInterior::render(sf::RenderWindow& window) {
         const float x = 168.0f + i * 170.0f;
         const float y = 315.0f;
 
-        if (mDumbbellSprite) {
-            const auto size = mDumbbellTexture.getSize();
-            const float scale = 58.0f / static_cast<float>(size.y);
-            sf::Sprite s(*mDumbbellSprite);
+        if (mDumbbellSprites[i]) {
+            const auto size = mDumbbellTextures[i].getSize();
+            const float maxWidth = 108.0f;
+            const float maxHeight = 58.0f;
+            const float scale = std::min(maxWidth / static_cast<float>(size.x), maxHeight / static_cast<float>(size.y));
+            sf::Sprite s(*mDumbbellSprites[i]);
             s.setScale({scale, scale});
-            s.setPosition({x, y});
+            const auto scaledSize = sf::Vector2f(size.x * scale, size.y * scale);
+            s.setPosition({x + (maxWidth - scaledSize.x) / 2.0f, y + (maxHeight - scaledSize.y) / 2.0f});
             window.draw(s);
         } else {
             sf::RectangleShape platform({108.0f, 58.0f});
@@ -108,7 +129,7 @@ void GymInterior::render(sf::RenderWindow& window) {
     }
 
     if (font) {
-        drawLabel(window, cls::text("gym.treadmill"), {146.0f, 204.0f});
+        drawLabel(window, cls::text("gym.treadmill"), {168.0f, 204.0f});
         drawLabel(window, cls::text("gym.treadmill"), {628.0f, 204.0f});
         drawLabel(window, cls::text("gym.barbells"), {168.0f, 386.0f});
     }
