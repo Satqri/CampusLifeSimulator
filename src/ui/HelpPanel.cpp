@@ -1,6 +1,6 @@
 #include "ui/HelpPanel.h"
 #include "core/Localization.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 
 HelpPanel::HelpPanel(sf::Font& font)
     : font(font)

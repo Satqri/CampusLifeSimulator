@@ -3,7 +3,7 @@
 #include "core/GameContext.h"
 #include "core/CharacterState.h"
 #include "core/Localization.h"
-#include "core/LibraryConfig.h"
+#include "config/LibraryConfig.h"
 
 #include <sstream>
 
@@ -25,34 +25,11 @@ bool hasJoinedInnovation(GameContext& ctx) {
         || hidden.value("innovationStage", 0) > 0;
 }
 
-int normalizedMinute(int minute) {
-    constexpr int kMinutesPerDay = 24 * 60;
-    int result = minute % kMinutesPerDay;
-    if (result < 0) result += kMinutesPerDay;
-    return result;
-}
-
-int absoluteGameMinute(const TimeSystem& timeSystem) {
-    return (timeSystem.getDay() - 1) * 24 * 60 + normalizedMinute(timeSystem.getMinuteOfDay());
-}
-
 void runAndMergeHidden(GameContext& ctx, int minutes, const Attributes& delta,
                        const HiddenMap& hiddenDelta,
                        const std::string& title, const std::string& body,
                        const std::string& actionId) {
-    if (ctx.runTimedActivityWithHidden) {
-        ctx.runTimedActivityWithHidden(minutes, delta, hiddenDelta, title, body, actionId, true);
-    } else {
-        const int previousMinute = ctx.timeSystem.advanceMinutes(minutes);
-        ctx.player.modifyAttributes(delta);
-        mergeHidden(ctx.player.getHidden(), hiddenDelta);
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (ctx.finalizeStateChange && ctx.finalizeStateChange()) return;
-        if (ctx.showTimedResult) ctx.showTimedResult(title, body);
-        if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
-        if (ctx.finalizeStateChange) ctx.finalizeStateChange();
-    }
+    ctx.runTimedActivityWithHidden(minutes, delta, hiddenDelta, title, body, actionId, true);
 }
 
 std::string bookSkillKey(const std::string& skill) {
@@ -67,33 +44,41 @@ std::string bookSkillKey(const std::string& skill) {
 
 namespace RegularInteraction {
 
-bool handle(GameContext& ctx, const InteractionPoint& ip) {
-    const std::string& actionId = ip.actionId;
-
-    if (actionId == "dormitory_desk") {
-        if (hasJoinedInnovation(ctx) && isEveningOrNight(ctx.timeSystem)) {
-            runAndMergeHidden(ctx, 75, Attributes{.energy = -12, .san = -8, .academic = 5},
-                HiddenMap{{"innovationProgress", 6}, {"lateNightLevel", 2}},
-                cls::text("notice.study_complete"),
-                cls::text("activity.dormitory_desk.innovation"),
-                actionId);
-            return true;
-        }
-
-        runAndMergeHidden(ctx, 60, Attributes{.energy = -10, .san = -5, .academic = 8}, HiddenMap::object(),
+bool handleDormitoryDeskStudy(GameContext& ctx, const std::string& actionId) {
+    if (hasJoinedInnovation(ctx) && isEveningOrNight(ctx.timeSystem)) {
+        runAndMergeHidden(ctx, 75, Attributes{.energy = -12, .san = -8, .academic = 5},
+            HiddenMap{{"innovationProgress", 6}, {"lateNightLevel", 2}},
             cls::text("notice.study_complete"),
-            cls::text("activity.dormitory_desk.study"),
+            cls::text("activity.dormitory_desk.innovation"),
             actionId);
         return true;
     }
 
+    runAndMergeHidden(ctx, 60, Attributes{.energy = -10, .san = -5, .academic = 8}, HiddenMap::object(),
+        cls::text("notice.study_complete"),
+        cls::text("activity.dormitory_desk.study"),
+        actionId);
+    return true;
+}
+
+bool handleDormitoryGames(GameContext& ctx, const std::string& actionId) {
+    runAndMergeHidden(ctx, 45, Attributes{.energy = -5, .san = 10, .academic = -2},
+        HiddenMap{{"gameAddiction", 4}, {"lateNightLevel", 3}, {"healthIndex", -3}},
+        cls::text("notice.game_break_complete"),
+        cls::text("activity.dormitory_games"),
+        actionId);
+    return true;
+}
+
+bool handle(GameContext& ctx, const InteractionPoint& ip) {
+    const std::string& actionId = ip.actionId;
+
+    if (actionId == "dormitory_desk") {
+        return handleDormitoryDeskStudy(ctx, actionId);
+    }
+
     if (actionId == "dormitory_games") {
-        runAndMergeHidden(ctx, 45, Attributes{.energy = -5, .san = 10, .academic = -2},
-            HiddenMap{{"gameAddiction", 4}, {"lateNightLevel", 3}, {"healthIndex", -3}},
-            cls::text("notice.game_break_complete"),
-            cls::text("activity.dormitory_games"),
-            actionId);
-        return true;
+        return handleDormitoryGames(ctx, actionId);
     }
 
     if (actionId == "dormitory_rug") {

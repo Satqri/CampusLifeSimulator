@@ -5,8 +5,9 @@
 SimpleQuest::SimpleQuest(const std::string& id, const std::string& name,
                          const std::string& desc,
                          const std::vector<std::pair<std::string, Attributes>>& choices,
-                         const Attributes& reward)
-    : MainQuest(id, name, desc, reward, MainQuestType::ORIENTATION)
+                         const Attributes& reward,
+                         MainQuestType type)
+    : MainQuest(id, name, desc, reward, type)
     , hoveredChoiceIndex(0)
 {
     for (const auto& c : choices) {

@@ -1,7 +1,7 @@
 #include "interaction/CafeteriaInteraction.h"
 #include "core/GameContext.h"
 #include "core/CharacterState.h"
-#include "core/MealConfig.h"
+#include "config/MealConfig.h"
 #include "core/Localization.h"
 #include <sstream>
 
@@ -44,26 +44,10 @@ bool handleInteraction(GameContext& ctx, const std::string& actionId,
 
         Attributes reward{.energy = 18, .san = 6, .social = 1};
         HiddenMap hiddenDelta{{"mealCount", 1}, {"healthIndex", 3}};
-        if (ctx.runTimedActivityWithHidden) {
-            ctx.runTimedActivityWithHidden(25, reward, hiddenDelta,
-                cls::text("notice.meal_complete"),
-                cls::text("activity.cafeteria.eat_at_table"),
-                actionId, false);
-        } else {
-            const int previousMinute = ctx.timeSystem.advanceMinutes(25);
-            ctx.player.modifyAttributes(reward);
-            mergeHidden(ctx.player.getHidden(), hiddenDelta);
-            syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-            ctx.timeSkipFlash.start("Time passes...");
-            if (!(ctx.finalizeStateChange && ctx.finalizeStateChange())) {
-                if (ctx.showTimedResult) {
-                    ctx.showTimedResult(cls::text("notice.meal_complete"),
-                        cls::text("activity.cafeteria.eat_at_table"));
-                }
-                if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
-                if (ctx.finalizeStateChange) ctx.finalizeStateChange();
-            }
-        }
+        ctx.runTimedActivityWithHidden(25, reward, hiddenDelta,
+            cls::text("notice.meal_complete"),
+            cls::text("activity.cafeteria.eat_at_table"),
+            actionId, false);
         ctx.lastMealPickupSlot = -1;
         return true;
     }
@@ -104,22 +88,9 @@ void resolveMealChoice(GameContext& ctx, int mealIndex) {
     Attributes reward = meal.reward;
     reward.gold -= meal.cost;
     HiddenMap hiddenDelta{{"mealCount", 1}, {"healthIndex", meal.cost >= 20 ? 4 : 2}};
-    if (ctx.runTimedActivityWithHidden) {
-        ctx.runTimedActivityWithHidden(20, reward, hiddenDelta,
-            cls::text("notice.meal_complete"), body.str(),
-            "cafeteria_meal_choice", false);
-    } else {
-        const int previousMinute = ctx.timeSystem.advanceMinutes(20);
-        ctx.player.modifyAttributes(reward);
-        mergeHidden(ctx.player.getHidden(), hiddenDelta);
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (!(ctx.finalizeStateChange && ctx.finalizeStateChange())) {
-            if (ctx.showTimedResult) ctx.showTimedResult(cls::text("notice.meal_complete"), body.str());
-            if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
-            if (ctx.finalizeStateChange) ctx.finalizeStateChange();
-        }
-    }
+    ctx.runTimedActivityWithHidden(20, reward, hiddenDelta,
+        cls::text("notice.meal_complete"), body.str(),
+        "cafeteria_meal_choice", false);
 }
 
 } // namespace CafeteriaInteraction

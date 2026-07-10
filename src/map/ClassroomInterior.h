@@ -2,6 +2,8 @@
 #define CLS_MAP_CLASSROOMINTERIOR_H
 
 #include "map/BuildingInterior.h"
+#include <SFML/Graphics.hpp>
+#include <memory>
 
 /**
  * @class ClassroomInterior
@@ -14,6 +16,14 @@ public:
     void render(sf::RenderWindow& window) override;
     std::vector<MapPortal> getPortals() const override;
     CampusPlace getPlace() const override { return CampusPlace::Classroom; }
+
+private:
+    sf::Texture mBlackboardTexture;
+    sf::Texture mDeskTexture;
+    sf::Texture mFloorTexture;
+    std::unique_ptr<sf::Sprite> mBlackboardSprite;
+    bool mDeskLoaded{false};
+    bool mFloorLoaded{false};
 };
 
 #endif // CLS_MAP_CLASSROOMINTERIOR_H

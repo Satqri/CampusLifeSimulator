@@ -58,6 +58,16 @@ public:
         }
     }
 
+    /** @brief 按 actionId 更新交互点区域（用于精灵尺寸适配） */
+    void updateInteractionArea(const std::string& actionId, sf::FloatRect newArea) {
+        for (auto& ip : interactions) {
+            if (ip.actionId == actionId) {
+                ip.area = newArea;
+                return;
+            }
+        }
+    }
+
     void setFont(const sf::Font* f) { font = f; }
 
     /**
@@ -103,6 +113,9 @@ protected:
 
     /** @brief 绘制半透明传送门标记覆盖层 */
     void drawPortalMarkers(sf::RenderWindow& window) const;
+
+    /** @brief 调试用：绘制所有障碍物边框 */
+    void drawObstacleOutlines(sf::RenderWindow& window) const;
 
     /** @brief 绘制文字标签 */
     void drawLabel(sf::RenderWindow& window, const std::string& text,

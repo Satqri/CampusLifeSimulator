@@ -27,6 +27,10 @@ QuestManager::QuestManager(QuestManager&& other) noexcept
     , currentQuest(std::move(other.currentQuest))
     , allCompleted(other.allCompleted)
     , questActive(other.questActive) {
+    other.completedEventCount = 0;
+    other.currentQuestIndex = 0;
+    other.allCompleted = true;
+    other.questActive = false;
 }
 
 QuestManager& QuestManager::operator=(QuestManager&& other) noexcept {
@@ -37,6 +41,10 @@ QuestManager& QuestManager::operator=(QuestManager&& other) noexcept {
     currentQuest = std::move(other.currentQuest);
     allCompleted = other.allCompleted;
     questActive = other.questActive;
+    other.completedEventCount = 0;
+    other.currentQuestIndex = 0;
+    other.allCompleted = true;
+    other.questActive = false;
     return *this;
 }
 
@@ -136,7 +144,7 @@ std::unique_ptr<MainQuest> QuestManager::createNextQuest() {
         case MainQuestType::GRADUATION:
             quest = std::make_unique<SimpleQuest>(
                 def.customId, def.displayName, def.description,
-                def.choices, def.reward);
+                def.choices, def.reward, def.type);
             break;
 
         case MainQuestType::MIDTERM_EXAM:

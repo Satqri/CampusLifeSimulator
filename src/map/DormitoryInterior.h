@@ -2,6 +2,8 @@
 #define CLS_MAP_DORMITORYINTERIOR_H
 
 #include "map/BuildingInterior.h"
+#include <SFML/Graphics.hpp>
+#include <memory>
 
 /**
  * @class DormitoryInterior
@@ -14,6 +16,14 @@ public:
     void render(sf::RenderWindow& window) override;
     std::vector<MapPortal> getPortals() const override;
     CampusPlace getPlace() const override { return CampusPlace::Dormitory; }
+
+private:
+    sf::Texture mBedTexture;
+    sf::Texture mDeskPcTexture;
+    sf::Texture mCarpetTexture;
+    std::unique_ptr<sf::Sprite> mBedSprite;
+    std::unique_ptr<sf::Sprite> mDeskPcSprite;
+    std::unique_ptr<sf::Sprite> mCarpetSprite;
 };
 
 #endif // CLS_MAP_DORMITORYINTERIOR_H

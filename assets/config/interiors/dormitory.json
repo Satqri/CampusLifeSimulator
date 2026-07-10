@@ -16,22 +16,11 @@
         "x": 636.0,
         "y": 112.0,
         "w": 210.0,
-        "h": 66.0
+        "h": 140.0
       },
       "actionId": "dormitory_desk",
       "label_key": "interaction.dormitory_desk.label",
       "description_key": "interaction.dormitory_desk.description"
-    },
-    {
-      "area": {
-        "x": 660.0,
-        "y": 190.0,
-        "w": 168.0,
-        "h": 62.0
-      },
-      "actionId": "dormitory_games",
-      "label_key": "interaction.dormitory_games.label",
-      "description_key": "interaction.dormitory_games.description"
     },
     {
       "area": {

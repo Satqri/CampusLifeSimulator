@@ -7,6 +7,8 @@ SaveManager::SaveManager(const std::string& filePath)
 }
 
 bool SaveManager::saveGame(const SaveGameData& data) {
+    jsonData.clear();
+    jsonData["version"] = 1;
     jsonData["difficulty"] = static_cast<int>(data.difficulty);
     jsonData["player"] = {
         {"name", data.player.name},
@@ -29,6 +31,7 @@ bool SaveManager::saveGame(const SaveGameData& data) {
     jsonData["time"] = {
         {"day", data.time.day},
         {"minute", data.time.minute},
+        {"rollCallMinute", data.time.rollCallMinute},
         {"classPrompted", data.time.classPrompted},
         {"classResolved", data.time.classResolved}
     };
@@ -62,6 +65,7 @@ bool SaveManager::saveGame(const SaveGameData& data) {
 bool SaveManager::loadGame(SaveGameData& data) {
     if (!read()) return false;
 
+    const int saveVersion = jsonData.value("version", 0);
     data.difficulty = static_cast<Difficulty>(jsonData.value("difficulty", static_cast<int>(Difficulty::Normal)));
 
     const auto& playerJson = jsonData["player"];
@@ -85,6 +89,7 @@ bool SaveManager::loadGame(SaveGameData& data) {
     const auto& timeJson = jsonData["time"];
     data.time.day = timeJson.value("day", 1);
     data.time.minute = timeJson.value("minute", TimeSystem::kDayStartMinute);
+    data.time.rollCallMinute = timeJson.value("rollCallMinute", 0);
     data.time.classPrompted = timeJson.value("classPrompted", false);
     data.time.classResolved = timeJson.value("classResolved", false);
 

@@ -2,10 +2,10 @@
   "interactions": [
     {
       "area": {
-        "x": 100.0,
-        "y": 94.0,
-        "w": 760.0,
-        "h": 70.0
+        "x": 75.0,
+        "y": 80.0,
+        "w": 838.0,
+        "h": 130.0
       },
       "actionId": "cafeteria_counter",
       "label_key": "interaction.cafeteria_counter.label",
@@ -13,10 +13,10 @@
     },
     {
       "area": {
-        "x": 130.0,
-        "y": 278.0,
-        "w": 84.0,
-        "h": 58.0
+        "x": 100.0,
+        "y": 264.0,
+        "w": 122.0,
+        "h": 132.0
       },
       "actionId": "cafeteria_table_0",
       "label_key": "interaction.cafeteria_table_0.label",
@@ -24,10 +24,10 @@
     },
     {
       "area": {
-        "x": 290.0,
-        "y": 278.0,
-        "w": 84.0,
-        "h": 58.0
+        "x": 268.0,
+        "y": 258.0,
+        "w": 132.0,
+        "h": 140.0
       },
       "actionId": "cafeteria_table_1",
       "label_key": "interaction.cafeteria_table_1.label",
@@ -35,10 +35,10 @@
     },
     {
       "area": {
-        "x": 450.0,
-        "y": 278.0,
-        "w": 84.0,
-        "h": 58.0
+        "x": 436.0,
+        "y": 262.0,
+        "w": 132.0,
+        "h": 136.0
       },
       "actionId": "cafeteria_table_2",
       "label_key": "interaction.cafeteria_table_2.label",
@@ -46,10 +46,10 @@
     },
     {
       "area": {
-        "x": 610.0,
-        "y": 278.0,
-        "w": 84.0,
-        "h": 58.0
+        "x": 604.0,
+        "y": 262.0,
+        "w": 132.0,
+        "h": 136.0
       },
       "actionId": "cafeteria_table_3",
       "label_key": "interaction.cafeteria_table_3.label",
@@ -57,10 +57,10 @@
     },
     {
       "area": {
-        "x": 770.0,
-        "y": 278.0,
-        "w": 84.0,
-        "h": 58.0
+        "x": 776.0,
+        "y": 264.0,
+        "w": 122.0,
+        "h": 132.0
       },
       "actionId": "cafeteria_table_4",
       "label_key": "interaction.cafeteria_table_4.label",

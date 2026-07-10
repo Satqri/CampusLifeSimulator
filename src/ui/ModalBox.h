@@ -2,6 +2,7 @@
 #define CLS_UI_MODALBOX_H
 
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include <string>
 #include "ui/UIComponent.h"
 
@@ -19,6 +20,9 @@ public:
     void setContent(const std::string& title, const std::string& body,
                     const std::string& footer);
 
+    /** @brief 设置全屏背景纹理（用于结局画面等） */
+    void setFullscreenTexture(const sf::Texture* texture);
+
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
 
@@ -27,6 +31,11 @@ private:
     std::string mTitle;
     std::string mBody;
     std::string mFooter;
+
+    sf::Texture mPopupTexture;
+    std::unique_ptr<sf::Sprite> mPopupSprite;
+    const sf::Texture* mFullscreenTexture = nullptr;
+    std::unique_ptr<sf::Sprite> mFullscreenSprite;
 };
 
 #endif

@@ -1,6 +1,6 @@
 #include "core/Localization.h"
 
-#include "core/AssetPath.h"
+#include "utils/AssetPath.h"
 
 #include <fstream>
 #include <iostream>
@@ -70,6 +70,23 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"help.quest_enter", {"Enter: Continue / Confirm / Roll exam dice", "Enter：继续 / 确认 / 掷考试骰子"}},
     {"help.quest_ud", {"Up / Down: Select quest choices or review option", "上 / 下：选择任务选项或复习选项"}},
     {"help.quest_chain", {"Quest Chain page: E adds event count, T checks trigger, C resets chain", "任务链页面：E 增加事件计数，T 检查触发条件，C 重置任务链"}},
+
+    // ── Quest Chain UI ─────────────────────────────────────
+    {"quest_chain.exam.review_prompt", {"Do you want to review first?", "你是否要提前复习？"}},
+    {"quest_chain.exam.review_yes", {"Review before exam", "考前复习"}},
+    {"quest_chain.exam.review_cost", {"Energy cost", "消耗体力"}},
+    {"quest_chain.exam.review_bonus_label", {"Bonus", "加值"}},
+    {"quest_chain.exam.review_footer", {"Up/Down: Toggle  |  Enter: Confirm", "上/下：切换  |  回车：确认"}},
+    {"quest_chain.exam.round_info", {"Round {round}/{total} | Passed: {score}/{required} | DC: {dc}", "第 {round}/{total} 轮 | 已通过: {score}/{required} | DC: {dc}"}},
+    {"quest_chain.exam.roll_prompt", {"Press Enter to roll D20", "按回车掷 D20"}},
+    {"quest_chain.exam.roll_result", {"D20: {d20} | Academic: {bonus} | Review: {review} | Total: {total} vs DC {dc}", "D20: {d20} | 学业: {bonus} | 复习: {review} | 合计: {total} vs DC {dc}"}},
+    {"quest_chain.exam.round_pass", {"YOU PASSED this round!", "本轮通过了！"}},
+    {"quest_chain.exam.round_fail", {"You FAILED this round...", "本轮未通过……"}},
+    {"quest_chain.exam.passed", {"Congratulations! You passed the exam!", "恭喜！你通过了考试！"}},
+    {"quest_chain.exam.failed", {"You didn't pass this exam. Better luck next time.", "你没有通过这次考试，下次加油。"}},
+    {"quest_chain.exam.round_result", {"Exam Result", "考试结果"}},
+
+    {"prompt.choice1", {"Press 1", "按 1"}},
     {"help.section.global", {"Global Shortcuts", "全局快捷键"}},
     {"help.global", {"H: Toggle Help    S: Toggle Settings", "H：切换帮助    S：切换设置"}},
     {"help.close", {"Press H again or Esc to return", "再次按 H 或 Esc 返回"}},
@@ -199,6 +216,10 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"notice.reading_complete", {"Reading Complete", "阅读完成"}},
     {"notice.late_return.title", {"Late Return Check", "深夜归寝"}},
     {"notice.late_return.body", {"Returning to the dormitory after midnight drew attention. SAN -6.", "0:00-6:00 深夜回宿舍被注意到了，心态受到影响。SAN -6。"}},
+    {"prompt.dormitory_desk.title", {"Dorm Desk", "宿舍书桌"}},
+    {"prompt.dormitory_desk.body", {"You step up to the desk and computer. What do you want to do first?", "你走到书桌和电脑前，准备先做什么？"}},
+    {"prompt.dormitory_desk.study", {"Study at desk", "书桌学习"}},
+    {"prompt.dormitory_desk.games", {"Play games", "打游戏"}},
     {"notice.exit_confirm_title", {"Exit Game", "退出游戏"}},
     {"notice.exit_confirm_body", {"Do you want to exit the game?\n1) Continue\n2) Exit", "要退出游戏吗？\n1）继续游戏\n2）退出程序"}},
     {"notice.exit_continue", {"Continue", "继续游戏"}},

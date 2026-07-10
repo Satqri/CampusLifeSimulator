@@ -2,6 +2,91 @@
 #define CLS_CORE_TYPES_H
 
 #include "core/CharacterState.h"
+#include "ui/SceneBackground.h"
+#include <string>
+
+/**
+ * @struct CombatResult
+ * @brief 战斗结果状态 — 追踪 d20 掷骰结果和显示计时器
+ */
+struct CombatResult {
+    bool active = false;
+    bool victory = false;
+    float timer = 0.0f;
+    std::string enemyName;
+    int d20Roll = 0;
+    int modifier = 0;
+    int total = 0;
+    int dc = 0;
+
+    void show(bool win, const std::string& name, int d20, int mod, int tot, int d) {
+        active = true; victory = win; timer = 3.0f;
+        enemyName = name; d20Roll = d20; modifier = mod; total = tot; dc = d;
+    }
+    void update(float dt) {
+        if (active) { timer -= dt; if (timer <= 0.0f) active = false; }
+    }
+    void clear() { active = false; timer = 0.0f; }
+};
+
+/**
+ * @struct SceneTransition
+ * @brief 场景过渡状态 — 控制淡入过渡动画的计时和内容
+ */
+struct SceneTransition {
+    bool active = false;
+    float timer = 0.0f;
+    SceneBackgroundType background = SceneBackgroundType::Dormitory;
+    std::string title;
+    std::string subtitle;
+
+    void start(SceneBackgroundType bg, const std::string& heading, const std::string& line) {
+        active = true;
+        timer = 0.0f;
+        background = bg;
+        title = heading;
+        subtitle = line;
+    }
+
+    void update(float dt) {
+        if (!active) return;
+        timer += dt;
+    }
+
+    bool canContinue() const {
+        return timer >= 0.45f;
+    }
+
+    void skip() {
+        active = false;
+        timer = 0.0f;
+    }
+};
+
+/**
+ * @struct TimeSkipFlash
+ * @brief 时间跳过时的全屏黑屏闪烁提示
+ */
+struct TimeSkipFlash {
+    bool active = false;
+    float timer = 0.0f;
+    std::string text;
+
+    void start(const std::string& message) {
+        active = true;
+        timer = 0.58f;
+        text = message;
+    }
+
+    void update(float dt) {
+        if (!active) return;
+        timer -= dt;
+        if (timer <= 0.0f) {
+            active = false;
+            timer = 0.0f;
+        }
+    }
+};
 
 /**
  * @enum EmotionType

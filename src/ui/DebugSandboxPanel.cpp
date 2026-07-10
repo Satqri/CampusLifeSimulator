@@ -1,7 +1,7 @@
 #include "ui/DebugSandboxPanel.h"
 
 #include "core/GameContext.h"
-#include "core/TextUtils.h"
+#include "utils/TextUtils.h"
 #include "event/EventRunner.h"
 #include "entity/Player.h"
 #include "map/BuildingInterior.h"
