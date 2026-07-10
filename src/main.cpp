@@ -36,6 +36,10 @@
 #include "ui/ChoicePrompt.h"
 #include "ui/DebugSandboxPanel.h"
 #include "ui/ModalBox.h"
+#include "quest/QuestManager.h"
+#include "quest/MainQuest.h"
+#include "quest/SimpleQuest.h"
+#include "quest/ExamQuest.h"
 #include "ui/TimePanel.h"
 #include "entity/Player.h"
 
@@ -85,9 +89,7 @@ enum class GameScreen {
 // ──────────────────────────────────────────────────────────────
 // 渲染当前属性面板（所有模式下都在顶部显示）
 // ──────────────────────────────────────────────────────────────
-void renderStatsPanel(sf::RenderWindow& window, sf::Font& font,
-                      const Player& player) {
-    HUD hud(font);
+void renderStatsPanel(sf::RenderWindow& window, HUD& hud, const Player& player) {
     hud.setPlayer(&player);
     hud.render(window);
 }
@@ -109,6 +111,104 @@ void renderTimeSkipFlash(sf::RenderWindow& window, sf::Font& font, const TimeSki
     text.setPosition({360.0f, 252.0f});
     window.draw(text);
 }
+
+// ── Quest 渲染 ─────────────────────────────────────────────
+void renderQuestContent(sf::RenderWindow& window, ModalBox& modalBox, MainQuest* quest) {
+    if (!quest || quest->isCompleted()) return;
+
+    std::string title = quest->getQuestName();
+    std::string body;
+    std::string footer;
+
+    // SimpleQuest / ExamQuest 各自渲染
+    if (auto* exam = dynamic_cast<ExamQuest*>(quest)) {
+        switch (exam->getCurrentPhase()) {
+            case QuestPhase::ANNOUNCEMENT:
+                body = exam->getDescription();
+                footer = cls::text("ui.press_enter_continue");
+                break;
+            case QuestPhase::PREPARATION: {
+                body = exam->getDescription() + "\n\n"
+                     + cls::text("quest_chain.exam.review_prompt");
+                body += "\n  ["
+                     + std::string(exam->getHasReviewed() ? "x" : " ")
+                     + "] " + cls::text("quest_chain.exam.review_yes")
+                     + " (" + cls::text("quest_chain.exam.review_cost")
+                     + ": " + std::to_string(exam->getReviewEnergyCost()) + " "
+                     + cls::text("quest_chain.exam.review_bonus_label")
+                     + ": +" + std::to_string(exam->getReviewBonus()) + ")";
+                footer = cls::text("quest_chain.exam.review_footer");
+                break;
+            }
+            case QuestPhase::EXAM_ROUND: {
+                body = cls::format("quest_chain.exam.round_info",
+                    {{"round", std::to_string(exam->getCurrentRound())},
+                     {"total", std::to_string(exam->getTotalRounds())},
+                     {"score", std::to_string(exam->getScore())},
+                     {"required", std::to_string(exam->getRequiredPasses())},
+                     {"dc", std::to_string(exam->getSubjectDC())}});
+                footer = cls::text("quest_chain.exam.roll_prompt");
+                break;
+            }
+            case QuestPhase::ROUND_RESULT: {
+                const auto& roll = exam->getLastRoll();
+                body = cls::format("quest_chain.exam.roll_result",
+                    {{"d20", std::to_string(roll.d20Roll)},
+                     {"bonus", std::to_string(roll.academicBonus)},
+                     {"review", std::to_string(roll.reviewBonus)},
+                     {"total", std::to_string(roll.total)},
+                     {"dc", std::to_string(roll.dc)}});
+                body += "\n" + std::string(roll.success
+                    ? cls::text("quest_chain.exam.round_pass")
+                    : cls::text("quest_chain.exam.round_fail"));
+                footer = cls::text("ui.press_enter_continue");
+                break;
+            }
+            case QuestPhase::FINAL_RESULT:
+                body = exam->getPassed()
+                    ? cls::text("quest_chain.exam.passed")
+                    : cls::text("quest_chain.exam.failed");
+                footer = cls::text("ui.press_enter_continue");
+                break;
+            default:
+                footer = cls::text("ui.press_enter_continue");
+                break;
+        }
+    } else {
+        // SimpleQuest
+        switch (quest->getCurrentPhase()) {
+            case QuestPhase::ANNOUNCEMENT:
+                body = quest->getDescription();
+                footer = cls::text("ui.press_enter_continue");
+                break;
+            case QuestPhase::CHOICE: {
+                body = quest->getDescription() + "\n\n";
+                const auto& choices = quest->getChoiceTexts();
+                for (size_t i = 0; i < choices.size(); ++i) {
+                    body += "[" + std::to_string(i + 1) + "] " + choices[i];
+                    if (i + 1 < choices.size()) body += "\n";
+                }
+                footer = cls::text("prompt.choice" + std::to_string(std::min(choices.size(), size_t(4))));
+                break;
+            }
+            case QuestPhase::FINAL_RESULT: {
+                int idx = quest->getSelectedChoiceIndex();
+                if (idx >= 0 && idx < static_cast<int>(quest->getChoiceTexts().size())) {
+                    body = quest->getChoiceTexts()[idx];
+                }
+                footer = cls::text("ui.press_enter_continue");
+                break;
+            }
+            default:
+                footer = cls::text("ui.press_enter_continue");
+                break;
+        }
+    }
+
+    modalBox.setContent(title, body, footer);
+    modalBox.render(window);
+}
+
 
 void applyDifficulty(Player& player, Difficulty difficulty) {
     switch (difficulty) {
@@ -236,10 +336,14 @@ int main() {
     TimeSystem timeSystem;
     ActivityNotice activityNotice;
     ChoicePrompt mealChoicePrompt;
+    HUD hud(font);
     EventRunner eventRunner;
     SettlementResolver settlementResolver;
     settlementResolver.load(cls::resolveAssetPath("assets/config/events/endings.json"),
                             cls::resolveAssetPath("assets/config/events/titles.json"));
+    QuestManager questManager;
+    questManager.loadQuestChain(cls::resolveAssetPath("assets/config/quests.json"));
+    bool questActive = false;
     TimeSkipFlash timeSkipFlash;
     TimePanel timePanel(font);
     ModalBox modalBox(font);
@@ -399,8 +503,16 @@ int main() {
         ctx.activityNotice.show(title, message.str());
     };
 
-    auto checkEventTriggers = [&eventRunner, &ctx](int prev) {
-        return eventRunner.checkTriggers(ctx, prev);
+    auto checkEventTriggers = [&eventRunner, &ctx, &questManager, &questActive](int prev) {
+        bool triggered = eventRunner.checkTriggers(ctx, prev);
+        if (triggered) {
+            questManager.onEventCompleted();
+            if (!questActive && questManager.shouldTriggerQuest()) {
+                questActive = true;
+                questManager.createNextQuest();
+            }
+        }
+        return triggered;
     };
 
     std::function<bool()> maybeFinalizeRun;
@@ -634,7 +746,7 @@ int main() {
         return false;
     };
 
-    auto handleInteraction = [&ctx, &eventRunner, &canTriggerInteraction, &mealChoicePrompt](const InteractionPoint& ip) {
+    auto handleInteraction = [&ctx, &eventRunner, &canTriggerInteraction, &mealChoicePrompt, &questManager, &questActive](const InteractionPoint& ip) {
         if (!canTriggerInteraction(ip)) return;
         if (ip.actionId == "dormitory_desk") {
             mealChoicePrompt.show(
@@ -648,7 +760,14 @@ int main() {
                 std::vector<int>{0, 1});
             return;
         }
-        if (eventRunner.triggerByAction(ip.actionId, ctx)) return;
+        if (eventRunner.triggerByAction(ip.actionId, ctx)) {
+            questManager.onEventCompleted();
+            if (!questActive && questManager.shouldTriggerQuest()) {
+                questActive = true;
+                questManager.createNextQuest();
+            }
+            return;
+        }
         if (CafeteriaInteraction::handleInteraction(ctx, ip.actionId, ip.displayLabel())) return;
         if (DormitoryInteraction::handle(ctx, ip)) return;
         if (RegularInteraction::handle(ctx, ip)) return;
@@ -834,6 +953,27 @@ int main() {
             if (eventRunner.isActive()) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>())
                     eventRunner.handleInput(keyEv->code, ctx);
+                continue;
+            }
+
+            // ── 主线任务输入处理 ────────────────────────────
+            if (questActive) {
+                MainQuest* quest = questManager.getCurrentQuest();
+                if (quest && !quest->isCompleted()) {
+                    int choiceMade = -1;
+                    if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                        if (quest->handleInput(event, player, choiceMade)) {
+                            if (quest->isCompleted()) {
+                                quest->execute(player);
+                                questManager.onQuestCompleted();
+                                questActive = false;
+                                if (maybeFinalizeRun()) continue;
+                            }
+                        }
+                    }
+                } else {
+                    questActive = false;
+                }
                 continue;
             }
 
@@ -1118,12 +1258,18 @@ int main() {
 
         // 顶部属性面板
         if (fontOk) {
-            renderStatsPanel(window, font, player);
+            renderStatsPanel(window, hud, player);
             timePanel.setTimeSystem(&timeSystem);
             timePanel.render(window);
         }
         if (eventRunner.isActive()) {
             eventRunner.render(window, modalBox);
+        }
+        if (questActive) {
+            MainQuest* quest = questManager.getCurrentQuest();
+            if (quest && !quest->isCompleted()) {
+                renderQuestContent(window, modalBox, quest);
+            }
         }
         if (activityNotice.active) {
             if (settlementActive) {

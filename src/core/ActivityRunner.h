@@ -34,15 +34,12 @@ struct PendingTimedActivity {
     }
 };
 
-namespace {
-
-std::string appendRepeatNotice(const std::string& body, int streak) {
+/** @brief 在活动结果文本末尾追加重复活动提示 */
+inline std::string appendRepeatNotice(const std::string& body, int streak) {
     if (streak <= 1) return body;
     return body + "\n\n" + cls::format("activity.repeat_penalty",
         {{"streak", std::to_string(streak)}});
 }
-
-} // namespace
 
 /** @brief 执行限时活动（时间推进 + 属性变化 + 事件触发） */
 inline void executeTimedActivity(GameContext& ctx,

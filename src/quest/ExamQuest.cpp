@@ -1,6 +1,15 @@
 #include "quest/ExamQuest.h"
 #include "entity/Player.h"
-#include <cstdlib>
+#include <random>
+#include <chrono>
+
+namespace {
+    std::mt19937& examRng() {
+        static std::mt19937 engine(static_cast<unsigned int>(
+            std::chrono::steady_clock::now().time_since_epoch().count()));
+        return engine;
+    }
+}
 
 ExamQuest::ExamQuest(const std::string& id, const std::string& name,
                      const std::string& desc, const std::string& subject,
@@ -112,7 +121,7 @@ void ExamQuest::performRoll(Player& player) {
     const Attributes& attrs = player.getAttributes();
     int academicBonus = (attrs.academic - 50) / 10;
 
-    lastRoll.d20Roll = (std::rand() % 20) + 1;
+    lastRoll.d20Roll = static_cast<int>(examRng()() % 20) + 1;
     lastRoll.academicBonus = academicBonus;
     lastRoll.reviewBonus = reviewBonus;
     lastRoll.total = lastRoll.d20Roll + academicBonus + reviewBonus;

@@ -3,12 +3,13 @@
 #include "core/GameContext.h"
 #include "core/TimeSystem.h"
 #include "core/CharacterState.h"
+#include "core/SleepSystem.h"
 #include "core/Localization.h"
 #include "entity/Player.h"
 #include "ui/ModalBox.h"
 #include <SFML/Graphics.hpp>
 #include <nlohmann/json.hpp>
-#include <chrono>
+#include <random>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -17,8 +18,7 @@
 using json = nlohmann::json;
 
 EventRunner::EventRunner()
-    : mRng(static_cast<unsigned int>(
-          std::chrono::steady_clock::now().time_since_epoch().count())) {
+    : mRng(std::random_device{}()) {
 }
 
 // ─── 辅助解析 ───────────────────────────────────────────────────────────────
@@ -320,25 +320,29 @@ bool EventRunner::loadEvents(const std::string& filepath) {
 
 // ─── 启动 / 清除 ────────────────────────────────────────────────────────────
 
+const EventDefinition* EventRunner::currentEventDef() const {
+    if (mCurrentEventId.empty()) return nullptr;
+    auto it = mEvents.find(mCurrentEventId);
+    return it != mEvents.end() ? &it->second : nullptr;
+}
+
 bool EventRunner::startEvent(const std::string& eventId, GameContext& ctx) {
     auto it = mEvents.find(eventId);
     if (it == mEvents.end()) return false;
 
-    mCurrentEvent    = &it->second;
     mCurrentEventId  = eventId;
     mActive          = true;
     mWaitingForEnter = false;
 
     std::cout << "[Event] Starting: " << eventId << std::endl;
     appendDebugHistory("start " + eventId);
-    transitionTo(mCurrentEvent->rootNode, ctx);
+    transitionTo(currentEventDef()->rootNode, ctx);
     return true;
 }
 
 void EventRunner::clear() {
     mActive          = false;
     mWaitingForEnter = false;
-    mCurrentEvent    = nullptr;
     mCurrentEventId.clear();
     mCurrentNodeId.clear();
 }
@@ -442,9 +446,10 @@ void EventRunner::appendDebugHistory(const std::string& message) {
 // ─── 节点跳转 ───────────────────────────────────────────────────────────────
 
 void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
-    if (!mCurrentEvent) return;
-    auto it = mCurrentEvent->steps.find(nodeId);
-    if (it == mCurrentEvent->steps.end()) {
+    const EventDefinition* event = currentEventDef();
+    if (!event) return;
+    auto it = event->steps.find(nodeId);
+    if (it == event->steps.end()) {
         std::cerr << "[Event] Missing step: " << nodeId << std::endl;
         clear();
         return;
@@ -472,36 +477,13 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
         return;
 
     case EventNodeType::RANDOM_CHECK: {
-        if (applyEffects(node, ctx)) {
-            clear();
-            return;
-        }
-        const int roll = static_cast<int>(mRng() % 100);
-        const bool success = roll < node.probability;
-        std::cout << "[Event] Random: roll=" << roll
-                  << " p=" << node.probability
-                  << " -> " << (success ? "success" : "failure") << std::endl;
-        appendDebugHistory("random roll=" + std::to_string(roll)
-            + " p=" + std::to_string(node.probability)
-            + " -> " + (success ? "success" : "failure"));
-        transitionTo(success ? node.successNode : node.failureNode, ctx);
+        if (applyEffects(node, ctx)) { clear(); return; }
+        resolveRandomCheck(node, ctx);
         return;
     }
     case EventNodeType::CHECK: {
-        if (applyEffects(node, ctx)) {
-            clear();
-            return;
-        }
-        const bool passed = evaluateConditions(
-            node.conditions, node.requireMode, ctx);
-        appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
-        const std::string& next = passed ? node.thenNode : node.elseNode;
-        if (next.empty()) {
-            std::cerr << "[Event] CHECK node has no " << (passed ? "then" : "else") << std::endl;
-            clear();
-            return;
-        }
-        transitionTo(next, ctx);
+        if (applyEffects(node, ctx)) { clear(); return; }
+        resolveCheck(node, ctx);
         return;
     }
     case EventNodeType::OUTCOME:
@@ -523,12 +505,38 @@ void EventRunner::transitionTo(const std::string& nodeId, GameContext& ctx) {
     }
 }
 
+void EventRunner::resolveRandomCheck(const EventNode& node, GameContext& ctx) {
+    const int roll = static_cast<int>(mRng() % 100);
+    const bool success = roll < node.probability;
+    std::cout << "[Event] Random: roll=" << roll
+              << " p=" << node.probability
+              << " -> " << (success ? "success" : "failure") << std::endl;
+    appendDebugHistory("random roll=" + std::to_string(roll)
+        + " p=" + std::to_string(node.probability)
+        + " -> " + (success ? "success" : "failure"));
+    transitionTo(success ? node.successNode : node.failureNode, ctx);
+}
+
+void EventRunner::resolveCheck(const EventNode& node, GameContext& ctx) {
+    const bool passed = evaluateConditions(
+        node.conditions, node.requireMode, ctx);
+    appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
+    const std::string& next = passed ? node.thenNode : node.elseNode;
+    if (next.empty()) {
+        std::cerr << "[Event] CHECK node has no " << (passed ? "then" : "else") << std::endl;
+        clear();
+        return;
+    }
+    transitionTo(next, ctx);
+}
+
 // ─── 键盘输入 ───────────────────────────────────────────────────────────────
 
 void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
-    if (!mActive || !mCurrentEvent) return;
-    auto it = mCurrentEvent->steps.find(mCurrentNodeId);
-    if (it == mCurrentEvent->steps.end()) return;
+    const EventDefinition* event = currentEventDef();
+    if (!mActive || !event) return;
+    auto it = event->steps.find(mCurrentNodeId);
+    if (it == event->steps.end()) return;
 
     const EventNode& node = it->second;
     const bool isEnter  = (key == sf::Keyboard::Key::Enter);
@@ -545,31 +553,13 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
         mWaitingForEnter = false;
 
         if (node.type == EventNodeType::RANDOM_CHECK) {
-            if (applyEffects(node, ctx)) {
-                clear();
-                return;
-            }
-            const int roll = static_cast<int>(mRng() % 100);
-            const bool success = roll < node.probability;
-            std::cout << "[Event] Random (on Enter): roll=" << roll
-                      << " -> " << (success ? "success" : "failure") << std::endl;
-            appendDebugHistory("random roll=" + std::to_string(roll)
-                + " p=" + std::to_string(node.probability)
-                + " -> " + (success ? "success" : "failure"));
-            transitionTo(success ? node.successNode : node.failureNode, ctx);
+            if (applyEffects(node, ctx)) { clear(); return; }
+            resolveRandomCheck(node, ctx);
             return;
         }
         if (node.type == EventNodeType::CHECK) {
-            if (applyEffects(node, ctx)) {
-                clear();
-                return;
-            }
-            const bool passed = evaluateConditions(
-                node.conditions, node.requireMode, ctx);
-            appendDebugHistory("check " + node.requireMode + " -> " + (passed ? "pass" : "fail"));
-            const std::string& next = passed ? node.thenNode : node.elseNode;
-            if (next.empty()) { clear(); return; }
-            transitionTo(next, ctx);
+            if (applyEffects(node, ctx)) { clear(); return; }
+            resolveCheck(node, ctx);
             return;
         }
         if (node.type == EventNodeType::DISPLAY) {
@@ -605,9 +595,10 @@ void EventRunner::handleInput(sf::Keyboard::Key key, GameContext& ctx) {
 // ─── 渲染 ───────────────────────────────────────────────────────────────────
 
 void EventRunner::render(sf::RenderWindow& window, ModalBox& modalBox) {
-    if (!mActive || !mCurrentEvent) return;
-    auto it = mCurrentEvent->steps.find(mCurrentNodeId);
-    if (it == mCurrentEvent->steps.end()) return;
+    const EventDefinition* event = currentEventDef();
+    if (!mActive || !event) return;
+    auto it = event->steps.find(mCurrentNodeId);
+    if (it == event->steps.end()) return;
 
     const EventNode& node = it->second;
     std::string title   = localizedValue(node.titleKey, node.title);
@@ -648,7 +639,6 @@ void EventRunner::render(sf::RenderWindow& window, ModalBox& modalBox) {
 // ─── 触发器轮询 ─────────────────────────────────────────────────────────────
 
 bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
-    const CampusPlace previousPlace = ctx.currentPlace;
     bool classAttendanceQueued = false;
     std::string classAttendanceId;
 
@@ -685,14 +675,6 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
         if (it != mEvents.end()) {
             auto& def = it->second;
             if (passesTriggerGate(def, ctx, mRng)) {
-                if (previousPlace == CampusPlace::Classroom) {
-                    ctx.timeSystem.setTimeAbsolute(ctx.timeSystem.getRollCallMinute());
-                    ctx.timeSystem.markClassPrompted();
-                    ctx.activityNotice.clear();
-                    startEvent(classAttendanceId, ctx);
-                    return true;
-                }
-
                 ctx.timeSystem.setTimeAbsolute(ctx.timeSystem.getRollCallMinute());
                 ctx.timeSystem.markClassPrompted();
                 ctx.activityNotice.clear();
@@ -846,7 +828,14 @@ bool EventRunner::evaluateCondition(const Condition& cond, GameContext& ctx) {
 bool EventRunner::applyEffects(const EventNode& node, GameContext& ctx) {
     bool changedState = false;
     if (node.timeAdvanceMinutes > 0) {
+        const int startDay = ctx.timeSystem.getDay();
         ctx.timeSystem.advanceMinutes(node.timeAdvanceMinutes);
+        if (ctx.timeSystem.getDay() != startDay) {
+            markNoSleepForSkippedDays(ctx);
+            ctx.player.dailyAttributeCheck();
+            ctx.gamePlayDay = ctx.timeSystem.getDay();
+            ctx.gamesPlayedToday = 0;
+        }
         changedState = true;
     }
     const auto& d = node.delta;

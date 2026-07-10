@@ -29,19 +29,7 @@ void runAndMergeHidden(GameContext& ctx, int minutes, const Attributes& delta,
                        const HiddenMap& hiddenDelta,
                        const std::string& title, const std::string& body,
                        const std::string& actionId) {
-    if (ctx.runTimedActivityWithHidden) {
-        ctx.runTimedActivityWithHidden(minutes, delta, hiddenDelta, title, body, actionId, true);
-    } else {
-        const int previousMinute = ctx.timeSystem.advanceMinutes(minutes);
-        ctx.player.modifyAttributes(delta);
-        mergeHidden(ctx.player.getHidden(), hiddenDelta);
-        syncVisibleHealthFromHidden(ctx.player.getAttributes(), ctx.player.getHidden());
-        ctx.timeSkipFlash.start("Time passes...");
-        if (ctx.finalizeStateChange && ctx.finalizeStateChange()) return;
-        if (ctx.showTimedResult) ctx.showTimedResult(title, body);
-        if (ctx.checkEventTriggers) ctx.checkEventTriggers(previousMinute);
-        if (ctx.finalizeStateChange) ctx.finalizeStateChange();
-    }
+    ctx.runTimedActivityWithHidden(minutes, delta, hiddenDelta, title, body, actionId, true);
 }
 
 std::string bookSkillKey(const std::string& skill) {

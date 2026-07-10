@@ -82,6 +82,12 @@ private:
     /** @brief 执行节点的附属效果（delta + time_advance + flash），返回 true 表示触发结算中断 */
     bool applyEffects(const EventNode& node, GameContext& ctx);
 
+    /** @brief 解析 RANDOM_CHECK 节点（掷骰 + 跳转），供 transitionTo/handleInput 共用 */
+    void resolveRandomCheck(const EventNode& node, GameContext& ctx);
+
+    /** @brief 解析 CHECK 节点（条件求值 + 跳转），供 transitionTo/handleInput 共用 */
+    void resolveCheck(const EventNode& node, GameContext& ctx);
+
     /** @brief 添加一条 Debug/QA 事件运行记录 */
     void appendDebugHistory(const std::string& message);
 
@@ -92,9 +98,11 @@ private:
     /** @brief 求值单条 condition */
     bool evaluateCondition(const Condition& cond, GameContext& ctx);
 
+    /** @brief 通过 mCurrentEventId 安全查找当前事件定义（避免裸指针悬垂） */
+    const EventDefinition* currentEventDef() const;
+
     std::unordered_map<std::string, EventDefinition> mEvents;
     std::vector<std::string> mEventOrder;
-    EventDefinition* mCurrentEvent = nullptr;
     std::string mCurrentEventId;
     std::string mCurrentNodeId;
     bool mActive = false;

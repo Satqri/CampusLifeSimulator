@@ -3,8 +3,17 @@
 #include "entity/CombatHelper.h"
 #include <cmath>
 #include <iostream>
+#include <random>
+#include <random>
 
 namespace CombatSystem {
+
+namespace {
+    std::mt19937& rng() {
+        static std::mt19937 engine(std::random_device{}());
+        return engine;
+    }
+}
 
 void trySpawnEnemy(GameContext& ctx) {
     int lvl = ctx.player.getSanLevel();
@@ -14,7 +23,7 @@ void trySpawnEnemy(GameContext& ctx) {
     if (static_cast<int>(ctx.activeEnemies.size()) >= maxEnemies) return;
 
     int chance = lvl == 1 ? 40 : (lvl == 2 ? 60 : 90);
-    if ((std::rand() % 100) >= chance) return;
+    if (static_cast<int>(rng()() % 100) >= chance) return;
 
     EmotionType types[] = {
         EmotionType::ANXIETY, EmotionType::DEPRESSION, EmotionType::ANGER,
@@ -23,8 +32,8 @@ void trySpawnEnemy(GameContext& ctx) {
     EmotionType type = types[ctx.spawnCounter % 5];
     ctx.spawnCounter++;
 
-    float angle = (std::rand() % 360) * 3.14159f / 180.0f;
-    float dist = 80.0f + (std::rand() % 60);
+    float angle = static_cast<float>(rng()() % 360) * 3.14159f / 180.0f;
+    float dist = 80.0f + static_cast<float>(rng()() % 60);
     float ox = ctx.player.getPosition().x + std::cos(angle) * dist;
     float oy = ctx.player.getPosition().y + std::sin(angle) * dist;
 
@@ -56,7 +65,7 @@ bool fightNearestEnemy(GameContext& ctx) {
     auto& enemy = ctx.activeEnemies[nearestIdx];
     EmotionType etype = enemy->getEmotionType();
 
-    int d20 = (std::rand() % 20) + 1;
+    int d20 = static_cast<int>(rng()() % 20) + 1;
     int stat = statForEmotion(ctx.player, etype);
     int mod = (stat - 50) / 10;
     if (ctx.player.getCombatBuffs().nextEventPositive)
@@ -100,7 +109,7 @@ bool CombatSystem::trySpawnEnemy(Player& player,
     if (static_cast<int>(enemies.size()) >= maxEnemies) return false;
 
     const int chance = level == 1 ? 40 : (level == 2 ? 60 : 90);
-    if ((std::rand() % 100) >= chance) return false;
+    if (static_cast<int>(rng()() % 100) >= chance) return false;
 
     EmotionType types[] = {
         EmotionType::ANXIETY, EmotionType::DEPRESSION, EmotionType::ANGER,
@@ -109,8 +118,10 @@ bool CombatSystem::trySpawnEnemy(Player& player,
     const EmotionType type = types[spawnCounter % 5];
     ++spawnCounter;
 
-    float ox = player.getPosition().x + static_cast<float>((std::rand() % 160) - 80);
-    float oy = player.getPosition().y + static_cast<float>((std::rand() % 160) - 80);
+    float angle = static_cast<float>(rng()() % 360) * 3.14159f / 180.0f;
+    float dist = 80.0f + static_cast<float>(rng()() % 60);
+    float ox = player.getPosition().x + std::cos(angle) * dist;
+    float oy = player.getPosition().y + std::sin(angle) * dist;
     ox = std::clamp(ox, 40.0f, 920.0f);
     oy = std::clamp(oy, 80.0f, 500.0f);
 
@@ -147,7 +158,7 @@ std::optional<std::size_t> CombatSystem::findNearestEnemy(
 CombatRollResult CombatSystem::resolveRoll(Player& player, const Enemy& enemy) {
     const int modifier = (statForEmotion(player, enemy.getEmotionType()) - 50) / 10
         + player.getCombatBuffs().nextRollModifier;
-    const int d20 = (std::rand() % 20) + 1;
+    const int d20 = static_cast<int>(rng()() % 20) + 1;
     const int total = d20 + modifier;
     const int dc = enemy.getDC();
 

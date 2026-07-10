@@ -24,11 +24,13 @@ public:
      * @param desc 任务描述
      * @param choices 选项列表 (选项文本, 属性变化)
      * @param reward 完成奖励
+     * @param type 任务类型
      */
     SimpleQuest(const std::string& id, const std::string& name,
                 const std::string& desc,
                 const std::vector<std::pair<std::string, Attributes>>& choices,
-                const Attributes& reward);
+                const Attributes& reward,
+                MainQuestType type);
 
     void execute(Player& player) override;
     void render(sf::RenderWindow& window) override;

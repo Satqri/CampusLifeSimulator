@@ -33,6 +33,7 @@ public:
     int getDay() const { return day; }
     int getMinuteOfDay() const { return minuteOfDay; }
     int getRollCallMinute() const { return rollCallMinute; }
+    void setRollCallMinute(int minutes) { rollCallMinute = minutes; }
     bool isMidtermDay() const { return day == 7; }
     bool isFinished() const { return finished; }
 

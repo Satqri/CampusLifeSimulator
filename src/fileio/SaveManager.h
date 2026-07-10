@@ -31,6 +31,7 @@ struct SavePlayerData {
 struct SaveTimeData {
     int day = 1;
     int minute = TimeSystem::kDayStartMinute;
+    int rollCallMinute = 0;
     bool classPrompted = false;
     bool classResolved = false;
 };
