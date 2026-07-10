@@ -431,6 +431,11 @@ int main() {
         modalBox.setVisible(false);
     };
 
+    auto setGameplayHudVisible = [&](bool visible) {
+        hud.setVisible(visible);
+        timePanel.setVisible(visible);
+    };
+
     if (!audioManager.initialize())
         std::cerr << "[Audio] Failed to initialize audio system" << std::endl;
     audioManager.applyVolume(gameSettings);
@@ -578,6 +583,7 @@ int main() {
         pendingMorningRushRoute = MorningRushRoute::Campus;
         morningRushTeacherTrust = 0;
         difficultyPanel.setVisible(false);
+        setGameplayHudVisible(true);
         screen = GameScreen::GAME;
     };
 
@@ -599,10 +605,9 @@ int main() {
     settingsPanel.attachToGui(tguiCtx);
     settingsPanel.setOnAction([&](SettingsAction action) { handleSettingsAction(action); });
     hud.attachToGui(tguiCtx);
-    hud.setVisible(true);
     timePanel.attachToGui(tguiCtx);
-    timePanel.setVisible(true);
     timePanel.setAlwaysExpanded(true);
+    setGameplayHudVisible(false);
     modalBox.attachToGui(tguiCtx);
 
     CampusPlace pendingPlace = CampusPlace::Campus;
@@ -707,7 +712,7 @@ int main() {
         player.modifyAttributes(Attributes{.san = -3, .academic = -2});
         syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
         std::ostringstream body;
-        body << reason << "\nSAN -3, Academic -2, Teacher Trust -2.";
+        body << reason << "\n" << cls::text("morning_rush.outer.late_penalty");
         activityNotice.show(title, body.str());
         if (maybeFinalizeRun) maybeFinalizeRun();
     };
@@ -733,8 +738,8 @@ int main() {
             return;
         }
         if (choice == 2) {
-            settleOrdinaryMorningLate("Late Arrival",
-                "You decide not to sprint and arrive after roll call.");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.late_title"),
+                cls::text("morning_rush.outer.reason.decline"));
             return;
         }
 
@@ -744,9 +749,12 @@ int main() {
         const int total = roll + socialBonus - pendingMorningRushPenalty;
         constexpr int dc = 11;
         std::ostringstream body;
-        body << "d20 " << roll << " + Social " << socialBonus
-             << " - Penalty " << pendingMorningRushPenalty
-             << " = " << total << " vs DC " << dc << ".";
+        body << cls::format("morning_rush.outer.classmate_roll",
+            {{"roll", std::to_string(roll)},
+             {"social", std::to_string(socialBonus)},
+             {"penalty", std::to_string(pendingMorningRushPenalty)},
+             {"total", std::to_string(total)},
+             {"dc", std::to_string(dc)}});
         if (total >= dc) {
             movePlayerToClassroom();
             timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
@@ -754,13 +762,13 @@ int main() {
             timeSystem.markClassResolved();
             mergeHidden(player.getHidden(), HiddenMap{{"classAttendCount", 1}, {"teacherTrust", 1}});
             syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
-            body << "\nA classmate saves a seat and covers for you. SAN +1, Energy -2, Social +1.";
+            body << "\n" << cls::text("morning_rush.outer.classmate_success");
             player.modifyAttributes(Attributes{.energy = -2, .san = 1, .social = 1});
-            activityNotice.show("Classmate Help", body.str());
+            activityNotice.show(cls::text("morning_rush.outer.classmate_help_title"), body.str());
             if (maybeFinalizeRun) maybeFinalizeRun();
         } else {
-            body << "\nNo one manages to cover for you in time.";
-            settleOrdinaryMorningLate("Help Failed", body.str());
+            body << "\n" << cls::text("morning_rush.outer.classmate_fail");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.help_failed_title"), body.str());
         }
     };
 
@@ -895,8 +903,8 @@ int main() {
         const bool stillBeforeClass = now < TimeSystem::kClassMinute;
         const bool normalWalkWouldBeLate = now + commuteMinutes > TimeSystem::kClassMinute;
         if (now >= TimeSystem::kClassMinute && now < TimeSystem::kClassEndMinute) {
-            settleOrdinaryMorningLate("Late Arrival",
-                "It is already past 08:50, so the sprint chance is gone.");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.late_title"),
+                cls::text("morning_rush.outer.reason.past_class"));
             return true;
         }
         if (!(previousMinute < TimeSystem::kClassMinute
@@ -906,13 +914,13 @@ int main() {
         }
 
         if (morningRushTriggeredToday || morningRushPromptedToday) {
-            settleOrdinaryMorningLate("Late Arrival",
-                "You already had a rush chance today, so this late risk is resolved normally.");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.late_title"),
+                cls::text("morning_rush.outer.reason.already_chance"));
             return true;
         }
         if (morningRushCooldownDays > 0) {
-            settleOrdinaryMorningLate("Too Tired To Sprint",
-                "You are still worn out from the last failed sprint and can only arrive late.");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.too_tired_title"),
+                cls::text("morning_rush.outer.reason.cooldown"));
             return true;
         }
 
@@ -923,8 +931,8 @@ int main() {
         const bool lowTrustEmergency = hiddenInt("teacherTrust") <= -10;
         const bool keyMorning = firstLate || beforeMajorExam || shortSleepMorning || lowTrustEmergency;
         if (!keyMorning) {
-            settleOrdinaryMorningLate("Late Arrival",
-                "This is not a key class moment, so the game uses the light late settlement.");
+            settleOrdinaryMorningLate(cls::text("morning_rush.outer.late_title"),
+                cls::text("morning_rush.outer.reason.not_key"));
             return true;
         }
 
@@ -935,13 +943,13 @@ int main() {
         pendingMorningRushRoute = routeForMorningRush(ctx.currentPlace);
         activityNotice.clear();
 
-        std::ostringstream body;
-        body << "Class starts at 08:50. Walking from here takes "
-             << commuteMinutes << " minutes.\nChoose a response.";
         mealChoicePrompt.show(
-            "Sprint To Class?",
-            body.str(),
-            std::vector<std::string>{"Run sprint", "Accept late penalty", "Ask classmate"},
+            cls::text("morning_rush.outer.prompt.title"),
+            cls::format("morning_rush.outer.prompt.body", {{"minutes", std::to_string(commuteMinutes)}}),
+            std::vector<std::string>{
+                cls::text("morning_rush.outer.prompt.run"),
+                cls::text("morning_rush.outer.prompt.late"),
+                cls::text("morning_rush.outer.prompt.classmate")},
             kMorningRushPromptPurpose,
             std::vector<int>{1, 2, 3});
         return true;
@@ -952,9 +960,8 @@ int main() {
         if (morningRushTestMode) {
             const int testedStage = morningRushGame.getStageIndex();
             morningRushTestMode = false;
-            activityNotice.show("Morning Rush Test",
-                "Stage " + std::to_string(testedStage)
-                + " test finished. No player stats or schedule were changed.");
+            activityNotice.show(cls::text("morning_rush.outer.test_title"),
+                cls::format("morning_rush.outer.test_finished", {{"stage", std::to_string(testedStage)}}));
             return;
         }
         syncMorningRushTeacherTrustToHidden();
@@ -964,8 +971,8 @@ int main() {
             timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
             mergeHidden(player.getHidden(), HiddenMap{{"classAttendCount", 1}, {"teacherTrust", 1}});
             syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
-            activityNotice.show("Morning Class",
-                "You arrive just in time and settle into the front row.");
+            activityNotice.show(cls::text("morning_rush.outer.morning_class_title"),
+                cls::text("morning_rush.outer.morning_class_success"));
         } else {
             addHiddenInt("lateCount", 1);
             morningRushCooldownDays = 2;
@@ -974,7 +981,9 @@ int main() {
                 : TimeSystem::kClassMinute + 5);
             timeSystem.markClassResolved();
             activityNotice.show(
-                morningRushGame.wasCriticalFailure() ? "Called Out" : "Late Arrival",
+                morningRushGame.wasCriticalFailure()
+                    ? cls::text("morning_rush.outer.called_out_title")
+                    : cls::text("morning_rush.outer.late_title"),
                 morningRushGame.getResultText());
         }
         if (maybeFinalizeRun) maybeFinalizeRun();
@@ -1359,8 +1368,8 @@ int main() {
                     if (morningRushTestMode && keyEv->code == sf::Keyboard::Key::Escape) {
                         morningRushActive = false;
                         morningRushTestMode = false;
-                        activityNotice.show("Morning Rush Test",
-                            "Practice exited. No player stats or schedule were changed.");
+                        activityNotice.show(cls::text("morning_rush.outer.test_title"),
+                            cls::text("morning_rush.outer.practice_exited"));
                         continue;
                     }
                 }
@@ -1424,8 +1433,8 @@ int main() {
                             && choiceIndex < static_cast<int>(mealChoicePrompt.values.size())) {
                             resolveMorningRushChoice(mealChoicePrompt.values[choiceIndex]);
                         } else if (keyEv->code == sf::Keyboard::Key::Escape) {
-                            settleOrdinaryMorningLate("Late Arrival",
-                                "You miss the sprint chance and arrive late.");
+                            settleOrdinaryMorningLate(cls::text("morning_rush.outer.late_title"),
+                                cls::text("morning_rush.outer.reason.escape"));
                         }
                         continue;
                     }
@@ -1533,6 +1542,7 @@ int main() {
 
         // ── 持续性输入(移动) ─────────────────────────────────
         if (screen == GameScreen::TITLE) {
+            setGameplayHudVisible(false);
             titleScreen.setVisible(true);
             titleScreen.update(dt);
             window.clear(sf::Color(20, 20, 30));
@@ -1543,6 +1553,7 @@ int main() {
         }
 
         if (screen == GameScreen::SETTINGS) {
+            setGameplayHudVisible(false);
             settingsPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
             tguiCtx.draw();
@@ -1551,6 +1562,7 @@ int main() {
         }
 
         if (screen == GameScreen::HELP) {
+            setGameplayHudVisible(false);
             helpPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
             tguiCtx.draw();
@@ -1559,6 +1571,7 @@ int main() {
         }
 
         if (screen == GameScreen::DIFFICULTY) {
+            setGameplayHudVisible(false);
             difficultyPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
             difficultyPanel.render(window);
@@ -1568,6 +1581,7 @@ int main() {
         }
 
         if (sceneTransition.active) {
+            setGameplayHudVisible(false);
             window.clear(sf::Color(20, 20, 30));
             renderSceneTransition(window, font, sceneBackground, sceneTransition);
             tguiCtx.draw();
@@ -1576,6 +1590,7 @@ int main() {
         }
 
         if (timeSkipFlash.active) {
+            setGameplayHudVisible(false);
             window.clear(sf::Color(0, 0, 0));
             renderTimeSkipFlash(window, font, timeSkipFlash);
             tguiCtx.draw();
@@ -1584,6 +1599,7 @@ int main() {
         }
 
         if (morningRushActive) {
+            setGameplayHudVisible(false);
             hideModalUi();
             syncMorningRushTeacherTrustFromHidden();
             morningRushGame.update(dt, player, morningRushTeacherTrust);
@@ -1712,6 +1728,7 @@ int main() {
 
         // 顶部属性面板
         if (fontOk) {
+            setGameplayHudVisible(true);
             renderStatsPanel(window, hud, player);
             timePanel.setTimeSystem(&timeSystem);
             timePanel.update(0.0f);
