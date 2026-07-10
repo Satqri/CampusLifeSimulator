@@ -8,6 +8,7 @@
 
 #include <TGUI/TGUI.hpp>
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <functional>
 #include <memory>
 
@@ -27,12 +28,20 @@ public:
     void setVisible(bool visible);
     void setOnAction(std::function<void(SettingsAction)> callback);
 
+    void moveSelection(int delta);
+    SettingsAction adjustCurrent(int delta);
+    SettingsAction confirmCurrent();
+
     bool isEditing() const { return false; }
     void setEditing(bool) {}
 
 private:
     void createWidgets();
+    void refreshText();
     void refreshValues();
+    void updateSelectionVisuals();
+    SettingsAction cycleWindowSize(int delta);
+    SettingsAction toggleLanguage();
     void onBgmChanged(float value);
     void onSfxChanged(float value);
 
@@ -41,6 +50,9 @@ private:
     TguiContext* mTguiCtx = nullptr;
 
     tgui::Panel::Ptr mContainer;
+    tgui::Label::Ptr mTitleLabel;
+    std::array<tgui::Panel::Ptr, 5> mRowHighlights;
+    std::array<tgui::Label::Ptr, 5> mRowLabels;
     tgui::Slider::Ptr mBgmSlider;
     tgui::Slider::Ptr mSfxSlider;
     tgui::Button::Ptr mWindowBtn;
@@ -53,6 +65,8 @@ private:
     bool mOverlayMode = false;
     bool mVisible = false;
     bool mWidgetsCreated = false;
+    bool mRefreshingValues = false;
+    int mSelectedRow = 0;
     std::function<void(SettingsAction)> mOnAction;
 };
 

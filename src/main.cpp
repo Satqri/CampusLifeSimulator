@@ -954,10 +954,24 @@ int main() {
             if (screen == GameScreen::SETTINGS) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Escape
-                        || keyEv->code == sf::Keyboard::Key::S
                         || isSettingsShortcut(*keyEv)) {
                         saveRuntimeSettings();
                         closeSettingsPanel();
+                    } else if (keyEv->code == sf::Keyboard::Key::Up
+                        || keyEv->code == sf::Keyboard::Key::W) {
+                        settingsPanel.moveSelection(-1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Down
+                        || keyEv->code == sf::Keyboard::Key::S) {
+                        settingsPanel.moveSelection(1);
+                    } else if (keyEv->code == sf::Keyboard::Key::Left
+                        || keyEv->code == sf::Keyboard::Key::A) {
+                        handleSettingsAction(settingsPanel.adjustCurrent(-1));
+                    } else if (keyEv->code == sf::Keyboard::Key::Right
+                        || keyEv->code == sf::Keyboard::Key::D) {
+                        handleSettingsAction(settingsPanel.adjustCurrent(1));
+                    } else if (keyEv->code == sf::Keyboard::Key::Enter
+                        || keyEv->code == sf::Keyboard::Key::Space) {
+                        handleSettingsAction(settingsPanel.confirmCurrent());
                     }
                 }
                 // 鼠标和滑块交互由 TGUI 回调处理
