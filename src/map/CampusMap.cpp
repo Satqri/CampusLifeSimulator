@@ -379,17 +379,17 @@ void CampusMap::drawCampusDetails(sf::RenderWindow& window) const {
 }
 
 void CampusMap::drawBuilding(sf::RenderWindow& window, const MapPortal& portal,
-                              const std::string& label, const sf::Sprite* buildingSprite) {
+                              const std::string& label, const sf::Texture* buildingTexture) {
     (void)label;
     const auto& area = portal.area;
 
-    if (buildingSprite) {
-        const auto texSize = buildingSprite->getTexture().getSize();
+    if (buildingTexture) {
+        const auto texSize = buildingTexture->getSize();
         if (texSize.y > 0) {
             const float scale = area.size.y / static_cast<float>(texSize.y);
             const float scaledW = texSize.x * scale;
             const float offsetX = (area.size.x - scaledW) / 2.0f;
-            sf::Sprite s(*buildingSprite);
+            sf::Sprite s(*buildingTexture);
             s.setScale({scale, scale});
             s.setPosition({area.position.x + offsetX, area.position.y});
             window.draw(s);
@@ -511,12 +511,12 @@ void CampusMap::render(sf::RenderWindow& window) {
     drawCampusDetails(window);
 
     const auto portals = getPortals();
-    drawBuilding(window, portals[0], cls::text("map.dorm.short"), getBuildingSprite(CampusPlace::Dormitory));
-    drawBuilding(window, portals[1], cls::text("map.gym"),         getBuildingSprite(CampusPlace::Gym));
-    drawBuilding(window, portals[2], cls::text("map.library"),     getBuildingSprite(CampusPlace::Library));
-    drawBuilding(window, portals[3], cls::text("map.classroom"),   getBuildingSprite(CampusPlace::Classroom));
-    drawBuilding(window, portals[4], cls::text("map.cafeteria"),   getBuildingSprite(CampusPlace::Cafeteria));
-    drawBuilding(window, portals[5], cls::text("map.store"),       getBuildingSprite(CampusPlace::Store));
+    drawBuilding(window, portals[0], cls::text("map.dorm.short"), getBuildingTexture(CampusPlace::Dormitory));
+    drawBuilding(window, portals[1], cls::text("map.gym"),         getBuildingTexture(CampusPlace::Gym));
+    drawBuilding(window, portals[2], cls::text("map.library"),     getBuildingTexture(CampusPlace::Library));
+    drawBuilding(window, portals[3], cls::text("map.classroom"),   getBuildingTexture(CampusPlace::Classroom));
+    drawBuilding(window, portals[4], cls::text("map.cafeteria"),   getBuildingTexture(CampusPlace::Cafeteria));
+    drawBuilding(window, portals[5], cls::text("map.store"),       getBuildingTexture(CampusPlace::Store));
 
     drawTimeLighting(window);
 
@@ -541,19 +541,17 @@ void CampusMap::renderPlayer(sf::RenderWindow& window, Player& player) {
 void CampusMap::loadBuildingTexture(int index, const std::string& relativePath) {
     const std::string resolved = cls::resolveAssetPath(relativePath);
     if (!std::filesystem::exists(resolved)) return;
-    if (mBuildingTextures[index].loadFromFile(resolved)) {
-        mBuildingSprites[index] = std::make_unique<sf::Sprite>(mBuildingTextures[index]);
-    }
+    mBuildingTextureLoaded[index] = mBuildingTextures[index].loadFromFile(resolved);
 }
 
-const sf::Sprite* CampusMap::getBuildingSprite(CampusPlace place) const {
+const sf::Texture* CampusMap::getBuildingTexture(CampusPlace place) const {
     switch (place) {
-        case CampusPlace::Dormitory: return mBuildingSprites[0].get();
-        case CampusPlace::Gym:       return mBuildingSprites[1].get();
-        case CampusPlace::Library:   return mBuildingSprites[2].get();
-        case CampusPlace::Classroom: return mBuildingSprites[3].get();
-        case CampusPlace::Cafeteria: return mBuildingSprites[4].get();
-        case CampusPlace::Store:     return mBuildingSprites[5].get();
+        case CampusPlace::Dormitory: return mBuildingTextureLoaded[0] ? &mBuildingTextures[0] : nullptr;
+        case CampusPlace::Gym:       return mBuildingTextureLoaded[1] ? &mBuildingTextures[1] : nullptr;
+        case CampusPlace::Library:   return mBuildingTextureLoaded[2] ? &mBuildingTextures[2] : nullptr;
+        case CampusPlace::Classroom: return mBuildingTextureLoaded[3] ? &mBuildingTextures[3] : nullptr;
+        case CampusPlace::Cafeteria: return mBuildingTextureLoaded[4] ? &mBuildingTextures[4] : nullptr;
+        case CampusPlace::Store:     return mBuildingTextureLoaded[5] ? &mBuildingTextures[5] : nullptr;
         default: return nullptr;
     }
 }

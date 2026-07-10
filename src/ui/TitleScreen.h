@@ -10,7 +10,6 @@
 
 #include <array>
 #include <functional>
-#include <memory>
 #include <string>
 
 enum class TitleAction { None, Start, Settings, Help };
@@ -49,7 +48,6 @@ private:
 
     // SFML 装饰
     sf::Texture mBgTexture;
-    std::unique_ptr<sf::Sprite> mBgSprite;
     float mElapsedTime = 0.0f;
     std::array<Button, 3> mButtons;
     std::size_t mSelectedIndex = 0;

@@ -23,15 +23,18 @@ void SceneBackground::render(sf::RenderWindow& window) {
 
 void SceneBackground::render(sf::RenderWindow& window, SceneBackgroundType type, sf::Color tint) {
     const int i = index(type);
-    if (sprites[i]) {
+    if (textureLoaded[i]) {
         const auto size = textures[i].getSize();
         if (size.x > 0 && size.y > 0) {
-            sprites[i]->setScale({
+            sf::Sprite sprite(textures[i]);
+            sprite.setScale({
                 960.0f / static_cast<float>(size.x),
                 540.0f / static_cast<float>(size.y)
             });
+            window.draw(sprite);
+        } else {
+            renderFallback(window, type);
         }
-        window.draw(*sprites[i]);
     } else {
         renderFallback(window, type);
     }
@@ -131,9 +134,7 @@ void SceneBackground::load(SceneBackgroundType type, const std::string& relative
     if (!std::filesystem::exists(resolvedPath)) {
         return;
     }
-    if (textures[i].loadFromFile(resolvedPath)) {
-        sprites[i] = std::make_unique<sf::Sprite>(textures[i]);
-    }
+    textureLoaded[i] = textures[i].loadFromFile(resolvedPath);
 }
 
 int SceneBackground::index(SceneBackgroundType type) const {

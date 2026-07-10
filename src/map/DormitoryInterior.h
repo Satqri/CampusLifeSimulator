@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 /**
  * @class DormitoryInterior
@@ -21,9 +20,9 @@ private:
     sf::Texture mBedTexture;
     sf::Texture mDeskPcTexture;
     sf::Texture mCarpetTexture;
-    std::unique_ptr<sf::Sprite> mBedSprite;
-    std::unique_ptr<sf::Sprite> mDeskPcSprite;
-    std::unique_ptr<sf::Sprite> mCarpetSprite;
+    bool mBedLoaded = false;
+    bool mDeskPcLoaded = false;
+    bool mCarpetLoaded = false;
 };
 
 #endif // CLS_MAP_DORMITORYINTERIOR_H

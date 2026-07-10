@@ -6,25 +6,22 @@ DormitoryInterior::DormitoryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/dormitory.json"));
 
-    if (mBedTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/bed.png")))
-        mBedSprite = std::make_unique<sf::Sprite>(mBedTexture);
-    if (mDeskPcTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/desk_and_computer.png")))
-        mDeskPcSprite = std::make_unique<sf::Sprite>(mDeskPcTexture);
-    if (mCarpetTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/carpet.png")))
-        mCarpetSprite = std::make_unique<sf::Sprite>(mCarpetTexture);
+    mBedLoaded = mBedTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/bed.png"));
+    mDeskPcLoaded = mDeskPcTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/desk_and_computer.png"));
+    mCarpetLoaded = mCarpetTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/carpet.png"));
 
     // 碰撞区适配精灵实际尺寸
-    if (mBedSprite) {
+    if (mBedLoaded) {
         const auto s = mBedTexture.getSize();
         const float scale = 70.0f / static_cast<float>(s.y);
         updateInteractionArea("dormitory_bed", sf::FloatRect({90.0f, 108.0f}, {s.x * scale, 70.0f}));
     }
-    if (mDeskPcSprite) {
+    if (mDeskPcLoaded) {
         const auto s = mDeskPcTexture.getSize();
         const float scale = 150.0f / static_cast<float>(s.x);
         updateInteractionArea("dormitory_desk", sf::FloatRect({636.0f, 112.0f}, {150.0f, s.y * scale}));
     }
-    if (mCarpetSprite) {
+    if (mCarpetLoaded) {
         const auto s = mCarpetTexture.getSize();
         const float scale = 110.0f / static_cast<float>(s.y);
         const float scaledW = s.x * scale;
@@ -39,10 +36,10 @@ void DormitoryInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(158, 110, 68));
 
     // 床 + 枕头
-    if (mBedSprite) {
+    if (mBedLoaded) {
         const auto size = mBedTexture.getSize();
         const float scale = 70.0f / static_cast<float>(size.y);
-        sf::Sprite s(*mBedSprite);
+        sf::Sprite s(mBedTexture);
         s.setScale({scale, scale});
         s.setPosition({90.0f, 108.0f});
         window.draw(s);
@@ -59,10 +56,10 @@ void DormitoryInterior::render(sf::RenderWindow& window) {
     }
 
     // 书桌 + 显示器 + 主机
-    if (mDeskPcSprite) {
+    if (mDeskPcLoaded) {
         const auto size = mDeskPcTexture.getSize();
         const float scale = 150.0f / static_cast<float>(size.x);
-        sf::Sprite s(*mDeskPcSprite);
+        sf::Sprite s(mDeskPcTexture);
         s.setScale({scale, scale});
         s.setPosition({636.0f, 112.0f});
         window.draw(s);
@@ -86,12 +83,12 @@ void DormitoryInterior::render(sf::RenderWindow& window) {
     }
 
     // 地毯
-    if (mCarpetSprite) {
+    if (mCarpetLoaded) {
         const auto size = mCarpetTexture.getSize();
         const float scale = 110.0f / static_cast<float>(size.y);
         const float scaledW = size.x * scale;
         const float offsetX = (230.0f - scaledW) / 2.0f;
-        sf::Sprite s(*mCarpetSprite);
+        sf::Sprite s(mCarpetTexture);
         s.setScale({scale, scale});
         s.setPosition({365.0f + offsetX, 285.0f});
         window.draw(s);

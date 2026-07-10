@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 /**
  * @class ConvenienceStoreInterior
@@ -20,8 +19,8 @@ public:
 private:
     sf::Texture mShelfTexture;
     sf::Texture mCashRegisterTexture;
-    std::unique_ptr<sf::Sprite> mShelfSprite;
-    std::unique_ptr<sf::Sprite> mCashRegisterSprite;
+    bool mShelfLoaded = false;
+    bool mCashRegisterLoaded = false;
 };
 
 #endif // CLS_MAP_CONVENIENCESTOREINTERIOR_H

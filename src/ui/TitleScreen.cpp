@@ -19,9 +19,7 @@ TitleScreen::TitleScreen(sf::Font& fontRef, const std::string& backgroundPath)
     }}
 {
     const std::string resolvedPath = cls::resolveAssetPath(backgroundPath);
-    if (mBgTexture.loadFromFile(resolvedPath)) {
-        mBgSprite = std::make_unique<sf::Sprite>(mBgTexture);
-    }
+    mBgTexture.loadFromFile(resolvedPath);
 }
 
 void TitleScreen::attachToGui(TguiContext& ctx) {
@@ -115,15 +113,14 @@ void TitleScreen::update(float deltaTime) {
 
 void TitleScreen::render(sf::RenderWindow& window) {
     // 背景图
-    if (mBgSprite) {
-        const auto size = mBgTexture.getSize();
-        if (size.x > 0 && size.y > 0) {
-            mBgSprite->setScale({
-                960.0f / static_cast<float>(size.x),
-                540.0f / static_cast<float>(size.y)
-            });
-        }
-        window.draw(*mBgSprite);
+    const auto size = mBgTexture.getSize();
+    if (size.x > 0 && size.y > 0) {
+        sf::Sprite bgSprite(mBgTexture);
+        bgSprite.setScale({
+            960.0f / static_cast<float>(size.x),
+            540.0f / static_cast<float>(size.y)
+        });
+        window.draw(bgSprite);
     } else {
         sf::RectangleShape fallback({960.0f, 540.0f});
         fallback.setFillColor(sf::Color(12, 92, 76));

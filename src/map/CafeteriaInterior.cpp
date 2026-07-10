@@ -6,11 +6,11 @@ CafeteriaInterior::CafeteriaInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/cafeteria.json"));
 
-    if (mCounterTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/shelf.png")))
-        mCounterSprite = std::make_unique<sf::Sprite>(mCounterTexture);
+    mCounterLoaded = mCounterTexture.loadFromFile(
+        cls::resolveAssetPath("assets/image/scenery/shelf.png"));
 
     // 碰撞区适配精灵实际尺寸（柜台 354×70，居中）
-    if (mCounterSprite) {
+    if (mCounterLoaded) {
         const auto s = mCounterTexture.getSize();
         const float scale = 70.0f / static_cast<float>(s.y);
         const float scaledW = s.x * scale;
@@ -26,12 +26,12 @@ void CafeteriaInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(150, 114, 72));
 
     // 柜台
-    if (mCounterSprite) {
+    if (mCounterLoaded) {
         const auto size = mCounterTexture.getSize();
         const float scale = 70.0f / static_cast<float>(size.y);
         const float scaledW = size.x * scale;
         const float offsetX = (760.0f - scaledW) / 2.0f;
-        sf::Sprite s(*mCounterSprite);
+        sf::Sprite s(mCounterTexture);
         s.setScale({scale, scale});
         s.setPosition({100.0f + offsetX, 94.0f});
         window.draw(s);

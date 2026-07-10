@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 class GymInterior : public BuildingInterior {
 public:
@@ -16,8 +15,8 @@ public:
 private:
     sf::Texture mTreadmillTexture;
     sf::Texture mDumbbellTexture;
-    std::unique_ptr<sf::Sprite> mTreadmillSprite;
-    std::unique_ptr<sf::Sprite> mDumbbellSprite;
+    bool mTreadmillLoaded = false;
+    bool mDumbbellLoaded = false;
 };
 
 #endif // CLS_MAP_GYMINTERIOR_H

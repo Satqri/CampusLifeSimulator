@@ -8,19 +8,19 @@ GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/gym.json"));
 
-    if (mTreadmillTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill.png")))
-        mTreadmillSprite = std::make_unique<sf::Sprite>(mTreadmillTexture);
-    if (mDumbbellTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/dumbbell.png")))
-        mDumbbellSprite = std::make_unique<sf::Sprite>(mDumbbellTexture);
+    mTreadmillLoaded = mTreadmillTexture.loadFromFile(
+        cls::resolveAssetPath("assets/image/scenery/treadmill.png"));
+    mDumbbellLoaded = mDumbbellTexture.loadFromFile(
+        cls::resolveAssetPath("assets/image/scenery/dumbbell.png"));
 
     // 碰撞区适配精灵实际尺寸
-    if (mTreadmillSprite) {
+    if (mTreadmillLoaded) {
         const auto s = mTreadmillTexture.getSize();
         const float w = s.x * 76.0f / static_cast<float>(s.y);
         updateInteractionArea("gym_treadmill_0", sf::FloatRect({128.0f, 118.0f}, {w, 76.0f}));
         updateInteractionArea("gym_treadmill_1", sf::FloatRect({610.0f, 118.0f}, {w, 76.0f}));
     }
-    if (mDumbbellSprite) {
+    if (mDumbbellLoaded) {
         const auto s = mDumbbellTexture.getSize();
         const float w = s.x * 58.0f / static_cast<float>(s.y);
         for (int i = 0; i < 4; ++i)
@@ -43,10 +43,10 @@ void GymInterior::render(sf::RenderWindow& window) {
 
     // 跑步机 x2
     for (const sf::Vector2f pos : {sf::Vector2f{128.0f, 118.0f}, sf::Vector2f{610.0f, 118.0f}}) {
-        if (mTreadmillSprite) {
+        if (mTreadmillLoaded) {
             const auto size = mTreadmillTexture.getSize();
             const float scale = 76.0f / static_cast<float>(size.y);
-            sf::Sprite s(*mTreadmillSprite);
+            sf::Sprite s(mTreadmillTexture);
             s.setScale({scale, scale});
             s.setPosition(pos);
             window.draw(s);
@@ -75,10 +75,10 @@ void GymInterior::render(sf::RenderWindow& window) {
         const float x = 168.0f + i * 170.0f;
         const float y = 315.0f;
 
-        if (mDumbbellSprite) {
+        if (mDumbbellLoaded) {
             const auto size = mDumbbellTexture.getSize();
             const float scale = 58.0f / static_cast<float>(size.y);
-            sf::Sprite s(*mDumbbellSprite);
+            sf::Sprite s(mDumbbellTexture);
             s.setScale({scale, scale});
             s.setPosition({x, y});
             window.draw(s);

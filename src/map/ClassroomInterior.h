@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 /**
  * @class ClassroomInterior
@@ -19,7 +18,7 @@ public:
 
 private:
     sf::Texture mBlackboardTexture;
-    std::unique_ptr<sf::Sprite> mBlackboardSprite;
+    bool mBlackboardLoaded = false;
 };
 
 #endif // CLS_MAP_CLASSROOMINTERIOR_H

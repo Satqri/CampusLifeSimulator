@@ -6,11 +6,11 @@ ClassroomInterior::ClassroomInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/classroom.json"));
 
-    if (mBlackboardTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/blackboard.png")))
-        mBlackboardSprite = std::make_unique<sf::Sprite>(mBlackboardTexture);
+    mBlackboardLoaded = mBlackboardTexture.loadFromFile(
+        cls::resolveAssetPath("assets/image/scenery/blackboard.png"));
 
     // 碰撞区适配精灵实际尺寸（黑板 250×150，居中）
-    if (mBlackboardSprite) {
+    if (mBlackboardLoaded) {
         const auto s = mBlackboardTexture.getSize();
         const float scale = 150.0f / static_cast<float>(s.y);
         const float scaledW = s.x * scale;
@@ -26,12 +26,12 @@ void ClassroomInterior::render(sf::RenderWindow& window) {
     drawRoomFrame(window, sf::Color(116, 126, 112));
 
     // 黑板
-    if (mBlackboardSprite) {
+    if (mBlackboardLoaded) {
         const auto size = mBlackboardTexture.getSize();
         const float scale = 150.0f / static_cast<float>(size.y);
         const float scaledW = size.x * scale;
         const float offsetX = (520.0f - scaledW) / 2.0f;
-        sf::Sprite s(*mBlackboardSprite);
+        sf::Sprite s(mBlackboardTexture);
         s.setScale({scale, scale});
         s.setPosition({220.0f + offsetX, 82.0f});
         window.draw(s);

@@ -6,19 +6,18 @@ ConvenienceStoreInterior::ConvenienceStoreInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/store.json"));
 
-    if (mShelfTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/shelf.png")))
-        mShelfSprite = std::make_unique<sf::Sprite>(mShelfTexture);
-    if (mCashRegisterTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/cash_register.png")))
-        mCashRegisterSprite = std::make_unique<sf::Sprite>(mCashRegisterTexture);
+    mShelfLoaded = mShelfTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/shelf.png"));
+    mCashRegisterLoaded = mCashRegisterTexture.loadFromFile(
+        cls::resolveAssetPath("assets/image/scenery/cash_register.png"));
 
     // 碰撞区适配精灵实际尺寸
-    if (mShelfSprite) {
+    if (mShelfLoaded) {
         const auto s = mShelfTexture.getSize();
         const float h = s.y * 156.0f / static_cast<float>(s.x);
         updateInteractionArea("store_shelf", sf::FloatRect({170.0f, 160.0f}, {156.0f, h}));
         updateInteractionArea("store_drink_fridge", sf::FloatRect({590.0f, 160.0f}, {156.0f, h}));
     }
-    if (mCashRegisterSprite) {
+    if (mCashRegisterLoaded) {
         const auto s = mCashRegisterTexture.getSize();
         const float w = s.x * 70.0f / static_cast<float>(s.y);
         updateInteractionArea("store_counter", sf::FloatRect({640.0f, 360.0f}, {w, 70.0f}));
@@ -32,10 +31,10 @@ void ConvenienceStoreInterior::render(sf::RenderWindow& window) {
 
     // 货架 A、B、冰箱
     for (const float x : {170.0f, 380.0f, 590.0f}) {
-        if (mShelfSprite) {
+        if (mShelfLoaded) {
             const auto size = mShelfTexture.getSize();
             const float scale = 156.0f / static_cast<float>(size.x);
-            sf::Sprite s(*mShelfSprite);
+            sf::Sprite s(mShelfTexture);
             s.setScale({scale, scale});
             s.setPosition({x, 160.0f});
             window.draw(s);
@@ -54,10 +53,10 @@ void ConvenienceStoreInterior::render(sf::RenderWindow& window) {
     window.draw(hotWater);
 
     // 收银台
-    if (mCashRegisterSprite) {
+    if (mCashRegisterLoaded) {
         const auto size = mCashRegisterTexture.getSize();
         const float scale = 70.0f / static_cast<float>(size.y);
-        sf::Sprite s(*mCashRegisterSprite);
+        sf::Sprite s(mCashRegisterTexture);
         s.setScale({scale, scale});
         s.setPosition({640.0f, 360.0f});
         window.draw(s);

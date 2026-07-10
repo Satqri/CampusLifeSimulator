@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 /**
  * @class CafeteriaInterior
@@ -19,7 +18,7 @@ public:
 
 private:
     sf::Texture mCounterTexture;
-    std::unique_ptr<sf::Sprite> mCounterSprite;
+    bool mCounterLoaded = false;
 };
 
 #endif // CLS_MAP_CAFETERIAINTERIOR_H

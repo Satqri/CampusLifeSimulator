@@ -3,7 +3,7 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
+#include <vector>
 
 /**
  * @class LibraryInterior
@@ -18,8 +18,22 @@ public:
     CampusPlace getPlace() const override { return CampusPlace::Library; }
 
 private:
-    sf::Texture mBookshelfTexture;
-    std::unique_ptr<sf::Sprite> mBookshelfSprite;
+    struct AtlasSprite {
+        sf::IntRect source;
+        sf::Vector2f position;
+        sf::Vector2f scale{1.0f, 1.0f};
+    };
+
+    void addObject(sf::IntRect source, sf::Vector2f position, sf::Vector2f scale,
+                   sf::FloatRect collision);
+    void drawAtlasSprite(sf::RenderWindow& window, const AtlasSprite& sprite) const;
+    void drawPixelFloor(sf::RenderWindow& window) const;
+    void drawBackWall(sf::RenderWindow& window) const;
+    void buildLibraryLayout();
+
+    sf::Texture mAtlasTexture;
+    std::vector<AtlasSprite> mDecorSprites;
+    std::vector<AtlasSprite> mObjectSprites;
 };
 
 #endif // CLS_MAP_LIBRARYINTERIOR_H
