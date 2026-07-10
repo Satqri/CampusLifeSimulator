@@ -14,10 +14,12 @@ public:
     CampusPlace getPlace() const override { return CampusPlace::Gym; }
 
 private:
+    sf::Texture mFloorTexture;
     sf::Texture mTreadmillLeftTexture;
     sf::Texture mTreadmillRightTexture;
     sf::Texture mDumbbellTextures[4];
     sf::Texture mFrontDeskTexture;
+    std::unique_ptr<sf::Sprite> mFloorSprite;
     std::unique_ptr<sf::Sprite> mTreadmillLeftSprite;
     std::unique_ptr<sf::Sprite> mTreadmillRightSprite;
     std::unique_ptr<sf::Sprite> mDumbbellSprites[4];

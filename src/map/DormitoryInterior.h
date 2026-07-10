@@ -18,6 +18,8 @@ public:
     CampusPlace getPlace() const override { return CampusPlace::Dormitory; }
 
 private:
+    sf::Texture mFloorTexture;
+    std::unique_ptr<sf::Sprite> mFloorSprite;
     sf::Texture mBackgroundTexture;
     std::unique_ptr<sf::Sprite> mBackgroundSprite;
     sf::Texture mBedTexture;

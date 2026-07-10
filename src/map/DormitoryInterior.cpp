@@ -14,7 +14,13 @@ DormitoryInterior::DormitoryInterior() {
     } else if (mBedTexture.loadFromFile(bedDefaultPath)) {
         mBedSprite = std::make_unique<sf::Sprite>(mBedTexture);
     }
-    const std::string bgCustomPath = R"(C:\Users\sheng\Desktop\地板(1).png)";
+
+    const std::string floorPath = cls::resolveAssetPath("assets/image/scenery/floor_custom.png");
+    if (std::filesystem::exists(floorPath) && mFloorTexture.loadFromFile(floorPath)) {
+        mFloorSprite = std::make_unique<sf::Sprite>(mFloorTexture);
+    }
+
+    const std::string bgCustomPath = cls::resolveAssetPath("assets/image/scenery/dorm_background.png");
     if (std::filesystem::exists(bgCustomPath) && mBackgroundTexture.loadFromFile(bgCustomPath)) {
         mBackgroundSprite = std::make_unique<sf::Sprite>(mBackgroundTexture);
     }
@@ -29,8 +35,11 @@ DormitoryInterior::DormitoryInterior() {
     if (mBedSprite) {
         const auto s = mBedTexture.getSize();
         const float baseScale = 70.0f / static_cast<float>(s.y);
-        const float scale = baseScale * 2.0f; // 保持 2 倍缩放
-        updateInteractionArea("dormitory_bed", sf::FloatRect(bedPos, {s.x * scale, s.y * scale}));
+        const float scale = baseScale * 2.6f; // 放大为当前 1.3 倍
+        const float paddedWidth = s.x * scale + 8.0f;
+        const float paddedHeight = s.y * scale + 8.0f;
+        const sf::Vector2f paddedPos = {bedPos.x - 4.0f, bedPos.y - 4.0f};
+        updateInteractionArea("dormitory_bed", sf::FloatRect(paddedPos, {paddedWidth, paddedHeight}));
     }
     if (mCarpetSprite) {
         const auto s = mCarpetTexture.getSize();
@@ -49,6 +58,18 @@ DormitoryInterior::DormitoryInterior() {
 }
 
 void DormitoryInterior::render(sf::RenderWindow& window) {
+    if (mFloorSprite) {
+        sf::Sprite floor(*mFloorSprite);
+        const auto floorSize = mFloorTexture.getSize();
+        if (floorSize.x > 0 && floorSize.y > 0) {
+            const float scaleX = 876.0f / static_cast<float>(floorSize.x);
+            const float scaleY = 424.0f / static_cast<float>(floorSize.y);
+            floor.setScale({scaleX, scaleY});
+        }
+        floor.setPosition({42.0f, 72.0f});
+        window.draw(floor);
+    }
+
     if (mBackgroundSprite) {
         sf::Sprite bg(*mBackgroundSprite);
         const auto bgSize = mBackgroundTexture.getSize();
@@ -59,23 +80,21 @@ void DormitoryInterior::render(sf::RenderWindow& window) {
         }
         bg.setPosition({42.0f, 72.0f});
         window.draw(bg);
-
-        sf::RectangleShape roomFrame({876.0f, 424.0f});
-        roomFrame.setPosition({42.0f, 72.0f});
-        roomFrame.setFillColor(sf::Color(0, 0, 0, 0));
-        roomFrame.setOutlineColor(sf::Color(42, 30, 22));
-        roomFrame.setOutlineThickness(12.0f);
-        window.draw(roomFrame);
-    } else {
-        drawRoomFrame(window, sf::Color(158, 110, 68));
     }
+
+    sf::RectangleShape roomFrame({876.0f, 424.0f});
+    roomFrame.setPosition({42.0f, 72.0f});
+    roomFrame.setFillColor(sf::Color(0, 0, 0, 0));
+    roomFrame.setOutlineColor(sf::Color(42, 30, 22));
+    roomFrame.setOutlineThickness(12.0f);
+    window.draw(roomFrame);
 
     // 床 + 枕头
     const sf::Vector2f bedPos = {410.0f, 175.0f}; // 床再往下移动20f
     if (mBedSprite) {
         const auto size = mBedTexture.getSize();
         const float baseScale = 70.0f / static_cast<float>(size.y);
-        const float scale = baseScale * 2.0f; // 保持 2 倍缩放
+        const float scale = baseScale * 2.6f; // 放大为当前 1.3 倍
         sf::Sprite s(*mBedSprite);
         s.setScale({scale, scale});
         s.setPosition(bedPos);

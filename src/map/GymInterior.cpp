@@ -9,6 +9,10 @@ GymInterior::GymInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/gym.json"));
 
+    const std::string floorPath = cls::resolveAssetPath("assets/image/scenery/floor_custom.png");
+    if (mFloorTexture.loadFromFile(floorPath))
+        mFloorSprite = std::make_unique<sf::Sprite>(mFloorTexture);
+
     if (mTreadmillLeftTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill_left.png")))
         mTreadmillLeftSprite = std::make_unique<sf::Sprite>(mTreadmillLeftTexture);
     if (mTreadmillRightTexture.loadFromFile(cls::resolveAssetPath("assets/image/scenery/treadmill_right.png")))
@@ -27,6 +31,18 @@ GymInterior::GymInterior() {
 }
 
 void GymInterior::render(sf::RenderWindow& window) {
+    if (mFloorSprite) {
+        sf::Sprite floor(*mFloorSprite);
+        const auto floorSize = mFloorTexture.getSize();
+        if (floorSize.x > 0 && floorSize.y > 0) {
+            const float scaleX = 876.0f / static_cast<float>(floorSize.x);
+            const float scaleY = 424.0f / static_cast<float>(floorSize.y);
+            floor.setScale({scaleX, scaleY});
+        }
+        floor.setPosition({42.0f, 72.0f});
+        window.draw(floor);
+    }
+
     drawRoomFrame(window, sf::Color(84, 102, 92));
 
     sf::RectangleShape rubberZone({760.0f, 300.0f});
