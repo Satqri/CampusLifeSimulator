@@ -19,7 +19,9 @@ TitleScreen::TitleScreen(sf::Font& fontRef, const std::string& backgroundPath)
     }}
 {
     const std::string resolvedPath = cls::resolveAssetPath(backgroundPath);
-    mBgTexture.loadFromFile(resolvedPath);
+    if (!mBgTexture.loadFromFile(resolvedPath)) {
+        // render() draws a solid fallback background when the texture is unavailable.
+    }
 }
 
 void TitleScreen::attachToGui(TguiContext& ctx) {
