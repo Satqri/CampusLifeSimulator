@@ -104,6 +104,21 @@ cmake --build build-msys2
 ./build-msys2/CampusLifeSimulator.exe
 ```
 
+```
+cd /c/Users/ASUS/Desktop/demo2
+
+cmake -S . -B build-msys2 -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCLS_LANG_CHINESE=ON \
+  -DTGUI_DIR=/c/Users/ASUS/Desktop/tgui-sfml-ucrt/lib/cmake/TGUI
+
+cmake --build build-msys2
+
+cp /c/Users/ASUS/Desktop/tgui-sfml-ucrt/bin/tgui.dll build-msys2/
+
+./build-msys2/CampusLifeSimulator.exe
+```
+
 ### macOS（Homebrew）
 
 ```bash
