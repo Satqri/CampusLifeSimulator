@@ -14,7 +14,7 @@ elseif(APPLE AND EXISTS "/usr/local")
 endif()
 
 # ── SFML ─────────────────────────────────────────────────
-find_package(SFML COMPONENTS Graphics Window System REQUIRED)
+find_package(SFML COMPONENTS Graphics Window System Audio REQUIRED)
 
 # ── nlohmann/json (header-only) ──────────────────────────
 find_package(nlohmann_json REQUIRED)
@@ -44,6 +44,7 @@ target_link_libraries(CampusLifeSimulator PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
+    SFML::Audio
     nlohmann_json::nlohmann_json
     CURL::libcurl
     TGUI::TGUI

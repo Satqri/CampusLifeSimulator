@@ -12,6 +12,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include "audio/AudioManager.h"
 #include "core/ActivityRunner.h"
 #include "utils/AssetPath.h"
 #include "core/GameSettings.h"
@@ -344,6 +345,7 @@ int main() {
     SceneBackground sceneBackground;
     SceneTransition sceneTransition;
     TimeSystem timeSystem;
+    cls::AudioManager audioManager;
     ActivityNotice activityNotice;
     ChoicePrompt mealChoicePrompt;
     HUD hud(font);
@@ -387,9 +389,14 @@ int main() {
     int gamePlayDay = 1;
     int gamesPlayedToday = 0;
 
+    if (!audioManager.initialize())
+        std::cerr << "[Audio] Failed to initialize audio system" << std::endl;
+    audioManager.applyVolume(gameSettings);
+
     auto applyRuntimeSettings = [&]() {
         cls::clampSettings(gameSettings);
         cls::setLanguage(gameSettings.language);
+        audioManager.applyVolume(gameSettings);
         const auto& windowSize = cls::windowScalePresets()[gameSettings.windowScaleIndex];
         cls::applyWindowSize(window, gameView, windowSize.width, windowSize.height);
     };
@@ -868,6 +875,7 @@ int main() {
         sceneBackground.update(dt);
         sceneTransition.update(dt);
         timeSkipFlash.update(dt);
+        audioManager.update(timeSystem, combatResult, gameSettings);
 
         // ── 事件处理 ────────────────────────────────────────
         while (const auto eventOpt = window.pollEvent()) {
