@@ -406,9 +406,6 @@ int main() {
         screen = GameScreen::TITLE;
     };
 
-    helpPanel.attachToGui(tguiCtx);
-    helpPanel.setOnClose([&]() { closeTitlePanel(); });
-
     auto handleTitleAction = [&](TitleAction action) {
         switch (action) {
             case TitleAction::Start:
@@ -429,9 +426,6 @@ int main() {
         }
     };
 
-    titleScreen.attachToGui(tguiCtx);
-    titleScreen.setOnAction([&](TitleAction action) { handleTitleAction(action); });
-
     auto handleSettingsAction = [&](SettingsAction action) {
         if (action == SettingsAction::Changed) {
             applyRuntimeSettings();
@@ -441,17 +435,6 @@ int main() {
             closeTitlePanel();
         }
     };
-
-    settingsPanel.attachToGui(tguiCtx);
-    settingsPanel.setOnAction([&](SettingsAction action) { handleSettingsAction(action); });
-
-    hud.attachToGui(tguiCtx);
-    hud.setVisible(true);  // HUD 在游戏中始终可见
-
-    timePanel.attachToGui(tguiCtx);
-    timePanel.setVisible(true);
-
-    modalBox.attachToGui(tguiCtx);
 
     // ── 地图对象 ───────────────────────────────────────────────
     auto campusMap     = std::make_unique<CampusMap>();
@@ -523,6 +506,20 @@ int main() {
             startGameWithDifficulty(action.difficulty);
         }
     });
+
+    // ── TGUI 初始化 ──────────────────────────────────────────
+    helpPanel.attachToGui(tguiCtx);
+    helpPanel.setOnClose([&]() { closeTitlePanel(); });
+    titleScreen.attachToGui(tguiCtx);
+    titleScreen.setOnAction([&](TitleAction action) { handleTitleAction(action); });
+    settingsPanel.attachToGui(tguiCtx);
+    settingsPanel.setOnAction([&](SettingsAction action) { handleSettingsAction(action); });
+    hud.attachToGui(tguiCtx);
+    hud.setVisible(true);
+    timePanel.attachToGui(tguiCtx);
+    timePanel.setVisible(true);
+    modalBox.attachToGui(tguiCtx);
+
     CampusPlace pendingPlace = CampusPlace::Campus;
     sf::Vector2f pendingSpawnPosition(480.0f, 276.0f);
     bool hasPendingMapTransition = false;
@@ -1159,7 +1156,7 @@ int main() {
             window.clear(sf::Color(20, 20, 30));
             renderSceneTransition(window, font, sceneBackground, sceneTransition);
             tguiCtx.draw();
-        window.display();
+            window.display();
             continue;
         }
 
@@ -1167,7 +1164,7 @@ int main() {
             window.clear(sf::Color(0, 0, 0));
             renderTimeSkipFlash(window, font, timeSkipFlash);
             tguiCtx.draw();
-        window.display();
+            window.display();
             continue;
         }
 
