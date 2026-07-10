@@ -17,8 +17,10 @@ LibraryInterior::LibraryInterior() {
     interactions = loadInteractionsFromJson(
         cls::resolveAssetPath("assets/config/interiors/library.json"));
 
-    mAtlasTexture.loadFromFile(cls::resolveAssetPath(
-        "assets/image/scenery/library/libassetpack-tiled.png"));
+    if (!mAtlasTexture.loadFromFile(cls::resolveAssetPath(
+            "assets/image/scenery/library/libassetpack-tiled.png"))) {
+        // Rendering falls back to simple shapes when the atlas is unavailable.
+    }
 
     buildLibraryLayout();
 }
