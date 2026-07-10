@@ -88,7 +88,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
 
     {"prompt.choice1", {"Press 1", "按 1"}},
     {"help.section.global", {"Global Shortcuts", "全局快捷键"}},
-    {"help.global", {"H: Toggle Help    S: Toggle Settings", "H：切换帮助    S：切换设置"}},
+    {"help.global", {"H: Toggle Help    Ctrl+S: Toggle Settings", "H：切换帮助    Ctrl+S：切换设置"}},
     {"help.close", {"Press H again or Esc to return", "再次按 H 或 Esc 返回"}},
 
     {"settings.title", {"Settings", "设置"}},
@@ -97,7 +97,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"settings.window", {"Window Size", "窗口大小"}},
     {"settings.language", {"Language", "语言"}},
     {"settings.back", {"Back", "返回"}},
-    {"settings.nav", {"Up/Down: Select  Left/Right: Adjust  Enter: Confirm  Esc/S: Back", "上/下：切换  左/右：调整  Enter：确认  Esc/S：返回"}},
+    {"settings.nav", {"Up/Down: Select  Left/Right: Adjust  Enter: Confirm  Esc/Ctrl+S: Back", "上/下：切换  左/右：调整  Enter：确认  Esc/Ctrl+S：返回"}},
     {"settings.scale.1", {"Small (960x540)", "小（960x540）"}},
     {"settings.scale.2", {"Medium (1280x720)", "中（1280x720）"}},
     {"settings.scale.3", {"Large (1600x900)", "大（1600x900）"}},

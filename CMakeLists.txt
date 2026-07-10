@@ -23,7 +23,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 
 # ── TGUI ─────────────────────────────────────────────────
-find_package(tgui REQUIRED)
+find_package(TGUI CONFIG REQUIRED)
 
 # ── 语言选项（cmake -DCLS_LANG_CHINESE=ON 启用中文）────
 option(CLS_LANG_CHINESE "Build with Chinese UI (default: English)" OFF)

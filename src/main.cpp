@@ -365,6 +365,7 @@ int main() {
     (void)endingBadLoaded;
     DebugSandboxPanel debugSandbox(font);
     GameScreen screen = GameScreen::TITLE;
+    GameScreen settingsReturnScreen = GameScreen::TITLE;
     Difficulty selectedDifficulty = Difficulty::Normal;
     bool difficultyApplied = false;
     bool settlementActive = false;
@@ -406,6 +407,28 @@ int main() {
         screen = GameScreen::TITLE;
     };
 
+    auto openSettingsPanel = [&](GameScreen returnScreen) {
+        settingsReturnScreen = returnScreen;
+        settingsPanel.setEditing(false);
+        settingsPanel.setOverlayMode(returnScreen == GameScreen::GAME);
+        titleScreen.setVisible(false);
+        helpPanel.setVisible(false);
+        screen = GameScreen::SETTINGS;
+    };
+
+    auto closeSettingsPanel = [&]() {
+        settingsPanel.setEditing(false);
+        settingsPanel.setVisible(false);
+        helpPanel.setVisible(false);
+        settingsPanel.setOverlayMode(false);
+        screen = settingsReturnScreen;
+        settingsReturnScreen = GameScreen::TITLE;
+    };
+
+    auto isSettingsShortcut = [](const sf::Event::KeyPressed& keyEv) {
+        return keyEv.control && keyEv.code == sf::Keyboard::Key::S;
+    };
+
     auto handleTitleAction = [&](TitleAction action) {
         switch (action) {
             case TitleAction::Start:
@@ -413,9 +436,7 @@ int main() {
                 screen = GameScreen::DIFFICULTY;
                 break;
             case TitleAction::Settings:
-                settingsPanel.setEditing(false);
-                titleScreen.setVisible(false);
-                screen = GameScreen::SETTINGS;
+                openSettingsPanel(GameScreen::TITLE);
                 break;
             case TitleAction::Help:
                 titleScreen.setVisible(false);
@@ -432,7 +453,7 @@ int main() {
             saveRuntimeSettings();
         } else if (action == SettingsAction::Close) {
             saveRuntimeSettings();
-            closeTitlePanel();
+            closeSettingsPanel();
         }
     };
 
@@ -872,6 +893,12 @@ int main() {
                 }
                 continue;
             }
+            if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                if (screen == GameScreen::GAME && isSettingsShortcut(*keyEv)) {
+                    openSettingsPanel(GameScreen::GAME);
+                    continue;
+                }
+            }
             if (screen == GameScreen::GAME) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     const bool sandboxWasExpanded = debugSandbox.isExpanded();
@@ -912,7 +939,7 @@ int main() {
                         || keyEv->code == sf::Keyboard::Key::Right) {
                         titleScreen.moveSelection(1);
                     } else if (keyEv->code == sf::Keyboard::Key::S) {
-                        handleTitleAction(TitleAction::Settings);
+                        openSettingsPanel(GameScreen::TITLE);
                     } else if (keyEv->code == sf::Keyboard::Key::H) {
                         handleTitleAction(TitleAction::Help);
                     } else if (keyEv->code == sf::Keyboard::Key::Enter
@@ -927,9 +954,10 @@ int main() {
             if (screen == GameScreen::SETTINGS) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Escape
-                        || keyEv->code == sf::Keyboard::Key::S) {
+                        || keyEv->code == sf::Keyboard::Key::S
+                        || isSettingsShortcut(*keyEv)) {
                         saveRuntimeSettings();
-                        closeTitlePanel();
+                        closeSettingsPanel();
                     }
                 }
                 // 鼠标和滑块交互由 TGUI 回调处理

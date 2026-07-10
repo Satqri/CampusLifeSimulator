@@ -65,7 +65,7 @@ bool SaveManager::saveGame(const SaveGameData& data) {
 bool SaveManager::loadGame(SaveGameData& data) {
     if (!read()) return false;
 
-    const int saveVersion = jsonData.value("version", 0);
+    [[maybe_unused]] const int saveVersion = jsonData.value("version", 0);
     data.difficulty = static_cast<Difficulty>(jsonData.value("difficulty", static_cast<int>(Difficulty::Normal)));
 
     const auto& playerJson = jsonData["player"];
