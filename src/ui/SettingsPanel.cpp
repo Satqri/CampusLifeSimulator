@@ -4,31 +4,192 @@
 #include "utils/AssetPath.h"
 
 #include <algorithm>
-#include <array>
 #include <filesystem>
 
 SettingsPanel::SettingsPanel(sf::Font& fontRef)
-    : font(fontRef)
-    , background({960.0f, 540.0f})
-    , panel({760.0f, 390.0f})
+    : mFont(fontRef)
 {
-    panel.setPosition({100.0f, 78.0f});
-    panel.setFillColor(sf::Color(20, 26, 36, 238));
-    panel.setOutlineColor(sf::Color(114, 138, 168));
-    panel.setOutlineThickness(2.0f);
-
-    const std::string resolved = cls::resolveAssetPath("assets/image/ui/settings/settings_popup.png");
-    if (std::filesystem::exists(resolved) && mPanelTexture.loadFromFile(resolved)) {
-        mPanelSprite = std::make_unique<sf::Sprite>(mPanelTexture);
-    }
 }
 
-void SettingsPanel::setSettings(const cls::GameSettings* value) {
-    settings = value;
+void SettingsPanel::setSettings(cls::GameSettings* value) {
+    mSettings = value;
+    if (value) refreshValues();
 }
 
 void SettingsPanel::setOverlayMode(bool value) {
-    overlayMode = value;
+    mOverlayMode = value;
+    if (mContainer) {
+        uint8_t alpha = value ? 190 : 255;
+        mContainer->getRenderer()->setBackgroundColor(tgui::Color(14, 18, 28, alpha));
+    }
+}
+
+void SettingsPanel::attachToGui(TguiContext& ctx) {
+    mTguiCtx = &ctx;
+    createWidgets();
+}
+
+void SettingsPanel::createWidgets() {
+    if (mWidgetsCreated) return;
+    mWidgetsCreated = true;
+
+    using namespace cls::tgui_theme;
+
+    // 全屏背景
+    mContainer = tgui::Panel::create({960, 540});
+    mContainer->getRenderer()->setBackgroundColor(tgui::Color(14, 18, 28));
+    mContainer->setVisible(false);
+    mTguiCtx->gui().add(mContainer);
+
+    // 内容面板（尝试加载贴图）
+    tgui::Panel::Ptr panelBg = tgui::Panel::create({760, 390});
+    panelBg->setPosition({100, 78});
+    panelBg->getRenderer()->setBackgroundColor(tgui::Color(20, 26, 36, 238));
+    panelBg->getRenderer()->setBorders({2.0f});
+    panelBg->getRenderer()->setBorderColor(tgui::Color(114, 138, 168));
+    mContainer->add(panelBg);
+
+    // 标题
+    auto titleLabel = createLabel(cls::text("settings.title"), 30);
+    titleLabel->setPosition({132, 96});
+    titleLabel->getRenderer()->setTextColor(tgui::Color::White);
+    mContainer->add(titleLabel);
+
+    const float rowY = 154.0f;
+    const float rowSpacing = 54.0f;
+    const float labelX = 160.0f;
+    const float sliderX = 380.0f;
+    const float sliderW = 280.0f;
+
+    // Row 0: BGM Volume
+    {
+        auto label = createLabel(cls::text("settings.bgm"), 22);
+        label->setPosition({labelX, rowY + 12});
+        label->getRenderer()->setTextColor(tgui::Color(238, 241, 248));
+        mContainer->add(label);
+
+        mBgmSlider = tgui::Slider::create(0.0f, 100.0f);
+        mBgmSlider->setPosition({sliderX, rowY + 6});
+        mBgmSlider->setSize({sliderW, 24});
+        mBgmSlider->setStep(5.0f);
+        mBgmSlider->onValueChange([this](float v) { onBgmChanged(v); });
+        mContainer->add(mBgmSlider);
+
+        mBgmValueLabel = createLabel("50%", 20);
+        mBgmValueLabel->setPosition({sliderX + sliderW + 10, rowY + 10});
+        mBgmValueLabel->getRenderer()->setTextColor(tgui::Color(208, 223, 240));
+        mContainer->add(mBgmValueLabel);
+    }
+
+    // Row 1: SFX Volume
+    {
+        auto label = createLabel(cls::text("settings.sfx"), 22);
+        label->setPosition({labelX, rowY + rowSpacing + 12});
+        label->getRenderer()->setTextColor(tgui::Color(238, 241, 248));
+        mContainer->add(label);
+
+        mSfxSlider = tgui::Slider::create(0.0f, 100.0f);
+        mSfxSlider->setPosition({sliderX, rowY + rowSpacing + 6});
+        mSfxSlider->setSize({sliderW, 24});
+        mSfxSlider->setStep(5.0f);
+        mSfxSlider->onValueChange([this](float v) { onSfxChanged(v); });
+        mContainer->add(mSfxSlider);
+
+        mSfxValueLabel = createLabel("50%", 20);
+        mSfxValueLabel->setPosition({sliderX + sliderW + 10, rowY + rowSpacing + 10});
+        mSfxValueLabel->getRenderer()->setTextColor(tgui::Color(208, 223, 240));
+        mContainer->add(mSfxValueLabel);
+    }
+
+    // Row 2: Window Size
+    {
+        auto label = createLabel(cls::text("settings.window"), 22);
+        label->setPosition({labelX, rowY + rowSpacing * 2 + 12});
+        label->getRenderer()->setTextColor(tgui::Color(238, 241, 248));
+        mContainer->add(label);
+
+        mWindowBtn = createButton("", 20);
+        mWindowBtn->setPosition({sliderX, rowY + rowSpacing * 2 + 4});
+        mWindowBtn->setSize({sliderW + 50, 36});
+        mWindowBtn->onClick([this] {
+            if (!mSettings) return;
+            mSettings->windowScaleIndex = (mSettings->windowScaleIndex + 1)
+                % static_cast<int>(cls::windowScalePresets().size());
+            refreshValues();
+            if (mOnAction) mOnAction(SettingsAction::Changed);
+        });
+        mContainer->add(mWindowBtn);
+    }
+
+    // Row 3: Language
+    {
+        auto label = createLabel(cls::text("settings.language"), 22);
+        label->setPosition({labelX, rowY + rowSpacing * 3 + 12});
+        label->getRenderer()->setTextColor(tgui::Color(238, 241, 248));
+        mContainer->add(label);
+
+        mLangBtn = createButton("", 20);
+        mLangBtn->setPosition({sliderX, rowY + rowSpacing * 3 + 4});
+        mLangBtn->setSize({sliderW + 50, 36});
+        mLangBtn->onClick([this] {
+            if (!mSettings) return;
+            mSettings->language = (mSettings->language == cls::Language::Chinese)
+                ? cls::Language::English : cls::Language::Chinese;
+            refreshValues();
+            if (mOnAction) mOnAction(SettingsAction::Changed);
+        });
+        mContainer->add(mLangBtn);
+    }
+
+    // Row 4: Back
+    {
+        auto label = createLabel(cls::text("settings.back"), 22);
+        label->setPosition({labelX, rowY + rowSpacing * 4 + 12});
+        label->getRenderer()->setTextColor(tgui::Color(238, 241, 248));
+        mContainer->add(label);
+
+        mBackBtn = createButton("Back", 20);
+        mBackBtn->setPosition({sliderX, rowY + rowSpacing * 4 + 4});
+        mBackBtn->setSize({sliderW + 50, 36});
+        mBackBtn->onClick([this] {
+            if (mOnAction) mOnAction(SettingsAction::Close);
+        });
+        mContainer->add(mBackBtn);
+    }
+
+    // 导航提示
+    mHintLabel = createLabel(cls::text("settings.nav"), 15);
+    mHintLabel->setPosition({126, 430});
+    mHintLabel->getRenderer()->setTextColor(tgui::Color(220, 228, 242));
+    mContainer->add(mHintLabel);
+}
+
+void SettingsPanel::refreshValues() {
+    if (!mSettings || !mBgmSlider) return;
+
+    mBgmSlider->setValue(static_cast<float>(mSettings->bgmVolume));
+    mSfxSlider->setValue(static_cast<float>(mSettings->sfxVolume));
+    mBgmValueLabel->setText(std::to_string(mSettings->bgmVolume) + "%");
+    mSfxValueLabel->setText(std::to_string(mSettings->sfxVolume) + "%");
+
+    const auto& preset = cls::windowScalePresets()[mSettings->windowScaleIndex];
+    mWindowBtn->setText(cls::text(preset.labelKey));
+
+    mLangBtn->setText(cls::languageName(mSettings->language));
+}
+
+void SettingsPanel::onBgmChanged(float value) {
+    if (!mSettings) return;
+    mSettings->bgmVolume = static_cast<int>(value);
+    mBgmValueLabel->setText(std::to_string(mSettings->bgmVolume) + "%");
+    if (mOnAction) mOnAction(SettingsAction::Changed);
+}
+
+void SettingsPanel::onSfxChanged(float value) {
+    if (!mSettings) return;
+    mSettings->sfxVolume = static_cast<int>(value);
+    mSfxValueLabel->setText(std::to_string(mSettings->sfxVolume) + "%");
+    if (mOnAction) mOnAction(SettingsAction::Changed);
 }
 
 void SettingsPanel::update(float deltaTime) {
@@ -36,179 +197,14 @@ void SettingsPanel::update(float deltaTime) {
 }
 
 void SettingsPanel::render(sf::RenderWindow& window) {
-    if (!settings) return;
-
-    background.setFillColor(overlayMode ? sf::Color(6, 8, 14, 190) : sf::Color(14, 18, 28));
-    window.draw(background);
-
-    if (mPanelSprite) {
-        const auto size = mPanelTexture.getSize();
-        const float scale = 390.0f / static_cast<float>(size.y);
-        mPanelSprite->setScale({scale, scale});
-        const float scaledW = size.x * scale;
-        mPanelSprite->setPosition({100.0f + (760.0f - scaledW) / 2.0f, 78.0f});
-        window.draw(*mPanelSprite);
-    } else {
-        window.draw(panel);
-    }
-
-    sf::Text title = cls::makeText(font, cls::text("settings.title"), 30);
-    title.setFillColor(sf::Color::White);
-    title.setPosition({132.0f, 96.0f});
-    window.draw(title);
-
-    const std::array<std::pair<Row, std::string>, 5> rows = {{
-        {Row::Bgm, "settings.bgm"},
-        {Row::Sfx, "settings.sfx"},
-        {Row::WindowSize, "settings.window"},
-        {Row::Language, "settings.language"},
-        {Row::Back, "settings.back"}
-    }};
-
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const sf::FloatRect bounds = rowBounds(i);
-        sf::RectangleShape box(bounds.size);
-        box.setPosition(bounds.position);
-        const bool selected = i == selectedIndex;
-        const bool activeEdit = selected && editing && i != 4;
-        box.setFillColor(activeEdit ? sf::Color(58, 92, 132, 245)
-                                    : selected ? sf::Color(41, 75, 108, 235)
-                                               : sf::Color(29, 36, 50, 215));
-        box.setOutlineColor(activeEdit ? sf::Color(255, 245, 180)
-                                       : selected ? sf::Color(245, 225, 144)
-                                                  : sf::Color(101, 116, 138));
-        box.setOutlineThickness(activeEdit ? 4.0f : selected ? 3.0f : 1.5f);
-        window.draw(box);
-
-        sf::Text label = cls::makeText(font, cls::text(rows[i].second), 22);
-        label.setFillColor(sf::Color(238, 241, 248));
-        label.setPosition({bounds.position.x + 24.0f, bounds.position.y + 14.0f});
-        window.draw(label);
-
-        sf::Text value = cls::makeText(font, valueText(rows[i].first), 20);
-        value.setFillColor(activeEdit ? sf::Color(255, 252, 210)
-                                      : selected ? sf::Color(255, 244, 185)
-                                                 : sf::Color(208, 223, 240));
-        const auto vb = value.getLocalBounds();
-        value.setOrigin({vb.position.x + vb.size.x, vb.position.y});
-        value.setPosition({bounds.position.x + bounds.size.x - 26.0f, bounds.position.y + 16.0f});
-        window.draw(value);
-    }
-
-    sf::Text hint = cls::makeText(font, cls::text("settings.nav"), 15);
-    hint.setFillColor(sf::Color(220, 228, 242));
-    hint.setPosition({126.0f, 430.0f});
-    window.draw(hint);
+    (void)window;
 }
 
-void SettingsPanel::moveSelection(int delta) {
-    if (editing) return;
-    constexpr int kRowCount = 5;
-    selectedIndex += delta;
-    while (selectedIndex < 0) selectedIndex += kRowCount;
-    selectedIndex %= kRowCount;
+void SettingsPanel::setVisible(bool visible) {
+    mVisible = visible;
+    if (mContainer) mContainer->setVisible(visible);
 }
 
-SettingsAction SettingsPanel::adjustCurrent(cls::GameSettings& value, int delta) {
-    if (!editing) return SettingsAction::None;
-
-    switch (static_cast<Row>(selectedIndex)) {
-        case Row::Bgm:
-            value.bgmVolume = std::clamp(value.bgmVolume + delta * 5, 0, 100);
-            return SettingsAction::Changed;
-        case Row::Sfx:
-            value.sfxVolume = std::clamp(value.sfxVolume + delta * 5, 0, 100);
-            return SettingsAction::Changed;
-        case Row::WindowSize:
-            value.windowScaleIndex = std::clamp(value.windowScaleIndex + delta, 0,
-                static_cast<int>(cls::windowScalePresets().size()) - 1);
-            return SettingsAction::Changed;
-        case Row::Language:
-            if (delta > 0) {
-                value.language = cls::Language::Chinese;
-            } else if (delta < 0) {
-                value.language = cls::Language::English;
-            }
-            return SettingsAction::Changed;
-        case Row::Back:
-            return SettingsAction::Close;
-    }
-    return SettingsAction::None;
-}
-
-SettingsAction SettingsPanel::handleClick(sf::Vector2f mousePosition, cls::GameSettings& value) {
-    for (int i = 0; i < 5; ++i) {
-        if (contains(rowBounds(i), mousePosition)) {
-            selectedIndex = i;
-            if (i == 4) {
-                editing = false;
-                return SettingsAction::Close;
-            }
-
-            if (!editing) {
-                editing = true;
-                return SettingsAction::None;
-            }
-
-            if (mousePosition.x > rowBounds(i).position.x + rowBounds(i).size.x * 0.62f) {
-                return adjustCurrent(value, 1);
-            }
-            if (mousePosition.x < rowBounds(i).position.x + rowBounds(i).size.x * 0.38f) {
-                return adjustCurrent(value, -1);
-            }
-            return SettingsAction::None;
-        }
-    }
-    return SettingsAction::None;
-}
-
-SettingsAction SettingsPanel::confirmCurrent(cls::GameSettings& value) {
-    (void)value;
-    if (static_cast<Row>(selectedIndex) == Row::Back) {
-        editing = false;
-        return SettingsAction::Close;
-    }
-    if (!editing) {
-        editing = true;
-        return SettingsAction::None;
-    }
-
-    editing = false;
-    return SettingsAction::None;
-}
-
-bool SettingsPanel::isEditing() const {
-    return editing;
-}
-
-void SettingsPanel::setEditing(bool value) {
-    editing = value;
-}
-
-std::string SettingsPanel::valueText(Row row) const {
-    if (!settings) return "";
-    switch (row) {
-        case Row::Bgm:
-            return std::to_string(settings->bgmVolume) + "%";
-        case Row::Sfx:
-            return std::to_string(settings->sfxVolume) + "%";
-        case Row::WindowSize:
-            return cls::text(cls::windowScalePresets()[settings->windowScaleIndex].labelKey);
-        case Row::Language:
-            return cls::languageName(settings->language);
-        case Row::Back:
-            return overlayMode ? "Esc / S" : "Enter";
-    }
-    return "";
-}
-
-sf::FloatRect SettingsPanel::rowBounds(int index) const {
-    return sf::FloatRect({136.0f, 154.0f + index * 54.0f}, {688.0f, 44.0f});
-}
-
-bool SettingsPanel::contains(const sf::FloatRect& bounds, sf::Vector2f point) const {
-    return point.x >= bounds.position.x
-        && point.x <= bounds.position.x + bounds.size.x
-        && point.y >= bounds.position.y
-        && point.y <= bounds.position.y + bounds.size.y;
+void SettingsPanel::setOnAction(std::function<void(SettingsAction)> callback) {
+    mOnAction = std::move(callback);
 }

@@ -1,5 +1,4 @@
 #include "ui/HUD.h"
-
 #include "core/Localization.h"
 #include "utils/TextUtils.h"
 #include "entity/Player.h"
@@ -8,98 +7,129 @@
 #include <sstream>
 
 HUD::HUD(sf::Font& font)
-    : font(font)
-    , player(nullptr)
-    , pageName("")
-    , primaryHelp("")
-    , secondaryHelp("")
-    , panel({960.0f, 42.0f})
+    : mFont(font)
 {
-    panel.setFillColor(sf::Color(20, 20, 30, 230));
 }
 
-void HUD::setPlayer(const Player* p) {
-    player = p;
-}
-
-void HUD::setPageName(const std::string& name) {
-    pageName = name;
-}
-
+void HUD::setPlayer(const Player* p) { mPlayer = p; }
+void HUD::setPageName(const std::string& name) { mPageName = name; }
 void HUD::setHelpText(const std::string& primary, const std::string& secondary) {
-    primaryHelp = primary;
-    secondaryHelp = secondary;
+    mPrimaryHelp = primary;
+    mSecondaryHelp = secondary;
 }
 
-void HUD::update(float deltaTime) {
-    (void)deltaTime;
+void HUD::attachToGui(TguiContext& ctx) {
+    mTguiCtx = &ctx;
+    createWidgets();
 }
 
-void HUD::render(sf::RenderWindow& window) {
-    window.draw(panel);
-    if (!player) return;
+void HUD::createWidgets() {
+    if (mWidgetsCreated) return;
+    mWidgetsCreated = true;
 
-    const auto& a = player->getAttributes();
-    const auto& buffs = player->getCombatBuffs();
+    using namespace cls::tgui_theme;
 
+    // 顶部面板 (960x42)
+    mContainer = tgui::Panel::create({960, 42});
+    mContainer->getRenderer()->setBackgroundColor(tgui::Color(20, 20, 30, 230));
+    mContainer->setVisible(false);
+    mTguiCtx->gui().add(mContainer);
+
+    // 状态文字
+    mStatsLabel = createLabel("", 12);
+    mStatsLabel->setPosition({8, 6});
+    mStatsLabel->getRenderer()->setTextColor(tgui::Color(200, 220, 255));
+    mContainer->add(mStatsLabel);
+
+    // 页面名
+    mPageLabel = createLabel("", 12);
+    mPageLabel->setPosition({820, 6});
+    mPageLabel->getRenderer()->setTextColor(tgui::Color(255, 200, 100));
+    mContainer->add(mPageLabel);
+
+    // 6 属性条
+    constexpr float kSpacing = 152.0f;
+    constexpr float kStartX = 8.0f;
+    constexpr float kBarY = 25.0f;
+    constexpr float kBarW = 96.0f;
+
+    const std::array<std::string, 6> labels = {
+        cls::text("hud.energy"), cls::text("hud.health"), cls::text("hud.gold"),
+        cls::text("hud.san"), cls::text("hud.academic"), cls::text("hud.social")
+    };
+    const std::array<tgui::Color, 6> colors = {
+        kGreen, kRed, kYellow, kBlue, kYellow, kPurple
+    };
+
+    for (int i = 0; i < 6; ++i) {
+        float x = kStartX + kSpacing * i;
+
+        // 标签
+        auto label = createLabel(labels[i], 10);
+        label->setPosition({x, kBarY});
+        label->getRenderer()->setTextColor(tgui::Color(210, 215, 225));
+        mContainer->add(label);
+        mBars[i].label = label;
+
+        // 进度条
+        auto bar = tgui::ProgressBar::create();
+        bar->setPosition({x + 34, kBarY + 3});
+        bar->setSize({kBarW, 8});
+        bar->setMinimum(0);
+        bar->setMaximum(100);
+        bar->getRenderer()->setBackgroundColor(tgui::Color(45, 48, 58));
+        bar->getRenderer()->setFillColor(colors[i]);
+        bar->getRenderer()->setTextSize(0);  // 隐藏进度条内的文字
+        mContainer->add(bar);
+        mBars[i].bar = bar;
+
+        // 数值
+        auto valLabel = createLabel("0", 10);
+        valLabel->setPosition({x + 136, kBarY});
+        valLabel->getRenderer()->setTextColor(tgui::Color(230, 235, 245));
+        mContainer->add(valLabel);
+        mBars[i].valueLabel = valLabel;
+    }
+}
+
+void HUD::refreshBars() {
+    if (!mPlayer) return;
+
+    const auto& a = mPlayer->getAttributes();
+    const auto& buffs = mPlayer->getCombatBuffs();
+
+    // 状态文字
     std::ostringstream ss;
-    ss << cls::text("hud.san_level") << ':' << player->getSanLevel()
+    ss << cls::text("hud.san_level") << ':' << mPlayer->getSanLevel()
        << "  |  " << cls::text("hud.buff") << ':'
        << (buffs.nextEventPositive ? cls::text("hud.win") : cls::text("hud.none"))
        << " d" << (buffs.nextRollModifier >= 0 ? "+" : "")
        << buffs.nextRollModifier;
+    mStatsLabel->setText(ss.str());
 
-    sf::Text stats = cls::makeText(font, ss.str(), 12);
-    stats.setFillColor(sf::Color(200, 220, 255));
-    stats.setPosition({8.0f, 6.0f});
+    // 页面名
+    mPageLabel->setText(mPageName);
 
-    sf::Text page = cls::makeText(font, pageName, 12);
-    page.setFillColor(sf::Color(255, 200, 100));
-    page.setPosition({820.0f, 6.0f});
+    // 属性值
+    const std::array<int, 6> values = {a.energy, a.health, a.gold, a.san, a.academic, a.social};
 
-    window.draw(stats);
-    window.draw(page);
-
-    // 6 属性条：体力、健康、金钱、SAN、知识、社交，均匀分布
-    constexpr float kSpacing = 152.0f;
-    constexpr float kStartX = 8.0f;
-    constexpr float kBarY = 25.0f;
-
-    drawAttributeBar(window, cls::text("hud.energy"),   a.energy,   100, {kStartX,              kBarY}, sf::Color(100, 230, 150));
-    drawAttributeBar(window, cls::text("hud.health"),   a.health,   100, {kStartX + kSpacing,   kBarY}, sf::Color(255, 120, 120));
-    drawAttributeBar(window, cls::text("hud.gold"),     a.gold,     100, {kStartX + kSpacing*2, kBarY}, sf::Color(255, 215, 60));
-    drawAttributeBar(window, cls::text("hud.san"),      a.san,      100, {kStartX + kSpacing*3, kBarY}, sf::Color(120, 210, 255));
-    drawAttributeBar(window, cls::text("hud.academic"), a.academic, 100, {kStartX + kSpacing*4, kBarY}, sf::Color(245, 205, 95));
-    drawAttributeBar(window, cls::text("hud.social"),   a.social,   100, {kStartX + kSpacing*5, kBarY}, sf::Color(205, 140, 255));
+    for (int i = 0; i < 6; ++i) {
+        int clamped = std::max(0, std::min(values[i], 100));
+        mBars[i].bar->setValue(static_cast<unsigned int>(clamped));
+        mBars[i].valueLabel->setText(std::to_string(clamped));
+    }
 }
 
-void HUD::drawAttributeBar(sf::RenderWindow& window, const std::string& label,
-                           int value, int maxValue, const sf::Vector2f& position,
-                           const sf::Color& fillColor) {
-    const int clamped = std::max(0, std::min(value, maxValue));
-    const float width = 96.0f;
-    const float ratio = maxValue > 0 ? static_cast<float>(clamped) / static_cast<float>(maxValue) : 0.0f;
+void HUD::update(float deltaTime) {
+    (void)deltaTime;
+    refreshBars();
+}
 
-    sf::Text labelText = cls::makeText(font, label, 10);
-    labelText.setFillColor(sf::Color(210, 215, 225));
-    labelText.setPosition(position);
+void HUD::render(sf::RenderWindow& window) {
+    (void)window;
+}
 
-    sf::RectangleShape back({width, 8.0f});
-    back.setPosition({position.x + 34.0f, position.y + 3.0f});
-    back.setFillColor(sf::Color(45, 48, 58));
-    back.setOutlineColor(sf::Color(80, 85, 100));
-    back.setOutlineThickness(1.0f);
-
-    sf::RectangleShape fill({width * ratio, 8.0f});
-    fill.setPosition(back.getPosition());
-    fill.setFillColor(fillColor);
-
-    sf::Text valueText = cls::makeText(font, std::to_string(clamped), 10);
-    valueText.setFillColor(sf::Color(230, 235, 245));
-    valueText.setPosition({position.x + 136.0f, position.y});
-
-    window.draw(labelText);
-    window.draw(back);
-    window.draw(fill);
-    window.draw(valueText);
+void HUD::setVisible(bool visible) {
+    mVisible = visible;
+    if (mContainer) mContainer->setVisible(visible);
 }

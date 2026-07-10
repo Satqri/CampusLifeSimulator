@@ -1,57 +1,89 @@
 #include "ui/HelpPanel.h"
 #include "core/Localization.h"
-#include "utils/TextUtils.h"
 
 HelpPanel::HelpPanel(sf::Font& font)
-    : font(font)
-    , background({960.0f, 540.0f})
-    , panel({820.0f, 410.0f})
+    : mFont(font)
 {
-    background.setFillColor(sf::Color(16, 18, 24));
-    panel.setPosition({70.0f, 70.0f});
-    panel.setFillColor(sf::Color(24, 27, 38, 235));
-    panel.setOutlineColor(sf::Color(100, 110, 145));
-    panel.setOutlineThickness(1.0f);
+}
+
+void HelpPanel::attachToGui(TguiContext& ctx) {
+    mTguiCtx = &ctx;
+    createWidgets();
+}
+
+void HelpPanel::createWidgets() {
+    if (mWidgetsCreated) return;
+    mWidgetsCreated = true;
+
+    using namespace cls::tgui_theme;
+
+    // 全屏背景
+    mContainer = tgui::Panel::create({960, 540});
+    mContainer->getRenderer()->setBackgroundColor(tgui::Color(16, 18, 24));
+    mContainer->setVisible(false);
+
+    // 内容面板
+    mContentPanel = tgui::Panel::create({820, 410});
+    mContentPanel->setPosition({70, 70});
+    mContentPanel->getRenderer()->setBackgroundColor(tgui::Color(24, 27, 38, 235));
+    mContentPanel->getRenderer()->setBorders({1.0f});
+    mContentPanel->getRenderer()->setBorderColor(tgui::Color(100, 110, 145));
+    mContainer->add(mContentPanel);
+
+    // 帮助文本行
+    struct LineInfo { std::string key; float x; float y; unsigned int size; tgui::Color color; };
+    const std::vector<LineInfo> lines = {
+        {"help.title",                  100,  95,  30, tgui::Color::White},
+        {"help.section.pages",          105, 150,  18, kTextGold},
+        {"help.pages",                  125, 180,  15, kTextLight},
+        {"help.section.explore",        105, 230,  18, kTextGold},
+        {"help.move",                   125, 260,  15, kTextLight},
+        {"help.click_move",             125, 285,  15, kTextLight},
+        {"help.stress",                 125, 310,  15, kTextLight},
+        {"help.combat",                 125, 335,  15, kTextLight},
+        {"help.section.quest",          105, 380,  18, kTextGold},
+        {"help.quest_enter",            125, 410,  15, kTextLight},
+        {"help.quest_ud",               125, 435,  15, kTextLight},
+        {"help.quest_chain",            125, 460,  15, kTextLight},
+        {"help.global",                 125, 485,  15, tgui::Color(255, 238, 188)},
+        {"notice.standard_route_title", 520, 150,  18, kTextGold},
+        {"notice.standard_route_body",  520, 180,  14, kTextLight},
+        {"help.close",                  125, 508,  14, kTextLight},
+    };
+
+    for (const auto& li : lines) {
+        auto label = createLabel(cls::text(li.key), li.size);
+        label->setPosition({li.x, li.y});
+        label->getRenderer()->setTextColor(li.color);
+        mContainer->add(label);
+        mLabels.push_back(label);
+    }
+
+    // 点击任意位置关闭
+    mContainer->onClick([this](tgui::Vector2f) {
+        if (mOnClose) mOnClose();
+    });
+
+    mTguiCtx->gui().add(mContainer);
 }
 
 void HelpPanel::update(float deltaTime) {
     (void)deltaTime;
 }
 
-void HelpPanel::setOverlayMode(bool value) {
-    overlayMode = value;
-}
-
 void HelpPanel::render(sf::RenderWindow& window) {
-    background.setFillColor(overlayMode ? sf::Color(8, 10, 16, 190) : sf::Color(16, 18, 24));
-    window.draw(background);
-    window.draw(panel);
-
-    drawLine(window, cls::text("help.title"), {100.0f, 95.0f}, 30, sf::Color::White);
-    drawLine(window, cls::text("help.section.pages"), {105.0f, 150.0f}, 18, sf::Color(255, 210, 120));
-    drawLine(window, cls::text("help.pages"), {125.0f, 180.0f}, 15, sf::Color(215, 220, 235));
-
-    drawLine(window, cls::text("help.section.explore"), {105.0f, 230.0f}, 18, sf::Color(255, 210, 120));
-    drawLine(window, cls::text("help.move"), {125.0f, 260.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.click_move"), {125.0f, 285.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.stress"), {125.0f, 310.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.combat"), {125.0f, 335.0f}, 15, sf::Color(215, 220, 235));
-
-    drawLine(window, cls::text("help.section.quest"), {105.0f, 380.0f}, 18, sf::Color(255, 210, 120));
-    drawLine(window, cls::text("help.quest_enter"), {125.0f, 410.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.quest_ud"), {125.0f, 435.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.quest_chain"), {125.0f, 460.0f}, 15, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.global"), {125.0f, 485.0f}, 15, sf::Color(255, 238, 188));
-    drawLine(window, cls::text("notice.standard_route_title"), {520.0f, 150.0f}, 18, sf::Color(255, 210, 120));
-    drawLine(window, cls::text("notice.standard_route_body"), {520.0f, 180.0f}, 14, sf::Color(215, 220, 235));
-    drawLine(window, cls::text("help.close"), {125.0f, 508.0f}, 14, sf::Color(215, 220, 235));
+    (void)window;
 }
 
-void HelpPanel::drawLine(sf::RenderWindow& window, const std::string& text,
-                         const sf::Vector2f& position, unsigned int size,
-                         const sf::Color& color) {
-    sf::Text line = cls::makeText(font, text, size);
-    line.setFillColor(color);
-    line.setPosition(position);
-    window.draw(line);
+void HelpPanel::setVisible(bool visible) {
+    mVisible = visible;
+    if (mContainer) mContainer->setVisible(visible);
+}
+
+void HelpPanel::setOverlayMode(bool value) {
+    mOverlayMode = value;
+    if (mContainer) {
+        mContainer->getRenderer()->setBackgroundColor(
+            tgui::Color(16, 18, 24, static_cast<std::uint8_t>(value ? 190 : 255)));
+    }
 }

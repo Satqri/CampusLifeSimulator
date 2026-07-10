@@ -60,6 +60,8 @@ constexpr char kDormitoryDeskPromptPurpose[] = "dormitory_desk_choice";
 #include "ui/HelpPanel.h"
 #include "ui/SceneBackground.h"
 #include "ui/SettingsPanel.h"
+#include "ui/TguiContext.h"
+#include "ui/TguiTheme.h"
 
 #include <algorithm>
 #include <cmath>
@@ -89,9 +91,9 @@ enum class GameScreen {
 // ──────────────────────────────────────────────────────────────
 // 渲染当前属性面板（所有模式下都在顶部显示）
 // ──────────────────────────────────────────────────────────────
-void renderStatsPanel(sf::RenderWindow& window, HUD& hud, const Player& player) {
+void renderStatsPanel(sf::RenderWindow&, HUD& hud, const Player& player) {
     hud.setPlayer(&player);
-    hud.render(window);
+    hud.update(0.0f);  // 刷新 TGUI bars
 }
 
 // renderTimePanel 已拆离至 src/ui/TimePanel
@@ -289,6 +291,9 @@ int main() {
     sf::View gameView(sf::FloatRect({0.0f, 0.0f}, {kRenderWidth, kRenderHeight}));
     window.setView(gameView);
 
+    // TGUI 适配层
+    TguiContext tguiCtx(window);
+
     // ── 字体：优先使用项目内开源 CJK 字体，避免不同电脑中文乱码 ─────
     sf::Font font;
     bool fontOk = false;
@@ -310,17 +315,22 @@ int main() {
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
 #endif
     };
+    std::string resolvedFontPath;
     for (const auto& path : fontCandidates) {
         const std::string resolved = cls::resolveAssetPath(path);
         if (font.openFromFile(resolved)) {
             std::cout << "[Font] Loaded: " << resolved << std::endl;
-            fontOk = true; break;
+            fontOk = true;
+            resolvedFontPath = resolved;
+            break;
         } else {
             std::cout << "[Font] Failed: " << resolved << std::endl;
         }
     }
     if (!fontOk) {
         std::cerr << "ERROR: Failed to load font!" << std::endl;
+    } else {
+        cls::tgui_theme::loadGlobalFont(resolvedFontPath);
     }
 
     // ── 创建 Entity 对象 ─────────────────────────────────────
@@ -391,19 +401,24 @@ int main() {
 
     auto closeTitlePanel = [&]() {
         settingsPanel.setEditing(false);
+        settingsPanel.setVisible(false);
+        helpPanel.setVisible(false);
         screen = GameScreen::TITLE;
     };
 
     auto handleTitleAction = [&](TitleAction action) {
         switch (action) {
             case TitleAction::Start:
+                titleScreen.setVisible(false);
                 screen = GameScreen::DIFFICULTY;
                 break;
             case TitleAction::Settings:
                 settingsPanel.setEditing(false);
+                titleScreen.setVisible(false);
                 screen = GameScreen::SETTINGS;
                 break;
             case TitleAction::Help:
+                titleScreen.setVisible(false);
                 screen = GameScreen::HELP;
                 break;
             case TitleAction::None:
@@ -455,10 +470,57 @@ int main() {
         return campusMap.get();
     };
 
+    CampusPlace currentPlace = CampusPlace::Campus;
     Player player(480.0f, 280.0f);
     player.setName("Protagonist");
     initializeHiddenState(player.getHidden());
-    CampusPlace currentPlace = CampusPlace::Campus;
+
+    auto startGameWithDifficulty = [&](Difficulty difficulty) {
+        selectedDifficulty = difficulty;
+        player.setAttributes(defaultPlayerAttributes());
+        currentPlace = CampusPlace::Campus;
+        currentMap = campusMap.get();
+        player.setPosition(480.0f, 276.0f);
+        timeSystem = TimeSystem();
+        initializeHiddenState(player.getHidden());
+        applyDifficulty(player, selectedDifficulty);
+        syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+        difficultyApplied = true;
+        activityNotice.clear();
+        mealChoicePrompt.clear();
+        pendingTimedActivity.clear();
+        pendingSleep.clear();
+        lastMealPickupSlot = -1;
+        gamePlayDay = timeSystem.getDay();
+        gamesPlayedToday = 0;
+        difficultyPanel.setVisible(false);
+        screen = GameScreen::GAME;
+    };
+
+    difficultyPanel.attachToGui(tguiCtx);
+    difficultyPanel.setOnAction([&](DifficultyAction action) {
+        if (action.type == DifficultyActionType::Back) {
+            difficultyPanel.setVisible(false);
+            screen = GameScreen::TITLE;
+        } else if (action.type == DifficultyActionType::Select) {
+            startGameWithDifficulty(action.difficulty);
+        }
+    });
+
+    // ── TGUI 初始化 ──────────────────────────────────────────
+    helpPanel.attachToGui(tguiCtx);
+    helpPanel.setOnClose([&]() { closeTitlePanel(); });
+    titleScreen.attachToGui(tguiCtx);
+    titleScreen.setOnAction([&](TitleAction action) { handleTitleAction(action); });
+    settingsPanel.attachToGui(tguiCtx);
+    settingsPanel.setOnAction([&](SettingsAction action) { handleSettingsAction(action); });
+    hud.attachToGui(tguiCtx);
+    hud.setVisible(true);
+    timePanel.attachToGui(tguiCtx);
+    timePanel.setVisible(true);
+    timePanel.setAlwaysExpanded(true);
+    modalBox.attachToGui(tguiCtx);
+
     CampusPlace pendingPlace = CampusPlace::Campus;
     sf::Vector2f pendingSpawnPosition(480.0f, 276.0f);
     bool hasPendingMapTransition = false;
@@ -778,6 +840,8 @@ int main() {
     while (window.isOpen()) {
         float dt = clock.restart().asSeconds();
 
+        if (mealChoicePrompt.debounce > 0) --mealChoicePrompt.debounce;
+
         // 更新战斗结果计时器
         combatResult.update(dt);
         sceneBackground.update(dt);
@@ -787,6 +851,9 @@ int main() {
         // ── 事件处理 ────────────────────────────────────────
         while (const auto eventOpt = window.pollEvent()) {
             const auto& event = *eventOpt;
+
+            // 转发给 TGUI，widget 回调在此触发
+            tguiCtx.handleEvent(event);
 
             if (event.is<sf::Event::Closed>()) {
                 window.close();
@@ -852,11 +919,8 @@ int main() {
                         || keyEv->code == sf::Keyboard::Key::Space) {
                         handleTitleAction(titleScreen.confirmSelection());
                     }
-                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = titleScreen.handleClick(
-                        window.mapPixelToCoords(mouseEv->position, gameView));
-                    handleTitleAction(action);
                 }
+                // 鼠标点击由 TGUI 回调处理
                 continue;
             }
 
@@ -866,25 +930,9 @@ int main() {
                         || keyEv->code == sf::Keyboard::Key::S) {
                         saveRuntimeSettings();
                         closeTitlePanel();
-                    } else if (keyEv->code == sf::Keyboard::Key::Up) {
-                        settingsPanel.moveSelection(-1);
-                    } else if (keyEv->code == sf::Keyboard::Key::Down) {
-                        settingsPanel.moveSelection(1);
-                    } else if (keyEv->code == sf::Keyboard::Key::Left
-                        || keyEv->code == sf::Keyboard::Key::A) {
-                        handleSettingsAction(settingsPanel.adjustCurrent(gameSettings, -1));
-                    } else if (keyEv->code == sf::Keyboard::Key::Right
-                        || keyEv->code == sf::Keyboard::Key::D) {
-                        handleSettingsAction(settingsPanel.adjustCurrent(gameSettings, 1));
-                    } else if (keyEv->code == sf::Keyboard::Key::Enter
-                        || keyEv->code == sf::Keyboard::Key::Space) {
-                        handleSettingsAction(settingsPanel.confirmCurrent(gameSettings));
                     }
-                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    handleSettingsAction(settingsPanel.handleClick(
-                        window.mapPixelToCoords(mouseEv->position, gameView),
-                        gameSettings));
                 }
+                // 鼠标和滑块交互由 TGUI 回调处理
                 continue;
             }
 
@@ -903,29 +951,9 @@ int main() {
             }
 
             if (screen == GameScreen::DIFFICULTY) {
-                auto startGameWithDifficulty = [&](Difficulty difficulty) {
-                    selectedDifficulty = difficulty;
-                    player.setAttributes(defaultPlayerAttributes());
-                    currentPlace = CampusPlace::Campus;
-                    currentMap = campusMap.get();
-                    player.setPosition(480.0f, 276.0f);
-                    timeSystem = TimeSystem();
-                    initializeHiddenState(player.getHidden());
-                    applyDifficulty(player, selectedDifficulty);
-                    syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
-                    difficultyApplied = true;
-                    activityNotice.clear();
-                    mealChoicePrompt.clear();
-                    pendingTimedActivity.clear();
-                    pendingSleep.clear();
-                    lastMealPickupSlot = -1;
-                    gamePlayDay = timeSystem.getDay();
-                    gamesPlayedToday = 0;
-                    screen = GameScreen::GAME;
-                };
-
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (keyEv->code == sf::Keyboard::Key::Escape) {
+                        difficultyPanel.setVisible(false);
                         screen = GameScreen::TITLE;
                     } else if (keyEv->code == sf::Keyboard::Key::Num1) {
                         startGameWithDifficulty(Difficulty::Easy);
@@ -934,15 +962,8 @@ int main() {
                     } else if (keyEv->code == sf::Keyboard::Key::Num3) {
                         startGameWithDifficulty(Difficulty::Hard);
                     }
-                } else if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
-                    const auto action = difficultyPanel.handleClick(
-                        window.mapPixelToCoords(mouseEv->position, gameView));
-                    if (action.type == DifficultyActionType::Back) {
-                        screen = GameScreen::TITLE;
-                    } else if (action.type == DifficultyActionType::Select) {
-                        startGameWithDifficulty(action.difficulty);
-                    }
                 }
+                // 鼠标点击由 TGUI 回调处理
                 continue;
             }
 
@@ -961,7 +982,7 @@ int main() {
                 MainQuest* quest = questManager.getCurrentQuest();
                 if (quest && !quest->isCompleted()) {
                     int choiceMade = -1;
-                    if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (event.is<sf::Event::KeyPressed>()) {
                         if (quest->handleInput(event, player, choiceMade)) {
                             if (quest->isCompleted()) {
                                 quest->execute(player);
@@ -982,9 +1003,7 @@ int main() {
                 if (const auto* mouseEv = event.getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEv->button == sf::Mouse::Button::Left) {
                         const sf::Vector2f target = window.mapPixelToCoords(mouseEv->position, gameView);
-                        if (timePanel.handleClick(target)) {
-                            continue;
-                        }
+                        // TGUI 处理 timePanel 点击
                         player.setMoveTarget(target);
                     }
                     continue;
@@ -993,6 +1012,7 @@ int main() {
 
             if (mealChoicePrompt.active) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (mealChoicePrompt.debounce > 0) continue;
                     if (mealChoicePrompt.purpose == kDurationPromptPurpose) {
                         if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
                             mealChoicePrompt.selectedValue = std::max(
@@ -1102,32 +1122,36 @@ int main() {
 
         // ── 持续性输入(移动) ─────────────────────────────────
         if (screen == GameScreen::TITLE) {
+            titleScreen.setVisible(true);
             titleScreen.update(dt);
             window.clear(sf::Color(20, 20, 30));
             titleScreen.render(window);
+            tguiCtx.draw();
             window.display();
             continue;
         }
 
         if (screen == GameScreen::SETTINGS) {
-            settingsPanel.update(dt);
+            settingsPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
-            settingsPanel.render(window);
+            tguiCtx.draw();
             window.display();
             continue;
         }
 
         if (screen == GameScreen::HELP) {
-            helpPanel.update(dt);
+            helpPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
-            helpPanel.render(window);
+            tguiCtx.draw();
             window.display();
             continue;
         }
 
         if (screen == GameScreen::DIFFICULTY) {
+            difficultyPanel.setVisible(true);
             window.clear(sf::Color(20, 20, 30));
             difficultyPanel.render(window);
+            tguiCtx.draw();
             window.display();
             continue;
         }
@@ -1135,6 +1159,7 @@ int main() {
         if (sceneTransition.active) {
             window.clear(sf::Color(20, 20, 30));
             renderSceneTransition(window, font, sceneBackground, sceneTransition);
+            tguiCtx.draw();
             window.display();
             continue;
         }
@@ -1142,6 +1167,7 @@ int main() {
         if (timeSkipFlash.active) {
             window.clear(sf::Color(0, 0, 0));
             renderTimeSkipFlash(window, font, timeSkipFlash);
+            tguiCtx.draw();
             window.display();
             continue;
         }
@@ -1218,7 +1244,7 @@ int main() {
                 std::cout << "[Buff] Victory buff set: +2 to rolls" << std::endl;
             }
 
-            if (justPressed(sf::Keyboard::Key::Enter) && !activityNotice.active) {
+            if (!eventRunner.isActive() && justPressed(sf::Keyboard::Key::Enter) && !activityNotice.active) {
                 // 第一层：场景传送门（进出建筑）
                 bool portalFound = false;
                 for (const auto& portal : currentMap->getPortals()) {
@@ -1260,7 +1286,7 @@ int main() {
         if (fontOk) {
             renderStatsPanel(window, hud, player);
             timePanel.setTimeSystem(&timeSystem);
-            timePanel.render(window);
+            timePanel.update(0.0f);
         }
         if (eventRunner.isActive()) {
             eventRunner.render(window, modalBox);
@@ -1311,11 +1337,16 @@ int main() {
                                 footer);
             modalBox.render(window);
         }
+        if (!eventRunner.isActive() && !questActive
+            && !activityNotice.active && !mealChoicePrompt.active) {
+            modalBox.setVisible(false);
+        }
         if (fontOk) {
             debugSandbox.refresh(ctx, eventRunner);
             debugSandbox.render(window);
         }
 
+        tguiCtx.draw();
         window.display();
     }
 

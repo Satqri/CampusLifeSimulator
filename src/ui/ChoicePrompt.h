@@ -22,6 +22,7 @@ struct ChoicePrompt {
     int minValue = 0;
     int maxValue = 0;
     int stepValue = 0;
+    int debounce = 0;
 
     void show(const std::string& heading, const std::string& message,
               const std::string& optionA, const std::string& optionB,
@@ -39,6 +40,7 @@ struct ChoicePrompt {
         minValue = 0;
         maxValue = 0;
         stepValue = 0;
+        debounce = 2;
     }
 
     void show(const std::string& heading, const std::string& message,
@@ -58,6 +60,7 @@ struct ChoicePrompt {
         minValue = 0;
         maxValue = 0;
         stepValue = 0;
+        debounce = 2;
     }
 
     void showRange(const std::string& heading, const std::string& message,
@@ -76,6 +79,7 @@ struct ChoicePrompt {
         minValue = minAllowed;
         maxValue = maxAllowed;
         stepValue = step;
+        debounce = 2;
     }
 
     void clear() {
@@ -92,6 +96,7 @@ struct ChoicePrompt {
         minValue = 0;
         maxValue = 0;
         stepValue = 0;
+        debounce = 0;
     }
 };
 

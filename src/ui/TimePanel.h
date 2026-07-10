@@ -3,28 +3,44 @@
 
 #include <SFML/Graphics.hpp>
 #include "ui/UIComponent.h"
+#include "ui/TguiTheme.h"
+#include "ui/TguiContext.h"
+
+#include <TGUI/TGUI.hpp>
 
 class TimeSystem;
 
-/**
- * @class TimePanel
- * @brief 游戏内时钟面板 — 显示当前时间和天数
- */
 class TimePanel : public UIComponent {
 public:
     explicit TimePanel(sf::Font& font);
     void setTimeSystem(const TimeSystem* time);
-    bool handleClick(sf::Vector2f point);
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
 
+    void attachToGui(TguiContext& ctx);
+    void setVisible(bool visible);
+    void setAlwaysExpanded(bool always);
+
 private:
-    sf::FloatRect collapsedBounds() const;
-    sf::FloatRect expandedBounds() const;
+    void createWidgets();
+    void refreshDisplay();
+    void toggle();
 
     sf::Font& mFont;
     const TimeSystem* mTimeSystem = nullptr;
     bool mExpanded = false;
+    TguiContext* mTguiCtx = nullptr;
+
+    tgui::Panel::Ptr mContainer;
+    tgui::Panel::Ptr mCollapsedPanel;
+    tgui::Label::Ptr mToggleLabel;
+    tgui::Panel::Ptr mExpandedPanel;
+    tgui::Label::Ptr mClockLabel;
+    tgui::Label::Ptr mDayLabel;
+
+    bool mVisible = false;
+    bool mWidgetsCreated = false;
+    bool mAlwaysExpanded = false;
 };
 
 #endif

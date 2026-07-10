@@ -4,6 +4,7 @@
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
 #include <array>
+#include <initializer_list>
 #include <memory>
 
 class Player;
@@ -33,15 +34,31 @@ private:
     bool outdoorTilesLoaded;
     const TimeSystem* timeSystem = nullptr;
 
-    static constexpr int kBuildingCount = 5;
+    static constexpr int kBuildingCount = 6;
     std::array<sf::Texture, kBuildingCount> mBuildingTextures;
     std::array<std::unique_ptr<sf::Sprite>, kBuildingCount> mBuildingSprites;
+    sf::Texture mLampTexture;
+    bool mLampTextureLoaded = false;
 
     void loadBuildingTexture(int index, const std::string& relativePath);
     const sf::Sprite* getBuildingSprite(CampusPlace place) const;
 
+    void drawGround(sf::RenderWindow& window) const;
+    void drawPathSegment(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end,
+                         float width, sf::Color color) const;
+    void drawRoundedPath(sf::RenderWindow& window, std::initializer_list<sf::Vector2f> points,
+                         float width, sf::Color color) const;
+    void drawPathNetwork(sf::RenderWindow& window) const;
+    void drawPlaza(sf::RenderWindow& window) const;
+    void drawTree(sf::RenderWindow& window, sf::Vector2f position, float scale) const;
+    void drawFlowerBed(sf::RenderWindow& window, sf::Vector2f position, sf::Vector2f size) const;
+    void drawBench(sf::RenderWindow& window, sf::Vector2f position) const;
+    void drawCampusDetails(sf::RenderWindow& window) const;
+    void drawMapTitle(sf::RenderWindow& window) const;
+    void drawEllipse(sf::RenderWindow& window, sf::Vector2f center, sf::Vector2f radii,
+                     sf::Color color) const;
     void drawPixlabSprite(sf::RenderWindow& window, const sf::IntRect& textureRect,
-                          sf::Vector2f position, float scale = 1.0f);
+                          sf::Vector2f position, float scale = 1.0f) const;
     void drawLamp(sf::RenderWindow& window, sf::Vector2f position, bool glow) const;
     void drawTimeLighting(sf::RenderWindow& window) const;
 };

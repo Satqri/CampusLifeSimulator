@@ -22,6 +22,9 @@ find_package(nlohmann_json REQUIRED)
 # ── libcurl ──────────────────────────────────────────────
 find_package(CURL REQUIRED)
 
+# ── TGUI ─────────────────────────────────────────────────
+find_package(tgui REQUIRED)
+
 # ── 语言选项（cmake -DCLS_LANG_CHINESE=ON 启用中文）────
 option(CLS_LANG_CHINESE "Build with Chinese UI (default: English)" OFF)
 
@@ -43,6 +46,7 @@ target_link_libraries(CampusLifeSimulator PRIVATE
     SFML::System
     nlohmann_json::nlohmann_json
     CURL::libcurl
+    TGUI::TGUI
 )
 
 target_compile_options(CampusLifeSimulator PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/W4 /utf-8 /FS,-Wall -Wextra>)
