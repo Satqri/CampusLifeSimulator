@@ -4,6 +4,7 @@
 #include "core/GameSettings.h"
 #include "core/TimeSystem.h"
 #include "core/Types.h"
+#include "map/MapPortal.h"
 #include "utils/AssetPath.h"
 #include <SFML/Audio.hpp>
 #include <memory>
@@ -32,10 +33,12 @@ public:
         if (!mClassStartBuf.loadFromFile(resolveAssetPath(sfxDir + "class_start.wav")))
             return false;
         mClassStartSfx = std::make_unique<sf::Sound>(mClassStartBuf);
+        mClassStartSfx->setLooping(false);
 
         if (!mClassEndBuf.loadFromFile(resolveAssetPath(sfxDir + "class_end.wav")))
             return false;
         mClassEndSfx = std::make_unique<sf::Sound>(mClassEndBuf);
+        mClassEndSfx->setLooping(false);
 
         mInitialized = true;
         return true;
@@ -48,7 +51,7 @@ public:
      * @param settings 运行时设置（读取音量值）
      */
     void update(const TimeSystem& timeSystem, const CombatResult& combatResult,
-                const GameSettings& settings) {
+                const GameSettings& settings, CampusPlace currentPlace) {
         if (!mInitialized) return;
 
         applyVolume(settings);
@@ -56,34 +59,59 @@ public:
         const int curMinute = timeSystem.getMinuteOfDay();
         const TimePhase curPhase = timeSystem.currentPhase();
 
-        // 战斗音乐切换
+        // ── 铃声播放中 ──────────────────────────────────────
+        if (mSfxPlaying) {
+            // 离开教室 → 立即停止铃声
+            if (currentPlace != CampusPlace::Classroom) {
+                mActiveSfx->stop();
+                mActiveSfx = nullptr;
+                mSfxPlaying = false;
+                if (!mInBattle) playBgm(mCurrentBgm);
+            } else if (mActiveSfx->getStatus() != sf::SoundSource::Status::Playing) {
+                // 铃声自然结束
+                mActiveSfx = nullptr;
+                mSfxPlaying = false;
+                if (!mInBattle) playBgm(mCurrentBgm);
+            }
+            mLastMinute = curMinute;
+            mLastPhase = curPhase;
+            return;
+        }
+
+        // ── 战斗音乐切换 ────────────────────────────────────
         if (!mInBattle && combatResult.active) {
-            // 战斗开始：暂停当前 BGM，播放战斗音乐
             pauseCurrentBgm();
             mPrevBgm = mCurrentBgm;
             mBgmBattle.play();
             mCurrentBgm = BgmTrack::Battle;
             mInBattle = true;
         } else if (mInBattle && !combatResult.active) {
-            // 战斗结束：恢复之前的 BGM
             mBgmBattle.stop();
             mInBattle = false;
             playBgm(mPrevBgm);
         }
 
-        // 非战斗时按时间段切换 BGM
+        // ── 非战斗时按时间段切换 BGM ────────────────────────
         if (!mInBattle) {
             const BgmTrack desired = trackForPhase(curPhase);
             if (desired != mCurrentBgm)
                 playBgm(desired);
         }
 
-        // 上下课铃检测（首帧跳过：mLastMinute == -1）
-        if (mLastMinute >= 0) {
+        // ── 上下课铃检测（仅在教室播放）─────────────────────
+        if (mLastMinute >= 0 && currentPlace == CampusPlace::Classroom) {
+            sf::Sound* bell = nullptr;
             if (crossedThreshold(mLastMinute, curMinute, TimeSystem::kClassMinute))
-                mClassStartSfx->play();
-            if (crossedThreshold(mLastMinute, curMinute, TimeSystem::kClassEndMinute))
-                mClassEndSfx->play();
+                bell = mClassStartSfx.get();
+            else if (crossedThreshold(mLastMinute, curMinute, TimeSystem::kClassEndMinute))
+                bell = mClassEndSfx.get();
+
+            if (bell) {
+                pauseCurrentBgm();
+                bell->play();
+                mActiveSfx = bell;
+                mSfxPlaying = true;
+            }
         }
 
         mLastMinute = curMinute;
@@ -158,6 +186,8 @@ private:
     TimePhase mLastPhase = TimePhase::EarlyMorning;
     int mLastMinute = -1;
     bool mInBattle = false;
+    bool mSfxPlaying = false;
+    sf::Sound* mActiveSfx = nullptr;
     bool mInitialized = false;
 };
 

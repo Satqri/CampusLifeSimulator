@@ -875,7 +875,7 @@ int main() {
         sceneBackground.update(dt);
         sceneTransition.update(dt);
         timeSkipFlash.update(dt);
-        audioManager.update(timeSystem, combatResult, gameSettings);
+        audioManager.update(timeSystem, combatResult, gameSettings, currentPlace);
 
         // ── 事件处理 ────────────────────────────────────────
         while (const auto eventOpt = window.pollEvent()) {
