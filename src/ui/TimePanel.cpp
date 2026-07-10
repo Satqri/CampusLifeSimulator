@@ -59,7 +59,20 @@ void TimePanel::createWidgets() {
     mContainer->add(mDayLabel);
 }
 
+void TimePanel::setAlwaysExpanded(bool always) {
+    mAlwaysExpanded = always;
+    if (mWidgetsCreated && always) {
+        mExpanded = true;
+        mCollapsedPanel->setVisible(false);
+        mToggleLabel->setVisible(false);
+        mExpandedPanel->setVisible(true);
+        mClockLabel->setVisible(true);
+        mDayLabel->setVisible(true);
+    }
+}
+
 void TimePanel::toggle() {
+    if (mAlwaysExpanded) return;
     mExpanded = !mExpanded;
     mCollapsedPanel->setVisible(!mExpanded);
     mToggleLabel->setVisible(!mExpanded);

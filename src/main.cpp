@@ -518,6 +518,7 @@ int main() {
     hud.setVisible(true);
     timePanel.attachToGui(tguiCtx);
     timePanel.setVisible(true);
+    timePanel.setAlwaysExpanded(true);
     modalBox.attachToGui(tguiCtx);
 
     CampusPlace pendingPlace = CampusPlace::Campus;
@@ -839,6 +840,8 @@ int main() {
     while (window.isOpen()) {
         float dt = clock.restart().asSeconds();
 
+        if (mealChoicePrompt.debounce > 0) --mealChoicePrompt.debounce;
+
         // 更新战斗结果计时器
         combatResult.update(dt);
         sceneBackground.update(dt);
@@ -1009,6 +1012,7 @@ int main() {
 
             if (mealChoicePrompt.active) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (mealChoicePrompt.debounce > 0) continue;
                     if (mealChoicePrompt.purpose == kDurationPromptPurpose) {
                         if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
                             mealChoicePrompt.selectedValue = std::max(
@@ -1240,7 +1244,7 @@ int main() {
                 std::cout << "[Buff] Victory buff set: +2 to rolls" << std::endl;
             }
 
-            if (justPressed(sf::Keyboard::Key::Enter) && !activityNotice.active) {
+            if (!eventRunner.isActive() && justPressed(sf::Keyboard::Key::Enter) && !activityNotice.active) {
                 // 第一层：场景传送门（进出建筑）
                 bool portalFound = false;
                 for (const auto& portal : currentMap->getPortals()) {

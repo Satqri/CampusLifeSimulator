@@ -19,6 +19,7 @@ public:
 
     void attachToGui(TguiContext& ctx);
     void setVisible(bool visible);
+    void setAlwaysExpanded(bool always);
 
 private:
     void createWidgets();
@@ -39,6 +40,7 @@ private:
 
     bool mVisible = false;
     bool mWidgetsCreated = false;
+    bool mAlwaysExpanded = false;
 };
 
 #endif

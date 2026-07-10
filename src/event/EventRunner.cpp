@@ -689,6 +689,7 @@ bool EventRunner::checkTriggers(GameContext& ctx, int previousMinute) {
 // ─── 交互触发 ───────────────────────────────────────────────────────────────
 
 bool EventRunner::triggerByAction(const std::string& actionId, GameContext& ctx) {
+    if (mActive) return false;
     const std::string normalized = normalizeActionId(actionId);
     for (const auto& id : mEventOrder) {
         auto it = mEvents.find(id);
