@@ -189,7 +189,6 @@ void ClassroomInterior::render(sf::RenderWindow& window) {
     if (font) {
         drawLabel(window, cls::text("map.exit_campus"), {428.0f, 504.0f});
     }
-    drawObstacleOutlines(window);
     drawPortalMarkers(window);
 }
 
