@@ -41,6 +41,7 @@ struct SettlementResult {
     bool resolved = false;
     bool gameOver = false;
     EndingDefinition ending;
+    std::vector<EndingDefinition> achievedEndings;
     std::vector<EarnedTitle> titles;
     std::string summary;
 };
