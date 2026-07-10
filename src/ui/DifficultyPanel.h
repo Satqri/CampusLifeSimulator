@@ -2,50 +2,35 @@
 #define CLS_UI_DIFFICULTY_PANEL_H
 
 #include "ui/UIComponent.h"
+#include "ui/TguiTheme.h"
+#include "ui/TguiContext.h"
+
+#include <TGUI/TGUI.hpp>
 #include <SFML/Graphics.hpp>
+
 #include <array>
+#include <functional>
 #include <string>
 
-/**
- * @enum Difficulty
- * @brief 游戏难度枚举
- */
-enum class Difficulty {
-    Easy,
-    Normal,
-    Hard
-};
+enum class Difficulty { Easy, Normal, Hard };
+enum class DifficultyActionType { None, Back, Select };
 
-/**
- * @enum DifficultyActionType
- * @brief 难度界面输出动作类型
- */
-enum class DifficultyActionType {
-    None,
-    Back,
-    Select
-};
-
-/**
- * @struct DifficultyAction
- * @brief 难度界面输出动作
- */
 struct DifficultyAction {
     DifficultyActionType type = DifficultyActionType::None;
     Difficulty difficulty = Difficulty::Normal;
 };
 
-/**
- * @class DifficultyPanel
- * @brief 难度选择界面组件
- */
 class DifficultyPanel : public UIComponent {
 public:
     explicit DifficultyPanel(sf::Font& font);
 
     void update(float deltaTime) override;
     void render(sf::RenderWindow& window) override;
-    DifficultyAction handleClick(sf::Vector2f mousePosition);
+
+    void attachToGui(TguiContext& ctx);
+    void setVisible(bool visible);
+    void setOnAction(std::function<void(DifficultyAction)> callback);
+
     void moveSelection(int delta);
     DifficultyAction confirmSelection() const;
 
@@ -58,13 +43,26 @@ private:
         sf::Color accent;
     };
 
-    sf::Font& font;
-    sf::FloatRect backButton;
-    std::array<Card, 3> cards;
-    int selectedIndex = 1;
+    void createWidgets();
+    void updateCardVisuals();
+    void drawDecorative(sf::RenderWindow& window) const;
 
-    void drawCard(sf::RenderWindow& window, const Card& card, bool selected) const;
-    bool contains(const sf::FloatRect& bounds, sf::Vector2f point) const;
+    sf::Font& mFont;
+    TguiContext* mTguiCtx = nullptr;
+    tgui::Panel::Ptr mContainer;
+    tgui::Button::Ptr mBackButton;
+    std::array<tgui::Button::Ptr, 3> mCardButtons;
+    tgui::Label::Ptr mTitleLabel;
+    tgui::Label::Ptr mSubtitleLabel;
+    tgui::Label::Ptr mNoteLabel;
+    std::array<tgui::Label::Ptr, 3> mCardTitleLabels;
+    std::array<tgui::Label::Ptr, 3> mCardDescLabels;
+
+    std::array<Card, 3> mCards;
+    int mSelectedIndex = 1;
+    bool mVisible = false;
+    bool mWidgetsCreated = false;
+    std::function<void(DifficultyAction)> mOnAction;
 };
 
-#endif // CLS_UI_DIFFICULTY_PANEL_H
+#endif
