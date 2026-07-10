@@ -88,7 +88,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
 
     {"prompt.choice1", {"Press 1", "按 1"}},
     {"help.section.global", {"Global Shortcuts", "全局快捷键"}},
-    {"help.global", {"H: Toggle Help    Ctrl+S: Toggle Settings", "H：切换帮助    Ctrl+S：切换设置"}},
+    {"help.global", {"Ctrl+H: Finish with current stats    Ctrl+S: Toggle Settings", "Ctrl+H：按当前参数结算    Ctrl+S：切换设置"}},
     {"help.close", {"Press H again or Esc to return", "再次按 H 或 Esc 返回"}},
 
     {"settings.title", {"Settings", "设置"}},
@@ -182,7 +182,7 @@ const std::unordered_map<std::string, std::pair<std::string, std::string>> kText
     {"interaction.closed.gym", {"Gym interactions are only available from 09:00 to 22:00.", "健身房交互只能在 09:00-22:00 触发。"}},
     {"interaction.closed.library", {"Library interactions are only available from 07:00 to 23:00.", "图书馆交互只能在 07:00-23:00 触发。"}},
     {"interaction.closed.cafeteria", {"Cafeteria interactions are unavailable outside 06:30-22:00.", "食堂 06:30-22:00 以外不能触发交互。"}},
-    {"campus.move_hint", {"WASD Move  |  Enter: enter highlighted area  |  0/6 Help", "WASD 移动  |  Enter：进入高亮区域  |  0/6 帮助"}},
+    {"campus.move_hint", {"WASD Move  |  Enter: enter highlighted area  |  Ctrl+H Finish", "WASD 移动  |  Enter：进入高亮区域  |  Ctrl+H 结算"}},
     {"scene.dormitory.subtitle", {"Backpacks drop by the bed; the next plan starts from a quiet room.", "背包落在床边，下一步计划从安静的房间开始。"}},
     {"scene.gym.subtitle", {"Rubber mats, bright lights, and steady breathing make room for training.", "橡胶地垫、明亮灯光与平稳呼吸，为训练留出空间。"}},
     {"scene.gym.exit", {"Fresh air returns after the echo of treadmills and weights.", "跑步机与器械的回响淡去，清新的空气再次迎面而来。"}},

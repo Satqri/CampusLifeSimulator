@@ -426,6 +426,11 @@ int main() {
     MorningRushRoute pendingMorningRushRoute = MorningRushRoute::Campus;
     int morningRushTeacherTrust = 0;
 
+    auto hideModalUi = [&]() {
+        modalBox.setFullscreenTexture(nullptr);
+        modalBox.setVisible(false);
+    };
+
     if (!audioManager.initialize())
         std::cerr << "[Audio] Failed to initialize audio system" << std::endl;
     audioManager.applyVolume(gameSettings);
@@ -471,6 +476,10 @@ int main() {
 
     auto isSettingsShortcut = [](const sf::Event::KeyPressed& keyEv) {
         return keyEv.control && keyEv.code == sf::Keyboard::Key::S;
+    };
+
+    auto isFinishShortcut = [](const sf::Event::KeyPressed& keyEv) {
+        return keyEv.control && keyEv.code == sf::Keyboard::Key::H;
     };
 
     auto handleTitleAction = [&](TitleAction action) {
@@ -706,6 +715,7 @@ int main() {
     auto startMorningRushRun = [&]() {
         mealChoicePrompt.clear();
         activityNotice.clear();
+        hideModalUi();
         morningRushActive = true;
         morningRushTestMode = false;
         morningRushTriggeredToday = true;
@@ -831,6 +841,34 @@ int main() {
             return true;
         }
         return false;
+    };
+
+    auto triggerFinalSettlementNow = [&]() {
+        if (settlementActive) return true;
+
+        eventRunner.clear();
+        questActive = false;
+        mealChoicePrompt.clear();
+        pendingTimedActivity.clear();
+        pendingSleep.clear();
+        morningRushActive = false;
+        morningRushTestMode = false;
+        timeSkipFlash.active = false;
+        player.stopMovement();
+
+        normalizeHidden(player.getHidden());
+        player.syncDailyCountersFromHidden();
+        syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+
+        settlementResult = settlementResolver.resolveImmediate(player);
+        if (!settlementResult.resolved) {
+            settlementResult = settlementResolver.resolveFinal(player);
+        }
+        settlementActive = true;
+        settlementPage = 0;
+        activityNotice.show(cls::text("quest.final_result"),
+            buildSettlementBody(settlementResult, settlementPage));
+        return true;
     };
 
     startMorningRushIfNeeded = [&](int previousMinute) {
@@ -1197,6 +1235,10 @@ int main() {
                     openSettingsPanel(GameScreen::GAME);
                     continue;
                 }
+                if (screen == GameScreen::GAME && isFinishShortcut(*keyEv)) {
+                    triggerFinalSettlementNow();
+                    continue;
+                }
             }
             if (screen == GameScreen::GAME) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
@@ -1474,16 +1516,11 @@ int main() {
                 if (settlementActive) {
                     if (justPressed(sf::Keyboard::Key::Enter)
                         || justPressed(sf::Keyboard::Key::Escape)) {
-                        if (settlementPage < 2) {
-                            ++settlementPage;
-                            activityNotice.show(
-                                settlementPage == 1 ? cls::text("quest.earned_titles") : cls::text("quest.semester_summary"),
-                                buildSettlementBody(settlementResult, settlementPage));
-                        } else {
-                            settlementActive = false;
-                            screen = GameScreen::TITLE;
-                            activityNotice.clear();
-                        }
+                        settlementActive = false;
+                        settlementPage = 0;
+                        screen = GameScreen::TITLE;
+                        activityNotice.clear();
+                        hideModalUi();
                     }
                 } else if (justPressed(sf::Keyboard::Key::Enter)
                     || justPressed(sf::Keyboard::Key::Escape)) {
@@ -1547,6 +1584,7 @@ int main() {
         }
 
         if (morningRushActive) {
+            hideModalUi();
             syncMorningRushTeacherTrustFromHidden();
             morningRushGame.update(dt, player, morningRushTeacherTrust);
             syncMorningRushTeacherTrustToHidden();

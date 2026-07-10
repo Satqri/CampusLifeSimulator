@@ -12,6 +12,20 @@ constexpr float kCoyoteTime = 0.10f;
 constexpr float kHitStunDuration = 0.86f;
 constexpr float kHitKnockbackSpeed = 190.0f;
 constexpr float kSlopeSlideSpeed = 68.0f;
+constexpr float kGroundAcceleration = 2350.0f;
+constexpr float kAirAcceleration = 1650.0f;
+constexpr float kGroundDeceleration = 2850.0f;
+constexpr float kAirDeceleration = 1950.0f;
+
+float approach(float current, float target, float maxDelta) {
+    if (current < target) return std::min(target, current + maxDelta);
+    if (current > target) return std::max(target, current - maxDelta);
+    return current;
+}
+
+bool sameDirection(float a, float b) {
+    return (a >= 0.0f && b >= 0.0f) || (a <= 0.0f && b <= 0.0f);
+}
 
 const PlatformerSlope* supportingSlope(const PlatformerRect& box,
                                        const PlatformerCollisionWorld& world,
@@ -30,9 +44,9 @@ void PlatformerController::reset(float x, float y, bool sleepyState) {
     box = {x, y, kPlayerWidth, kStandingHeight, "Player"};
     velocityX = 0.0f;
     velocityY = 0.0f;
-    jumpVelocity = sleepy ? 455.0f : 520.0f;
-    gravity = sleepy ? 1510.0f : 1450.0f;
-    maxFallSpeed = 900.0f;
+    jumpVelocity = sleepy ? 510.0f : 575.0f;
+    gravity = sleepy ? 1435.0f : 1360.0f;
+    maxFallSpeed = 940.0f;
     speedMultiplier = sleepy ? 0.92f : 1.0f;
     grounded = false;
     ducking = false;
@@ -187,12 +201,21 @@ void PlatformerController::update(float dt, const PlatformerInput& input,
         }
         if (moveDirection == 0 && slopeBeforeMove != nullptr && !input.downHeld) {
             const float downhillDirection = slopeBeforeMove->risesRight ? -1.0f : 1.0f;
-            velocityX = downhillDirection * kSlopeSlideSpeed;
+            const float targetVelocityX = downhillDirection * kSlopeSlideSpeed;
+            const float response = grounded ? kGroundAcceleration : kAirAcceleration;
+            velocityX = approach(velocityX, targetVelocityX, response * dt);
             slopeSliding = true;
         } else {
             const float crawlMultiplier = input.downHeld && grounded ? 0.48f : 1.0f;
-            velocityX = autoSpeed * speedMultiplier * crawlMultiplier * static_cast<float>(moveDirection);
-            if (slideTimer > 0.0f) velocityX *= 1.16f;
+            float targetVelocityX = autoSpeed * speedMultiplier * crawlMultiplier * static_cast<float>(moveDirection);
+            if (slideTimer > 0.0f) targetVelocityX *= 1.16f;
+
+            const bool slowingDown = std::abs(targetVelocityX) < std::abs(velocityX)
+                || !sameDirection(targetVelocityX, velocityX);
+            const float response = slowingDown
+                ? (grounded ? kGroundDeceleration : kAirDeceleration)
+                : (grounded ? kGroundAcceleration : kAirAcceleration);
+            velocityX = approach(velocityX, targetVelocityX, response * dt);
         }
     }
 

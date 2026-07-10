@@ -740,6 +740,8 @@ void MorningRushRenderer::drawRunner(sf::RenderWindow& window) const {
     StudentRow row = StudentRow::Idle;
     int frameCount = 1;
     float fps = 1.0f;
+    const float runSpeed = std::abs(game.getRunSpeed());
+    const float runAnimFactor = std::clamp(runSpeed / 165.0f, 0.0f, 1.55f);
     sf::Vector2f position(game.getRunnerScreenX() + 42.0f + game.getBurstLungeOffset(),
                           footY + 7.0f);
     sf::Vector2f scale(0.46f, 0.46f);
@@ -760,7 +762,7 @@ void MorningRushRenderer::drawRunner(sf::RenderWindow& window) const {
     } else if (visualAction == RushAction::BurstRun || game.isBurstRunning()) {
         row = StudentRow::Burst;
         frameCount = 8;
-        fps = 12.0f;
+        fps = 15.0f;
         scale = {0.60f, 0.60f};
         position.x += game.isFacingRight() ? 16.0f : -16.0f;
     } else if (!game.isGrounded() || visualAction == RushAction::HurdleJump) {
@@ -768,10 +770,10 @@ void MorningRushRenderer::drawRunner(sf::RenderWindow& window) const {
         frameCount = 9;
         fps = 10.0f;
         position.y -= 5.0f;
-    } else if (std::abs(game.getRunSpeed()) > 2.0f && !game.isSlopeSliding()) {
+    } else if (runSpeed > 2.0f && !game.isSlopeSliding()) {
         row = StudentRow::Walk;
         frameCount = 8;
-        fps = 12.0f;
+        fps = 10.0f + runAnimFactor * 5.0f;
     }
 
     int frame = static_cast<int>(game.getPulse() * fps) % std::max(1, frameCount);
