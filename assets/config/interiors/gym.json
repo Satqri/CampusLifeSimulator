@@ -2,10 +2,10 @@
   "interactions": [
     {
       "area": {
-        "x": 128.0,
+        "x": 150.0,
         "y": 118.0,
-        "w": 190.0,
-        "h": 76.0
+        "w": 150.0,
+        "h": 180.0
       },
       "actionId": "gym_treadmill_0",
       "label_key": "interaction.gym_treadmill_0.label",
@@ -15,8 +15,8 @@
       "area": {
         "x": 610.0,
         "y": 118.0,
-        "w": 190.0,
-        "h": 76.0
+        "w": 150.0,
+        "h": 180.0
       },
       "actionId": "gym_treadmill_1",
       "label_key": "interaction.gym_treadmill_1.label",
