@@ -182,6 +182,8 @@ private:
     bool burstRunning = false;
     bool facingRight = true;
     bool previousJumpKeyHeld = false;
+    bool previousJumpUpHeld = false;
+    bool previousJumpSpaceHeld = false;
     bool previousBurstKeyHeld = false;
     bool hasBicycle_ = false;
     bool pitFailure = false;

@@ -115,16 +115,8 @@ void MorningRushRenderer::render(sf::RenderWindow& window) {
         drawPixelFrame(window, {196.0f, 156.0f}, {568.0f, 210.0f},
                        sf::Color(18, 31, 42, 236), sf::Color(238, 200, 110));
         drawText(window, "MORNING RUSH", {240.0f, 180.0f}, 28, sf::Color(255, 235, 170));
-        drawText(window, "A/D: walk left/right   W: jump   J: prone crawl",
-                 {260.0f, 228.0f}, 14, sf::Color(220, 230, 235));
-        drawText(window, "Pick up the bicycle to unlock K: forward lunge",
-                 {270.0f, 254.0f}, 13, sf::Color(190, 200, 210));
-        drawText(window, "Avoid obstacles and reach class before time runs out",
-                 {282.0f, 280.0f}, 13, sf::Color(190, 200, 210));
-        if (game.hasSleepPenalty()) {
-            drawText(window, "Short sleep: lower jump and slower speed.",
-                     {228.0f, 304.0f}, 13, sf::Color(255, 170, 130));
-        }
+        drawText(window, "DOUBLE JUMP: press W / Up / Space again in midair",
+                 {226.0f, 244.0f}, 14, sf::Color(220, 230, 235));
         drawText(window, "ENTER  start sprint", {370.0f, 330.0f}, 16, sf::Color(245, 240, 215));
     } else if (game.getPhase() == MorningRushPhase::FinalResult) {
         drawFinal(window);

@@ -44,8 +44,8 @@ void PlatformerController::reset(float x, float y, bool sleepyState) {
     box = {x, y, kPlayerWidth, kStandingHeight, "Player"};
     velocityX = 0.0f;
     velocityY = 0.0f;
-    jumpVelocity = sleepy ? 510.0f : 575.0f;
-    gravity = sleepy ? 1435.0f : 1360.0f;
+    jumpVelocity = sleepy ? 560.0f : 625.0f;
+    gravity = sleepy ? 1390.0f : 1320.0f;
     maxFallSpeed = 940.0f;
     speedMultiplier = sleepy ? 0.92f : 1.0f;
     grounded = false;
@@ -141,7 +141,13 @@ void PlatformerController::tryConsumeJump() {
     }
 
     if (airJumpsUsed < 1) {
-        velocityY = -jumpVelocity * 0.82f;
+        const float targetAirJumpVelocity = -jumpVelocity * 0.96f;
+        if (velocityY < 0.0f) {
+            velocityY = std::max(-jumpVelocity * 1.08f, velocityY - 150.0f);
+            velocityY = std::min(velocityY, targetAirJumpVelocity);
+        } else {
+            velocityY = targetAirJumpVelocity;
+        }
         jumpBufferTimer = 0.0f;
         ++airJumpsUsed;
         ducking = false;
@@ -184,8 +190,8 @@ void PlatformerController::update(float dt, const PlatformerInput& input,
 
     tryConsumeJump();
 
-    if (!input.jumpHeld && velocityY < -220.0f) {
-        velocityY = -220.0f;
+    if (!input.jumpHeld && velocityY < -250.0f) {
+        velocityY = -250.0f;
     }
 
     const PlatformerSlope* slopeBeforeMove = grounded

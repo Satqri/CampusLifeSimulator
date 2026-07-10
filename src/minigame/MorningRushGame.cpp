@@ -21,11 +21,9 @@ PickupKind toRushPickupKind(PlatformerPickupKind) {
 }
 
 bool isJumpKey(sf::Keyboard::Key key) {
-    return key == sf::Keyboard::Key::W;
-}
-
-bool isDownKey(sf::Keyboard::Key key) {
-    return key == sf::Keyboard::Key::J;
+    return key == sf::Keyboard::Key::W
+        || key == sf::Keyboard::Key::Up
+        || key == sf::Keyboard::Key::Space;
 }
 
 bool isWallTurnKey(sf::Keyboard::Key key) {
@@ -34,6 +32,21 @@ bool isWallTurnKey(sf::Keyboard::Key key) {
 
 bool keyHeld(sf::Keyboard::Key key) {
     return sf::Keyboard::isKeyPressed(key);
+}
+
+bool downHeld() {
+    return keyHeld(sf::Keyboard::Key::J)
+        || keyHeld(sf::Keyboard::Key::Down);
+}
+
+bool leftHeld() {
+    return keyHeld(sf::Keyboard::Key::A)
+        || keyHeld(sf::Keyboard::Key::Left);
+}
+
+bool rightHeld() {
+    return keyHeld(sf::Keyboard::Key::D)
+        || keyHeld(sf::Keyboard::Key::Right);
 }
 
 bool isOnOrLeavingMatchingSolidTop(const PlatformerRect& runner,
@@ -134,6 +147,8 @@ void MorningRushGame::resetRunState() {
     burstLungeTimer = 0.0f;
     burstLungeOffset = 0.0f;
     previousJumpKeyHeld = false;
+    previousJumpUpHeld = false;
+    previousJumpSpaceHeld = false;
     previousBurstKeyHeld = false;
 
     if (sleptShort) {
@@ -191,7 +206,7 @@ bool MorningRushGame::handleInput(const sf::Event& event, Player&, int&) {
         if (phase == MorningRushPhase::Running) {
             if (isJumpKey(key->code)) {
                 jumpQueued = true;
-                cueAction(RushAction::Jump, 0.28f);
+                cueAction(controller.isGrounded() ? RushAction::Jump : RushAction::DoubleJump, 0.28f);
             } else if (isWallTurnKey(key->code)) {
                 cueAction(RushAction::WallTurn, 0.72f);
             } else if (key->code == sf::Keyboard::Key::K) {
@@ -228,6 +243,8 @@ void MorningRushGame::update(float deltaTime, Player& player, int& teacherTrust)
 
     if (phase != MorningRushPhase::Running) {
         previousJumpKeyHeld = keyHeld(sf::Keyboard::Key::W);
+        previousJumpUpHeld = keyHeld(sf::Keyboard::Key::Up);
+        previousJumpSpaceHeld = keyHeld(sf::Keyboard::Key::Space);
         previousBurstKeyHeld = keyHeld(sf::Keyboard::Key::K);
         return;
     }
@@ -237,11 +254,17 @@ void MorningRushGame::update(float deltaTime, Player& player, int& teacherTrust)
     burstDashCooldown = std::max(0.0f, burstDashCooldown - dt);
     burstLungeTimer = std::max(0.0f, burstLungeTimer - dt);
 
-    const bool jumpHeldNow = keyHeld(sf::Keyboard::Key::W);
+    const bool jumpWHeldNow = keyHeld(sf::Keyboard::Key::W);
+    const bool jumpUpHeldNow = keyHeld(sf::Keyboard::Key::Up);
+    const bool jumpSpaceHeldNow = keyHeld(sf::Keyboard::Key::Space);
+    const bool jumpHeldNow = jumpWHeldNow || jumpUpHeldNow || jumpSpaceHeldNow;
     const bool burstHeldNow = keyHeld(sf::Keyboard::Key::K);
-    if (jumpHeldNow && !previousJumpKeyHeld) {
+    const bool jumpPressedNow = (jumpWHeldNow && !previousJumpKeyHeld)
+        || (jumpUpHeldNow && !previousJumpUpHeld)
+        || (jumpSpaceHeldNow && !previousJumpSpaceHeld);
+    if (jumpPressedNow) {
         jumpQueued = true;
-        cueAction(RushAction::Jump, 0.28f);
+        cueAction(controller.isGrounded() ? RushAction::Jump : RushAction::DoubleJump, 0.28f);
     }
     if (hasBicycle_ && burstHeldNow && !previousBurstKeyHeld &&
         stamina >= kBurstDashCost && burstDashCooldown <= 0.0f) {
@@ -250,13 +273,15 @@ void MorningRushGame::update(float deltaTime, Player& player, int& teacherTrust)
         burstLungeTimer = kBurstLungeDuration;
         cueAction(RushAction::BurstRun, 0.42f);
     }
-    previousJumpKeyHeld = jumpHeldNow;
+    previousJumpKeyHeld = jumpWHeldNow;
+    previousJumpUpHeld = jumpUpHeldNow;
+    previousJumpSpaceHeld = jumpSpaceHeldNow;
     previousBurstKeyHeld = burstHeldNow;
 
     if (!controller.isHitStunned()) {
-        if (keyHeld(sf::Keyboard::Key::D) && !keyHeld(sf::Keyboard::Key::A)) {
+        if (rightHeld() && !leftHeld()) {
             facingRight = true;
-        } else if (keyHeld(sf::Keyboard::Key::A) && !keyHeld(sf::Keyboard::Key::D)) {
+        } else if (leftHeld() && !rightHeld()) {
             facingRight = false;
         }
     }
@@ -276,9 +301,9 @@ void MorningRushGame::update(float deltaTime, Player& player, int& teacherTrust)
         input.jumpPressed = jumpQueued;
         input.slidePressed = slideQueued;
         input.jumpHeld = jumpHeldNow;
-        input.downHeld = keyHeld(sf::Keyboard::Key::J);
-        input.moveLeft = keyHeld(sf::Keyboard::Key::A);
-        input.moveRight = keyHeld(sf::Keyboard::Key::D);
+        input.downHeld = downHeld();
+        input.moveLeft = leftHeld();
+        input.moveRight = rightHeld();
         input.facingRight = facingRight;
 
         controller.update(kFixedStep, input, level.getWorld(), effectiveAutoSpeed());
