@@ -45,6 +45,7 @@
 #include "entity/Player.h"
 
 constexpr char kDormitoryDeskPromptPurpose[] = "dormitory_desk_choice";
+constexpr char kMorningRushPromptPurpose[] = "morning_rush_choice";
 #include "entity/Enemy.h"
 #include "map/MapPortal.h"
 #include "map/BuildingInterior.h"
@@ -63,10 +64,14 @@ constexpr char kDormitoryDeskPromptPurpose[] = "dormitory_desk_choice";
 #include "ui/SettingsPanel.h"
 #include "ui/TguiContext.h"
 #include "ui/TguiTheme.h"
+#include "minigame/MorningRushGame.h"
+#include "minigame/MorningRushRenderer.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <sstream>
 #include <iostream>
 #include <array>
@@ -369,6 +374,8 @@ int main() {
     ActivityNotice activityNotice;
     ChoicePrompt mealChoicePrompt;
     HUD hud(font);
+    MorningRushGame morningRushGame;
+    MorningRushRenderer morningRushRenderer(font, morningRushGame);
     EventRunner eventRunner;
     SettlementResolver settlementResolver;
     settlementResolver.load(cls::resolveAssetPath("assets/config/events/endings.json"),
@@ -408,6 +415,16 @@ int main() {
     int lastMealPickupSlot = -1;
     int gamePlayDay = 1;
     int gamesPlayedToday = 0;
+    bool morningRushActive = false;
+    bool morningRushTestMode = false;
+    bool morningRushTriggeredToday = false;
+    bool morningRushPromptedToday = false;
+    int morningRushCooldownDays = 0;
+    bool pendingMorningRushShortSleep = false;
+    bool pendingMorningRushBreakfastRisk = false;
+    int pendingMorningRushPenalty = 0;
+    MorningRushRoute pendingMorningRushRoute = MorningRushRoute::Campus;
+    int morningRushTeacherTrust = 0;
 
     if (!audioManager.initialize())
         std::cerr << "[Audio] Failed to initialize audio system" << std::endl;
@@ -541,6 +558,16 @@ int main() {
         lastMealPickupSlot = -1;
         gamePlayDay = timeSystem.getDay();
         gamesPlayedToday = 0;
+        morningRushActive = false;
+        morningRushTestMode = false;
+        morningRushTriggeredToday = false;
+        morningRushPromptedToday = false;
+        morningRushCooldownDays = 0;
+        pendingMorningRushShortSleep = false;
+        pendingMorningRushBreakfastRisk = false;
+        pendingMorningRushPenalty = 0;
+        pendingMorningRushRoute = MorningRushRoute::Campus;
+        morningRushTeacherTrust = 0;
         difficultyPanel.setVisible(false);
         screen = GameScreen::GAME;
     };
@@ -613,7 +640,124 @@ int main() {
         ctx.activityNotice.show(title, message.str());
     };
 
-    auto checkEventTriggers = [&eventRunner, &ctx, &questManager, &questActive](int prev) {
+    std::function<bool()> maybeFinalizeRun;
+
+    auto hiddenInt = [&](const std::string& key, int fallback = 0) {
+        auto& hidden = player.getHidden();
+        normalizeHidden(hidden);
+        return hidden.value(key, fallback);
+    };
+    auto setHiddenInt = [&](const std::string& key, int value) {
+        auto& hidden = player.getHidden();
+        normalizeHidden(hidden);
+        hidden[key] = value;
+    };
+    auto addHiddenInt = [&](const std::string& key, int delta) {
+        setHiddenInt(key, hiddenInt(key) + delta);
+    };
+    auto syncMorningRushTeacherTrustFromHidden = [&]() {
+        morningRushTeacherTrust = hiddenInt("teacherTrust");
+    };
+    auto syncMorningRushTeacherTrustToHidden = [&]() {
+        setHiddenInt("teacherTrust", morningRushTeacherTrust);
+    };
+
+    auto movePlayerToClassroom = [&]() {
+        currentPlace = CampusPlace::Classroom;
+        currentMap = classroomMap.get();
+        ctx.currentPlace = currentPlace;
+        ctx.currentMap = currentMap;
+        ctx.player.stopMovement();
+        ctx.player.setPosition(480.0f, 276.0f);
+    };
+
+    auto routeForMorningRush = [](CampusPlace place) {
+        switch (place) {
+            case CampusPlace::Dormitory: return MorningRushRoute::Dormitory;
+            case CampusPlace::Cafeteria: return MorningRushRoute::Cafeteria;
+            case CampusPlace::Library: return MorningRushRoute::Library;
+            case CampusPlace::Gym:
+            case CampusPlace::Campus:
+            case CampusPlace::Store:
+            case CampusPlace::Classroom:
+                return MorningRushRoute::Campus;
+        }
+        return MorningRushRoute::Campus;
+    };
+
+    auto settleOrdinaryMorningLate = [&](const std::string& title, const std::string& reason) {
+        mealChoicePrompt.clear();
+        morningRushActive = false;
+        movePlayerToClassroom();
+        timeSystem.setTimeAbsolute(std::max(normalizedMinute(timeSystem.getMinuteOfDay()),
+                                            TimeSystem::kClassMinute + 5));
+        timeSystem.markClassPrompted();
+        timeSystem.markClassResolved();
+        addHiddenInt("lateCount", 1);
+        addHiddenInt("teacherTrust", -2);
+        player.modifyAttributes(Attributes{.san = -3, .academic = -2});
+        syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+        std::ostringstream body;
+        body << reason << "\nSAN -3, Academic -2, Teacher Trust -2.";
+        activityNotice.show(title, body.str());
+        if (maybeFinalizeRun) maybeFinalizeRun();
+    };
+
+    auto startMorningRushRun = [&]() {
+        mealChoicePrompt.clear();
+        activityNotice.clear();
+        morningRushActive = true;
+        morningRushTestMode = false;
+        morningRushTriggeredToday = true;
+        syncMorningRushTeacherTrustFromHidden();
+        morningRushGame.start(timeSystem.getDay(),
+                              pendingMorningRushShortSleep,
+                              pendingMorningRushBreakfastRisk,
+                              pendingMorningRushPenalty,
+                              pendingMorningRushRoute);
+    };
+
+    auto resolveMorningRushChoice = [&](int choice) {
+        if (choice == 1) {
+            startMorningRushRun();
+            return;
+        }
+        if (choice == 2) {
+            settleOrdinaryMorningLate("Late Arrival",
+                "You decide not to sprint and arrive after roll call.");
+            return;
+        }
+
+        mealChoicePrompt.clear();
+        const int roll = std::rand() % 20 + 1;
+        const int socialBonus = (player.getAttributes().social - 50) / 10;
+        const int total = roll + socialBonus - pendingMorningRushPenalty;
+        constexpr int dc = 11;
+        std::ostringstream body;
+        body << "d20 " << roll << " + Social " << socialBonus
+             << " - Penalty " << pendingMorningRushPenalty
+             << " = " << total << " vs DC " << dc << ".";
+        if (total >= dc) {
+            movePlayerToClassroom();
+            timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+            timeSystem.markClassPrompted();
+            timeSystem.markClassResolved();
+            mergeHidden(player.getHidden(), HiddenMap{{"classAttendCount", 1}, {"teacherTrust", 1}});
+            syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+            body << "\nA classmate saves a seat and covers for you. SAN +1, Energy -2, Social +1.";
+            player.modifyAttributes(Attributes{.energy = -2, .san = 1, .social = 1});
+            activityNotice.show("Classmate Help", body.str());
+            if (maybeFinalizeRun) maybeFinalizeRun();
+        } else {
+            body << "\nNo one manages to cover for you in time.";
+            settleOrdinaryMorningLate("Help Failed", body.str());
+        }
+    };
+
+    std::function<bool(int)> startMorningRushIfNeeded;
+
+    auto checkEventTriggers = [&eventRunner, &ctx, &questManager, &questActive, &startMorningRushIfNeeded](int prev) {
+        if (startMorningRushIfNeeded && startMorningRushIfNeeded(prev)) return true;
         bool triggered = eventRunner.checkTriggers(ctx, prev);
         if (triggered) {
             questManager.onEventCompleted();
@@ -624,8 +768,6 @@ int main() {
         }
         return triggered;
     };
-
-    std::function<bool()> maybeFinalizeRun;
 
     auto buildSettlementBody = [&](const SettlementResult& result, int page) {
         std::ostringstream body;
@@ -689,6 +831,115 @@ int main() {
             return true;
         }
         return false;
+    };
+
+    startMorningRushIfNeeded = [&](int previousMinute) {
+        if (morningRushActive || settlementActive) return false;
+        if (mealChoicePrompt.active && mealChoicePrompt.purpose == kMorningRushPromptPurpose) return false;
+        if (ctx.currentPlace == CampusPlace::Classroom) return false;
+        if (ctx.timeSystem.isClassPrompted() || ctx.timeSystem.isClassResolved()) return false;
+
+        const int now = normalizedMinute(ctx.timeSystem.getMinuteOfDay());
+        auto commuteToClassMinutes = [](CampusPlace place) {
+            switch (place) {
+                case CampusPlace::Dormitory: return 15;
+                case CampusPlace::Cafeteria: return 10;
+                case CampusPlace::Gym: return 10;
+                case CampusPlace::Library: return 5;
+                case CampusPlace::Campus: return 5;
+                case CampusPlace::Store: return 10;
+                case CampusPlace::Classroom: return 0;
+            }
+            return 5;
+        };
+
+        const int commuteMinutes = commuteToClassMinutes(ctx.currentPlace);
+        const bool stillBeforeClass = now < TimeSystem::kClassMinute;
+        const bool normalWalkWouldBeLate = now + commuteMinutes > TimeSystem::kClassMinute;
+        if (now >= TimeSystem::kClassMinute && now < TimeSystem::kClassEndMinute) {
+            settleOrdinaryMorningLate("Late Arrival",
+                "It is already past 08:50, so the sprint chance is gone.");
+            return true;
+        }
+        if (!(previousMinute < TimeSystem::kClassMinute
+              && stillBeforeClass
+              && normalWalkWouldBeLate)) {
+            return false;
+        }
+
+        if (morningRushTriggeredToday || morningRushPromptedToday) {
+            settleOrdinaryMorningLate("Late Arrival",
+                "You already had a rush chance today, so this late risk is resolved normally.");
+            return true;
+        }
+        if (morningRushCooldownDays > 0) {
+            settleOrdinaryMorningLate("Too Tired To Sprint",
+                "You are still worn out from the last failed sprint and can only arrive late.");
+            return true;
+        }
+
+        const int day = ctx.timeSystem.getDay();
+        const bool firstLate = hiddenInt("lateCount") == 0;
+        const bool beforeMajorExam = (day == 6 || day == 13);
+        const bool shortSleepMorning = hiddenInt("lastSleepMinutes", kDefaultSleepMinutes) < kMinimumHealthySleepMinutes;
+        const bool lowTrustEmergency = hiddenInt("teacherTrust") <= -10;
+        const bool keyMorning = firstLate || beforeMajorExam || shortSleepMorning || lowTrustEmergency;
+        if (!keyMorning) {
+            settleOrdinaryMorningLate("Late Arrival",
+                "This is not a key class moment, so the game uses the light late settlement.");
+            return true;
+        }
+
+        morningRushPromptedToday = true;
+        pendingMorningRushShortSleep = shortSleepMorning;
+        pendingMorningRushBreakfastRisk = (ctx.currentPlace == CampusPlace::Cafeteria);
+        pendingMorningRushPenalty = 0;
+        pendingMorningRushRoute = routeForMorningRush(ctx.currentPlace);
+        activityNotice.clear();
+
+        std::ostringstream body;
+        body << "Class starts at 08:50. Walking from here takes "
+             << commuteMinutes << " minutes.\nChoose a response.";
+        mealChoicePrompt.show(
+            "Sprint To Class?",
+            body.str(),
+            std::vector<std::string>{"Run sprint", "Accept late penalty", "Ask classmate"},
+            kMorningRushPromptPurpose,
+            std::vector<int>{1, 2, 3});
+        return true;
+    };
+
+    auto finishMorningRush = [&]() {
+        morningRushActive = false;
+        if (morningRushTestMode) {
+            const int testedStage = morningRushGame.getStageIndex();
+            morningRushTestMode = false;
+            activityNotice.show("Morning Rush Test",
+                "Stage " + std::to_string(testedStage)
+                + " test finished. No player stats or schedule were changed.");
+            return;
+        }
+        syncMorningRushTeacherTrustToHidden();
+        movePlayerToClassroom();
+        timeSystem.markClassPrompted();
+        if (!morningRushGame.wasLate()) {
+            timeSystem.setTimeAbsolute(TimeSystem::kClassMinute);
+            mergeHidden(player.getHidden(), HiddenMap{{"classAttendCount", 1}, {"teacherTrust", 1}});
+            syncVisibleHealthFromHidden(player.getAttributes(), player.getHidden());
+            activityNotice.show("Morning Class",
+                "You arrive just in time and settle into the front row.");
+        } else {
+            addHiddenInt("lateCount", 1);
+            morningRushCooldownDays = 2;
+            timeSystem.setTimeAbsolute(morningRushGame.wasCriticalFailure()
+                ? TimeSystem::kClassMinute + 15
+                : TimeSystem::kClassMinute + 5);
+            timeSystem.markClassResolved();
+            activityNotice.show(
+                morningRushGame.wasCriticalFailure() ? "Called Out" : "Late Arrival",
+                morningRushGame.getResultText());
+        }
+        if (maybeFinalizeRun) maybeFinalizeRun();
     };
 
     ctx.runTimedActivity = [&ctx, &pendingTimedActivity](int minutes, const Attributes& delta,
@@ -902,6 +1153,13 @@ int main() {
         float dt = clock.restart().asSeconds();
 
         if (mealChoicePrompt.debounce > 0) --mealChoicePrompt.debounce;
+        if (timeSystem.getDay() != gamePlayDay) {
+            gamePlayDay = timeSystem.getDay();
+            gamesPlayedToday = 0;
+            morningRushTriggeredToday = false;
+            morningRushPromptedToday = false;
+            if (morningRushCooldownDays > 0) --morningRushCooldownDays;
+        }
 
         // 更新战斗结果计时器
         combatResult.update(dt);
@@ -1054,6 +1312,22 @@ int main() {
                 continue;
             }
 
+            if (morningRushActive) {
+                if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (morningRushTestMode && keyEv->code == sf::Keyboard::Key::Escape) {
+                        morningRushActive = false;
+                        morningRushTestMode = false;
+                        activityNotice.show("Morning Rush Test",
+                            "Practice exited. No player stats or schedule were changed.");
+                        continue;
+                    }
+                }
+                syncMorningRushTeacherTrustFromHidden();
+                morningRushGame.handleInput(event, player, morningRushTeacherTrust);
+                syncMorningRushTeacherTrustToHidden();
+                continue;
+            }
+
             if (eventRunner.isActive()) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>())
                     eventRunner.handleInput(keyEv->code, ctx);
@@ -1096,6 +1370,23 @@ int main() {
             if (mealChoicePrompt.active) {
                 if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
                     if (mealChoicePrompt.debounce > 0) continue;
+                    if (mealChoicePrompt.purpose == kMorningRushPromptPurpose) {
+                        auto choiceIndex = [&]() {
+                            if (keyEv->code == sf::Keyboard::Key::Num1 || keyEv->code == sf::Keyboard::Key::Numpad1) return 0;
+                            if (keyEv->code == sf::Keyboard::Key::Num2 || keyEv->code == sf::Keyboard::Key::Numpad2) return 1;
+                            if (keyEv->code == sf::Keyboard::Key::Num3 || keyEv->code == sf::Keyboard::Key::Numpad3) return 2;
+                            if (keyEv->code == sf::Keyboard::Key::Enter) return 0;
+                            return -1;
+                        }();
+                        if (choiceIndex >= 0
+                            && choiceIndex < static_cast<int>(mealChoicePrompt.values.size())) {
+                            resolveMorningRushChoice(mealChoicePrompt.values[choiceIndex]);
+                        } else if (keyEv->code == sf::Keyboard::Key::Escape) {
+                            settleOrdinaryMorningLate("Late Arrival",
+                                "You miss the sprint chance and arrive late.");
+                        }
+                        continue;
+                    }
                     if (mealChoicePrompt.purpose == kDurationPromptPurpose) {
                         if (keyEv->code == sf::Keyboard::Key::Left || keyEv->code == sf::Keyboard::Key::A) {
                             mealChoicePrompt.selectedValue = std::max(
@@ -1253,6 +1544,22 @@ int main() {
             tguiCtx.draw();
             window.display();
             continue;
+        }
+
+        if (morningRushActive) {
+            syncMorningRushTeacherTrustFromHidden();
+            morningRushGame.update(dt, player, morningRushTeacherTrust);
+            syncMorningRushTeacherTrustToHidden();
+            if (morningRushGame.consumeCompleted()) {
+                finishMorningRush();
+            } else {
+                morningRushRenderer.update(dt);
+                window.clear(sf::Color(20, 20, 30));
+                morningRushRenderer.render(window);
+                tguiCtx.draw();
+                window.display();
+                continue;
+            }
         }
 
         if (!debugSandbox.isExpanded() && !mealChoicePrompt.active && !activityNotice.active) {

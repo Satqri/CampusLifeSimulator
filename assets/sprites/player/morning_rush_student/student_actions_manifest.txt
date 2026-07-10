@@ -1,0 +1,153 @@
+frame_width=360
+frame_height=260
+0:walk[0] crop=(103x219)
+0:walk[1] crop=(98x218)
+0:walk[2] crop=(104x219)
+0:walk[3] crop=(108x219)
+0:walk[4] crop=(90x219)
+0:walk[5] crop=(87x219)
+0:walk[6] crop=(97x219)
+1:run[0] crop=(132x250)
+1:run[1] crop=(138x250)
+1:run[2] crop=(188x250)
+1:run[3] crop=(161x250)
+1:run[4] crop=(134x250)
+1:run[5] crop=(141x250)
+1:run[6] crop=(132x250)
+1:run[7] crop=(167x250)
+2:jump[0] crop=(159x216)
+2:jump[1] crop=(160x250)
+2:jump[2] crop=(125x250)
+2:jump[3] crop=(125x250)
+2:jump[4] crop=(134x250)
+2:jump[5] crop=(133x250)
+2:jump[6] crop=(141x250)
+2:jump[7] crop=(154x217)
+2:jump[8] crop=(134x250)
+3:dash[0] crop=(167x211)
+3:dash[1] crop=(247x169)
+3:dash[2] crop=(318x250)
+3:dash[3] crop=(312x250)
+3:dash[4] crop=(339x178)
+3:dash[5] crop=(307x174)
+3:dash[6] crop=(216x194)
+3:dash[7] crop=(165x194)
+4:crawl[0] crop=(144x227)
+4:crawl[1] crop=(156x189)
+4:crawl[2] crop=(155x172)
+4:crawl[3] crop=(210x160)
+4:crawl[4] crop=(268x127)
+4:crawl[5] crop=(262x120)
+4:crawl[6] crop=(165x168)
+4:crawl[7] crop=(147x175)
+4:crawl[8] crop=(143x220)
+5:hit[0] crop=(158x239)
+5:hit[1] crop=(182x228)
+5:hit[2] crop=(189x236)
+5:hit[3] crop=(177x236)
+5:hit[4] crop=(187x210)
+5:hit[5] crop=(340x147)
+5:hit[6] crop=(242x115)
+5:hit[7] crop=(200x100)
+6:bike[0] crop=(190x250)
+6:bike[1] crop=(233x250)
+6:bike[2] crop=(230x250)
+6:bike[3] crop=(233x250)
+6:bike[4] crop=(232x250)
+6:bike[5] crop=(233x250)
+6:bike[6] crop=(232x250)
+6:bike[7] crop=(193x250)
+7:mount[0] crop=(150x250)
+7:mount[1] crop=(331x242)
+7:mount[2] crop=(337x246)
+7:mount[3] crop=(338x246)
+7:mount[4] crop=(340x245)
+7:mount[5] crop=(62x137)
+8:dismount[0] crop=(156x250)
+8:dismount[1] crop=(336x250)
+8:dismount[2] crop=(334x250)
+8:dismount[3] crop=(334x250)
+8:dismount[4] crop=(294x246)
+8:dismount[5] empty
+
+run row realigned:
+run[0] dest=(99,0) face=94.7 crop=(126x244)
+run[1] dest=(92,0) face=101.7 crop=(132x244)
+run[2] dest=(55,0) face=138.7 crop=(182x244)
+run[3] dest=(70,0) face=124.0 crop=(155x244)
+run[4] dest=(98,0) face=95.7 crop=(128x244)
+run[5] dest=(91,0) face=102.8 crop=(135x244)
+run[6] dest=(100,0) face=94.1 crop=(126x244)
+run[7] dest=(63,0) face=130.5 crop=(161x244)
+
+manual idle/walk rows from user images:
+idle_left.png[0] dest=(105,0) crop=(125x249) face=88.6
+idle_left.png[1] dest=(106,0) crop=(124x249) face=88.3
+idle_left.png[2] dest=(106,0) crop=(124x249) face=88.0
+idle_left.png[3] dest=(106,0) crop=(125x250) face=88.5
+idle_left.png[4] dest=(105,0) crop=(125x250) face=88.7
+idle_left.png[5] dest=(105,0) crop=(126x250) face=89.3
+idle_left.png[6] dest=(106,0) crop=(125x250) face=88.0
+idle_left.png[7] dest=(106,0) crop=(124x250) face=87.8
+walk_left.png[0] dest=(118,0) crop=(136x250) face=76.1
+walk_left.png[1] dest=(129,0) crop=(145x250) face=65.4
+walk_left.png[2] dest=(132,0) crop=(144x250) face=61.9
+walk_left.png[3] dest=(119,0) crop=(144x250) face=75.5
+walk_left.png[4] dest=(132,0) crop=(140x250) face=62.0
+walk_left.png[5] dest=(123,0) crop=(160x250) face=70.5
+walk_left.png[6] dest=(130,0) crop=(147x250) face=64.5
+walk_left.png[7] dest=(130,0) crop=(129x250) face=64.4
+
+left idle/lunge rows from user images:
+idle_left.png[0] dest=(161,0) crop=(101x252) face=33.4
+idle_left.png[1] dest=(120,0) crop=(150x252) face=74.0
+idle_left.png[2] dest=(125,0) crop=(150x252) face=68.5
+idle_left.png[3] dest=(159,0) crop=(118x252) face=35.3
+idle_left.png[4] dest=(160,0) crop=(118x252) face=34.4
+idle_left.png[5] dest=(160,0) crop=(119x252) face=33.9
+idle_left.png[6] dest=(161,0) crop=(150x252) face=33.1
+idle_left.png[7] dest=(169,0) crop=(109x252) face=25.1
+lunge_left.png[0] dest=(159,51) crop=(130x195) face=34.7
+lunge_left.png[1] dest=(149,43) crop=(209x203) face=32.1
+lunge_left.png[2] dest=(144,14) crop=(205x232) face=50.3
+lunge_left.png[3] dest=(149,18) crop=(209x228) face=33.5
+lunge_left.png[4] dest=(137,80) crop=(209x166) face=57.4
+lunge_left.png[5] dest=(127,83) crop=(209x163) face=67.5
+lunge_left.png[6] dest=(93,89) crop=(209x157) face=100.7
+lunge_left.png[7] dest=(109,55) crop=(179x191) face=84.6
+
+left directional rematte fixed:
+idle_left.png[0] range=(0,209) dest=(98,0) crop=(150x252)
+idle_left.png[1] range=(209,418) dest=(104,0) crop=(150x252)
+idle_left.png[2] range=(418,627) dest=(112,0) crop=(150x252)
+idle_left.png[3] range=(627,836) dest=(120,0) crop=(150x252)
+idle_left.png[4] range=(836,1045) dest=(130,0) crop=(150x252)
+idle_left.png[5] range=(1045,1254) dest=(139,0) crop=(150x252)
+idle_left.png[6] range=(1254,1463) dest=(146,0) crop=(150x252)
+idle_left.png[7] range=(1463,1672) dest=(154,0) crop=(150x252)
+lunge_left.png[0] range=(0,209) dest=(141,50) crop=(130x196)
+lunge_left.png[1] range=(209,418) dest=(147,42) crop=(209x204)
+lunge_left.png[2] range=(418,627) dest=(128,11) crop=(209x235)
+lunge_left.png[3] range=(627,836) dest=(145,19) crop=(209x227)
+lunge_left.png[4] range=(836,1045) dest=(115,80) crop=(209x166)
+lunge_left.png[5] range=(1045,1254) dest=(95,84) crop=(209x162)
+lunge_left.png[6] range=(1254,1463) dest=(80,87) crop=(209x159)
+lunge_left.png[7] range=(1463,1672) dest=(90,53) crop=(181x193)
+
+right walk/lunge rebuilt from right-facing source strips:
+run.png[0] dest=(85,0) crop=(132x252)
+run.png[1] dest=(81,0) crop=(191x252)
+run.png[2] dest=(49,0) crop=(189x252)
+run.png[3] dest=(57,0) crop=(160x252)
+run.png[4] dest=(80,0) crop=(136x252)
+run.png[5] dest=(80,0) crop=(141x252)
+run.png[6] dest=(84,0) crop=(187x252)
+run.png[7] dest=(50,0) crop=(167x252)
+dash.png[0] dest=(91,38) crop=(227x208)
+dash.png[1] dest=(26,3) crop=(275x243)
+dash.png[2] dest=(70,0) crop=(261x252)
+dash.png[3] dest=(14,0) crop=(265x252)
+dash.png[4] dest=(2,71) crop=(276x175)
+dash.png[5] dest=(8,74) crop=(275x172)
+dash.png[6] dest=(37,55) crop=(275x191)
+dash.png[7] dest=(17,55) crop=(224x191)

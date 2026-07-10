@@ -1,6 +1,9 @@
 #include "entity/Player.h"
+#include "utils/AssetPath.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <string>
 
 namespace {
 constexpr float kDefaultMoveSpeed = 210.0f;
@@ -8,6 +11,17 @@ constexpr float kDefaultAcceleration = 900.0f;
 constexpr float kDefaultDeceleration = 1200.0f;
 constexpr float kDefaultStopThreshold = 8.0f;
 constexpr float kMoveTargetArrivalRadius = 10.0f;
+constexpr float kCharacterSpriteHeight = 38.0f;
+
+int frameIndex(int direction, bool walking) {
+    return direction * 2 + (walking ? 1 : 0);
+}
+
+struct CharacterFrame {
+    sf::Texture texture;
+    sf::IntRect source;
+    bool loaded = false;
+};
 
 float vectorLength(const sf::Vector2f& value) {
     return std::sqrt(value.x * value.x + value.y * value.y);
@@ -24,6 +38,54 @@ void applyVelocityTowardsTarget(sf::Vector2f& velocity, sf::Vector2f targetVeloc
         velocity.x += velocityDelta.x / velocityDeltaLength * accelStep;
         velocity.y += velocityDelta.y / velocityDeltaLength * accelStep;
     }
+}
+
+std::array<CharacterFrame, 8>& playerCharacterFrames() {
+    static std::array<CharacterFrame, 8> frames;
+    static bool initialized = false;
+    if (initialized) return frames;
+    initialized = true;
+
+    const auto loadFrame = [&](int direction, bool walking, const std::string& path,
+                               sf::IntRect source) {
+        CharacterFrame& frame = frames[frameIndex(direction, walking)];
+        frame.loaded = frame.texture.loadFromFile(cls::resolveAssetPath(path));
+        if (frame.loaded) {
+            frame.texture.setSmooth(false);
+            frame.source = source;
+        }
+    };
+
+    loadFrame(0, false, "assets/image/characters/player/male_front_idle.png",
+              sf::IntRect({316, 40}, {412, 984}));
+    loadFrame(0, true, "assets/image/characters/player/male_front_walk.png",
+              sf::IntRect({40, 57}, {143, 316}));
+    loadFrame(1, false, "assets/image/characters/player/male_back_idle.png",
+              sf::IntRect({314, 81}, {396, 897}));
+    loadFrame(1, true, "assets/image/characters/player/male_back_walk.png",
+              sf::IntRect({46, 31}, {141, 317}));
+    loadFrame(2, false, "assets/image/characters/player/male_left_idle.png",
+              sf::IntRect({309, 65}, {382, 896}));
+    loadFrame(2, true, "assets/image/characters/player/male_left_walk.png",
+              sf::IntRect({49, 40}, {156, 316}));
+    loadFrame(3, false, "assets/image/characters/player/male_right_idle.png",
+              sf::IntRect({316, 64}, {397, 896}));
+    loadFrame(3, true, "assets/image/characters/player/male_right_walk.png",
+              sf::IntRect({37, 23}, {151, 316}));
+
+    return frames;
+}
+
+const CharacterFrame* selectCharacterFrame(int direction, bool walking) {
+    auto& frames = playerCharacterFrames();
+    const CharacterFrame& preferred = frames[frameIndex(direction, walking)];
+    if (preferred.loaded) return &preferred;
+
+    const CharacterFrame& idle = frames[frameIndex(direction, false)];
+    if (idle.loaded) return &idle;
+
+    const CharacterFrame& frontIdle = frames[frameIndex(0, false)];
+    return frontIdle.loaded ? &frontIdle : nullptr;
 }
 }
 
@@ -61,6 +123,22 @@ void Player::update(float deltaTime) {
 
 void Player::render(sf::RenderWindow& window) {
     if (!visible) return;
+    const bool walking = vectorLength(velocity) > stopSpeedThreshold;
+    const int direction = static_cast<int>(facingDirection);
+    if (const CharacterFrame* frame = selectCharacterFrame(direction, walking)) {
+        sf::Sprite character(frame->texture);
+        character.setTextureRect(frame->source);
+        character.setOrigin({
+            static_cast<float>(frame->source.size.x) * 0.5f,
+            static_cast<float>(frame->source.size.y) * 0.5f
+        });
+        const float scale = kCharacterSpriteHeight / static_cast<float>(frame->source.size.y);
+        character.setScale({scale, scale});
+        character.setPosition({posX, posY});
+        window.draw(character);
+        return;
+    }
+
     sprite.setPosition({posX, posY});
     window.draw(sprite);
 }
@@ -76,6 +154,15 @@ void Player::move(float directionX, float directionY, float deltaTime) {
         if (inputLength > 1.0f) {
             inputDirection.x /= inputLength;
             inputDirection.y /= inputLength;
+        }
+        if (std::abs(inputDirection.x) > std::abs(inputDirection.y)) {
+            facingDirection = inputDirection.x < 0.0f
+                ? FacingDirection::Left
+                : FacingDirection::Right;
+        } else {
+            facingDirection = inputDirection.y < 0.0f
+                ? FacingDirection::Back
+                : FacingDirection::Front;
         }
         targetVelocity = {inputDirection.x * moveSpeed, inputDirection.y * moveSpeed};
         applyVelocityTowardsTarget(velocity, targetVelocity, acceleration, deltaTime);

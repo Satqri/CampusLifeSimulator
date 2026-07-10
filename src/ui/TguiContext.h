@@ -4,7 +4,6 @@
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Backend/SFML-Graphics.hpp>
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 class TguiContext {
 public:
@@ -20,7 +19,6 @@ private:
     sf::RenderWindow& mWindow;
     sf::RenderTexture mRenderTex;
     tgui::Gui mGui;
-    std::unique_ptr<sf::Sprite> mBlitSprite;
 };
 
 #endif
