@@ -53,18 +53,21 @@ void ModalBox::createWidgets() {
     mTitleLabel = createLabel("", 22);
     mTitleLabel->setPosition({218, 196});
     mTitleLabel->getRenderer()->setTextColor(tgui::Color(250, 238, 200));
+    mTitleLabel->setMaximumTextWidth(580.0f);
     mContainer->add(mTitleLabel);
 
     // 正文
     mBodyLabel = createLabel("", 15);
     mBodyLabel->setPosition({218, 238});
     mBodyLabel->getRenderer()->setTextColor(tgui::Color(218, 230, 220));
+    mBodyLabel->setMaximumTextWidth(580.0f);
     mContainer->add(mBodyLabel);
 
     // 页脚
     mFooterLabel = createLabel("", 12);
     mFooterLabel->setPosition({218, 320});
     mFooterLabel->getRenderer()->setTextColor(tgui::Color(172, 184, 178));
+    mFooterLabel->setMaximumTextWidth(580.0f);
     mContainer->add(mFooterLabel);
 }
 

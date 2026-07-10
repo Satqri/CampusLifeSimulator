@@ -1333,6 +1333,10 @@ int main() {
                                 footer);
             modalBox.render(window);
         }
+        if (!eventRunner.isActive() && !questActive
+            && !activityNotice.active && !mealChoicePrompt.active) {
+            modalBox.setVisible(false);
+        }
         if (fontOk) {
             debugSandbox.refresh(ctx, eventRunner);
             debugSandbox.render(window);
