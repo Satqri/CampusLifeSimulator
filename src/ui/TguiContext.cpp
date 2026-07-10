@@ -8,7 +8,6 @@ TguiContext::TguiContext(sf::RenderWindow& window)
 {
     mRenderTex.setSmooth(true);
     mGui.setTarget(mRenderTex);
-    mBlitSprite = std::make_unique<sf::Sprite>(mRenderTex.getTexture());
 }
 
 bool TguiContext::handleEvent(const sf::Event& event) {
@@ -35,5 +34,6 @@ void TguiContext::draw() {
     mRenderTex.clear(sf::Color::Transparent);
     mGui.draw();
     mRenderTex.display();
-    mWindow.draw(*mBlitSprite);
+    sf::Sprite blitSprite(mRenderTex.getTexture());
+    mWindow.draw(blitSprite);
 }

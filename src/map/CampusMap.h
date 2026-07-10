@@ -5,7 +5,6 @@
 #include <SFML/Graphics.hpp>
 #include <array>
 #include <initializer_list>
-#include <memory>
 
 class Player;
 class TimeSystem;
@@ -28,7 +27,7 @@ public:
 
 private:
     void drawBuilding(sf::RenderWindow& window, const MapPortal& portal,
-                      const std::string& label, const sf::Sprite* buildingSprite = nullptr);
+                      const std::string& label, const sf::Texture* buildingTexture = nullptr);
 
     sf::Texture outdoorTiles;
     bool outdoorTilesLoaded;
@@ -36,12 +35,12 @@ private:
 
     static constexpr int kBuildingCount = 6;
     std::array<sf::Texture, kBuildingCount> mBuildingTextures;
-    std::array<std::unique_ptr<sf::Sprite>, kBuildingCount> mBuildingSprites;
+    std::array<bool, kBuildingCount> mBuildingTextureLoaded{};
     sf::Texture mLampTexture;
     bool mLampTextureLoaded = false;
 
     void loadBuildingTexture(int index, const std::string& relativePath);
-    const sf::Sprite* getBuildingSprite(CampusPlace place) const;
+    const sf::Texture* getBuildingTexture(CampusPlace place) const;
 
     void drawGround(sf::RenderWindow& window) const;
     void drawPathSegment(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end,

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="300" height="34" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="91">
+ <objectgroup id="2" name="CollisionSolid">
+  <object id="1" name="Ground" x="0" y="420" width="4620" height="124"/>
+  <object id="2" name="StartWall" x="-16" y="0" width="16" height="544"/>
+  <object id="3" name="EndWall" x="4620" y="0" width="16" height="544"/>
+  <object id="75" name="Hurdle WetFloorSign" x="1148" y="350" width="42" height="70"/>
+  <object id="76" name="Hurdle TrafficCone" x="1674" y="370" width="32" height="50"/>
+  <object id="77" name="Hurdle RecyclingBin" x="2180" y="344" width="46" height="76"/>
+  <object id="78" name="Hurdle CampusPlanter" x="2910" y="364" width="92" height="56"/>
+  <object id="79" name="Hurdle CrowdBarrier" x="4026" y="340" width="92" height="80"/>
+ </objectgroup>
+ <objectgroup id="3" name="CollisionOneWay">
+  <object id="10" name="Dorm Shoe Rack" x="180" y="374" width="116" height="18"/>
+  <object id="11" name="Bunk Bed Rail" x="330" y="328" width="164" height="18"/>
+  <object id="12" name="Laundry Balcony" x="535" y="294" width="120" height="18"/>
+  <object id="13" name="Hall Window Ledge" x="715" y="350" width="136" height="18"/>
+  <object id="14" name="Stair Handrail" x="980" y="364" width="128" height="18"/>
+  <object id="15" name="Campus Bridge" x="1220" y="308" width="188" height="18"/>
+  <object id="16" name="Bus Stop Roof" x="1490" y="338" width="152" height="18"/>
+  <object id="17" name="Bench Route" x="1718" y="356" width="170" height="18"/>
+  <object id="18" name="Bike Shed Roof" x="1998" y="302" width="156" height="18"/>
+  <object id="19" name="Notice Board Ledge" x="2250" y="370" width="128" height="18"/>
+  <object id="20" name="Club Booth Counter" x="2455" y="332" width="176" height="18"/>
+  <object id="21" name="Library Return Desk" x="2740" y="356" width="160" height="18"/>
+  <object id="22" name="Locker Tops" x="3010" y="298" width="150" height="18"/>
+  <object id="23" name="Classroom Desk Tops" x="3245" y="356" width="176" height="18"/>
+  <object id="24" name="Window Ledge" x="3520" y="314" width="146" height="18"/>
+  <object id="25" name="Lecture Hall Rail" x="3820" y="332" width="190" height="18"/>
+  <object id="26" name="Podium Platform" x="4140" y="370" width="132" height="18"/>
+  <object id="27" name="Class Door Mat" x="4388" y="386" width="92" height="18"/>
+ </objectgroup>
+ <objectgroup id="4" name="Hazard">
+  <object id="80" name="Hurdle WetFloorSign" x="1142" y="344" width="54" height="76"/>
+  <object id="81" name="Hurdle TrafficCone" x="1668" y="364" width="44" height="56"/>
+  <object id="82" name="Hurdle RecyclingBin" x="2174" y="338" width="58" height="82"/>
+  <object id="83" name="Hurdle CampusPlanter" x="2904" y="358" width="104" height="62"/>
+  <object id="84" name="Hurdle CrowdBarrier" x="4020" y="334" width="104" height="86"/>
+ </objectgroup>
+ <objectgroup id="5" name="Pickup">
+  <object id="50" name="Bicycle" x="870" y="356" width="104" height="64"/>
+ </objectgroup>
+ <objectgroup id="6" name="Spawn">
+  <object id="60" name="PlayerSpawn" x="96" y="364" width="34" height="56"/>
+ </objectgroup>
+ <objectgroup id="7" name="Finish">
+  <object id="70" name="ClassDoor" x="4480" y="330" width="64" height="90"/>
+ </objectgroup>
+</map>

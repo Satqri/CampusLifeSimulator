@@ -130,6 +130,13 @@ public:
     void moveToTarget(float deltaTime);
 
 private:
+    enum class FacingDirection {
+        Front = 0,
+        Back,
+        Left,
+        Right
+    };
+
     sf::Vector2f velocity;      ///< 当前移动速度
     float acceleration;         ///< 按住方向键时的加速度
     float deceleration;         ///< 松开方向键时的减速度
@@ -140,6 +147,7 @@ private:
     int lowHealthDays = 0;      ///< 连续低健康天数（>=2 触发扣 SAN/知识/社交）
     bool moveTargetActive = false; ///< 鼠标点击移动目标是否有效
     sf::Vector2f moveTarget;    ///< 鼠标点击移动目标坐标
+    FacingDirection facingDirection = FacingDirection::Front;
 };
 
 #endif // CLS_ENTITY_PLAYER_H
