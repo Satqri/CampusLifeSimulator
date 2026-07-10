@@ -979,7 +979,7 @@ int main() {
                 MainQuest* quest = questManager.getCurrentQuest();
                 if (quest && !quest->isCompleted()) {
                     int choiceMade = -1;
-                    if (const auto* keyEv = event.getIf<sf::Event::KeyPressed>()) {
+                    if (event.is<sf::Event::KeyPressed>()) {
                         if (quest->handleInput(event, player, choiceMade)) {
                             if (quest->isCompleted()) {
                                 quest->execute(player);
