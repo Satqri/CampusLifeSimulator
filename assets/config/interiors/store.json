@@ -46,10 +46,10 @@
     },
     {
       "area": {
-        "x": 710.0,
-        "y": 430.0,
-        "w": 120.0,
-        "h": 40.0
+        "x": 0.0,
+        "y": 0.0,
+        "w": 1.0,
+        "h": 1.0
       },
       "actionId": "store_night_shift",
       "label_key": "interaction.store_night_shift.label",

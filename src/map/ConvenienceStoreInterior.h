@@ -3,7 +3,6 @@
 
 #include "map/BuildingInterior.h"
 #include <SFML/Graphics.hpp>
-#include <memory>
 
 /**
  * @class ConvenienceStoreInterior
@@ -18,10 +17,12 @@ public:
     CampusPlace getPlace() const override { return CampusPlace::Store; }
 
 private:
-    sf::Texture mShelfTexture;
-    sf::Texture mCashRegisterTexture;
-    std::unique_ptr<sf::Sprite> mShelfSprite;
-    std::unique_ptr<sf::Sprite> mCashRegisterSprite;
+    sf::Texture mMockupTexture;
+    bool mMockupLoaded = false;
+
+    void drawStoreBackground(sf::RenderWindow& window) const;
+    void drawMockup(sf::RenderWindow& window) const;
+    void drawFallbackScene(sf::RenderWindow& window) const;
 };
 
 #endif // CLS_MAP_CONVENIENCESTOREINTERIOR_H
