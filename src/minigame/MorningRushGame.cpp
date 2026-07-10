@@ -1,4 +1,5 @@
 #include "minigame/MorningRushGame.h"
+#include "core/Localization.h"
 #include "utils/AssetPath.h"
 
 #include <SFML/Window/Keyboard.hpp>
@@ -211,7 +212,8 @@ bool MorningRushGame::handleInput(const sf::Event& event, Player&, int&) {
                 cueAction(RushAction::WallTurn, 0.72f);
             } else if (key->code == sf::Keyboard::Key::K) {
                 if (!hasBicycle_) {
-                    luckEvent = {"K locked", "Pick up the bicycle to unlock the lunge.",
+                    luckEvent = {cls::text("morning_rush.notice.k_locked.title"),
+                                 cls::text("morning_rush.notice.k_locked.body"),
                                  0, 0, false, 1.5f};
                 } else if (stamina >= kBurstDashCost && burstDashCooldown <= 0.0f) {
                     burstImpulseQueued = true;
@@ -363,7 +365,7 @@ void MorningRushGame::triggerLuckEvent(Player& player) {
     const int dc = 11 + checkPenalty;
     const bool success = roll + energyBonus >= dc;
 
-    luckEvent.title = "Campus luck check";
+    luckEvent.title = cls::text("morning_rush.luck.title");
     luckEvent.d20 = roll;
     luckEvent.dc = dc;
     luckEvent.success = success;
@@ -372,11 +374,11 @@ void MorningRushGame::triggerLuckEvent(Player& player) {
     if (success) {
         timeLeft += 2.0f;
         ++comboCount;
-        luckEvent.text = "Found a cleaner line through the crowd. +2s";
+        luckEvent.text = cls::text("morning_rush.luck.success");
     } else {
         timeLeft -= 2.0f;
         comboCount = 0;
-        luckEvent.text = "A sudden jam slows the sprint. -2s";
+        luckEvent.text = cls::text("morning_rush.luck.fail");
     }
 }
 
@@ -386,7 +388,8 @@ void MorningRushGame::checkHazards() {
             pitFailure = true;
             ++collisionCount;
             comboCount = 0;
-            luckEvent = {"Late arrival", "Fell off the route. Morning Rush failed.",
+            luckEvent = {cls::text("morning_rush.late.title"),
+                         cls::text("morning_rush.late.pit_event"),
                          0, 0, false, 2.0f};
             return;
         }
@@ -425,7 +428,9 @@ void MorningRushGame::checkHazards() {
         ++comboCount;
         timeLeft = std::min(65.0f, timeLeft + 0.65f);
         invulnerableTimer = 0.12f;
-        luckEvent = {"Clean move", obstacleHint(rule) + " cleared. +0.6s", 0, 0, true, 1.6f};
+        luckEvent = {cls::text("morning_rush.clean.title"),
+                     cls::format("morning_rush.clean.body", {{"move", obstacleHint(rule)}}),
+                     0, 0, true, 1.6f};
         return;
     }
 
@@ -436,7 +441,9 @@ void MorningRushGame::checkHazards() {
     ++collisionCount;
     comboCount = 0;
     invulnerableTimer = 0.86f;
-    luckEvent = {"Wrong move", obstacleHint(rule) + " needed. -3s", 0, 0, false, 2.0f};
+    luckEvent = {cls::text("morning_rush.wrong.title"),
+                 cls::format("morning_rush.wrong.body", {{"move", obstacleHint(rule)}}),
+                 0, 0, false, 2.0f};
 }
 
 void MorningRushGame::checkPickups() {
@@ -449,7 +456,8 @@ void MorningRushGame::checkPickups() {
         ++comboCount;
 
         hasBicycle_ = true;
-        luckEvent = {"Bicycle acquired", "K lunge unlocked.", 0, 0, true, 2.2f};
+        luckEvent = {cls::text("morning_rush.bicycle.title"),
+                     cls::text("morning_rush.bicycle.body"), 0, 0, true, 2.2f};
     }
 }
 
@@ -469,27 +477,27 @@ void MorningRushGame::finishRun(Player& player, int& teacherTrust) {
     if (pitFailure) {
         outcome = MorningRushOutcome::Failure;
         applyAttributes(Attributes{.san = -5, .academic = -3});
-        text << "Fell off the route and arrived late. Academic -3, SAN -5.";
-        resultText = text.str();
+        resultText = cls::text("morning_rush.result.pit");
         return;
     }
     if (reachedClass && remaining >= 12) {
         outcome = MorningRushOutcome::GreatSuccess;
         applyAttributes(Attributes{.san = 2, .academic = 1});
-        text << "Arrived with " << remaining << "s left. SAN +2, Academic +1.";
+        text << cls::format("morning_rush.result.perfect",
+            {{"seconds", std::to_string(remaining)}});
     } else if (reachedClass || remaining > 0) {
         outcome = MorningRushOutcome::Success;
         applyAttributes(Attributes{.san = 2});
-        text << "Barely made it through the door. SAN +2.";
+        text << cls::text("morning_rush.result.success");
     } else if (collisionCount >= 4 || timeLeft < -5.0f) {
         outcome = MorningRushOutcome::CriticalFailure;
         applyAttributes(Attributes{.san = -8, .academic = -5});
         if (!practiceMode) teacherTrust -= 10;
-        text << "Missed the bell badly. Academic -5, SAN -8, Teacher Trust -10.";
+        text << cls::text("morning_rush.result.critical");
     } else {
         outcome = MorningRushOutcome::Failure;
         applyAttributes(Attributes{.san = -5, .academic = -3});
-        text << "Reached class late. Academic -3, SAN -5.";
+        text << cls::text("morning_rush.result.failure");
     }
     resultText = text.str();
 }
@@ -596,13 +604,13 @@ bool MorningRushGame::isNearWallTurnGate() const {
 
 std::string MorningRushGame::obstacleHint(MorningRushObstacleRule rule) const {
     switch (rule) {
-        case MorningRushObstacleRule::Hurdle: return "W hurdle";
-        case MorningRushObstacleRule::Squeeze: return "J crawl";
-        case MorningRushObstacleRule::WallTurn: return "T wall turn";
-        case MorningRushObstacleRule::BurstRun: return "K burst run";
-        case MorningRushObstacleRule::Clear: return "Clean line";
+        case MorningRushObstacleRule::Hurdle: return cls::text("morning_rush.hint.hurdle");
+        case MorningRushObstacleRule::Squeeze: return cls::text("morning_rush.hint.squeeze");
+        case MorningRushObstacleRule::WallTurn: return cls::text("morning_rush.hint.wall_turn");
+        case MorningRushObstacleRule::BurstRun: return cls::text("morning_rush.hint.burst");
+        case MorningRushObstacleRule::Clear: return cls::text("morning_rush.hint.clear");
     }
-    return "Clean line";
+    return cls::text("morning_rush.hint.clear");
 }
 
 void MorningRushGame::rebuildLegacyViews() {

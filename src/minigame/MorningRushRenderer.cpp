@@ -1,4 +1,5 @@
 ﻿#include "minigame/MorningRushRenderer.h"
+#include "core/Localization.h"
 #include "utils/AssetPath.h"
 #include "utils/TextUtils.h"
 #include "map/MapPortal.h"
@@ -114,10 +115,10 @@ void MorningRushRenderer::render(sf::RenderWindow& window) {
     if (game.getPhase() == MorningRushPhase::Intro) {
         drawPixelFrame(window, {196.0f, 156.0f}, {568.0f, 210.0f},
                        sf::Color(18, 31, 42, 236), sf::Color(238, 200, 110));
-        drawText(window, "MORNING RUSH", {240.0f, 180.0f}, 28, sf::Color(255, 235, 170));
-        drawText(window, "DOUBLE JUMP: press W / Up / Space again in midair",
+        drawText(window, cls::text("morning_rush.title"), {240.0f, 180.0f}, 28, sf::Color(255, 235, 170));
+        drawText(window, cls::text("morning_rush.double_jump"),
                  {226.0f, 244.0f}, 14, sf::Color(220, 230, 235));
-        drawText(window, "ENTER  start sprint", {370.0f, 330.0f}, 16, sf::Color(245, 240, 215));
+        drawText(window, cls::text("morning_rush.start"), {370.0f, 330.0f}, 16, sf::Color(245, 240, 215));
     } else if (game.getPhase() == MorningRushPhase::FinalResult) {
         drawFinal(window);
     }
@@ -653,19 +654,19 @@ void MorningRushRenderer::drawHud(sf::RenderWindow& window) const {
     // 鍖哄煙鏍囩
     std::string zoneName;
     switch (game.getCurrentZone()) {
-        case TerrainZone::Dormitory: zoneName = "DORM";   break;
-        case TerrainZone::Campus:    zoneName = "CAMPUS"; break;
-        case TerrainZone::Classroom: zoneName = "SCHOOL"; break;
+        case TerrainZone::Dormitory: zoneName = cls::text("morning_rush.zone.dorm");   break;
+        case TerrainZone::Campus:    zoneName = cls::text("morning_rush.zone.campus"); break;
+        case TerrainZone::Classroom: zoneName = cls::text("morning_rush.zone.school"); break;
     }
     drawText(window, zoneName, {44.0f, 34.0f}, 14, sf::Color(180, 200, 220));
-    drawText(window, "LEVEL " + std::to_string(game.getStageIndex()),
+    drawText(window, cls::format("morning_rush.level", {{"level", std::to_string(game.getStageIndex())}}),
              {132.0f, 34.0f}, 12, sf::Color(112, 224, 152));
-    drawText(window, "MORNING RUSH", {44.0f, 54.0f}, 16, sf::Color(255, 235, 170));
+    drawText(window, cls::text("morning_rush.title"), {44.0f, 54.0f}, 16, sf::Color(255, 235, 170));
 
     // 鏃堕棿
-    std::ostringstream time;
-    time << "TIME " << static_cast<int>(std::ceil(std::max(0.0f, game.getTimeLeft()))) << "s";
-    drawText(window, time.str(), {742.0f, 36.0f}, 18,
+    const std::string timeText = cls::format("morning_rush.time",
+        {{"seconds", std::to_string(static_cast<int>(std::ceil(std::max(0.0f, game.getTimeLeft()))))}});
+    drawText(window, timeText, {742.0f, 36.0f}, 18,
              game.getTimeLeft() < 8.0f ? sf::Color(255, 120, 110) : sf::Color(230, 240, 245));
 
     const float pct = std::clamp(game.getDistance() / game.getTargetDistance(), 0.0f, 1.0f);
@@ -678,12 +679,16 @@ void MorningRushRenderer::drawHud(sf::RenderWindow& window) const {
     drawPixelBlock(window, {238.0f + 414.0f * zoneB, 48.0f}, {2.0f, 12.0f}, sf::Color(200, 200, 200, 120));
 
     std::ostringstream info;
-    info << "Hits " << game.getCollisionCount();
-    if (game.getComboCount() > 1) info << "  Combo x" << game.getComboCount();
-    if (game.isBurstRunning()) info << "  LUNGE";
+    info << cls::format("morning_rush.hits", {{"count", std::to_string(game.getCollisionCount())}});
+    if (game.getComboCount() > 1) {
+        info << "  " << cls::format("morning_rush.combo", {{"count", std::to_string(game.getComboCount())}});
+    }
+    if (game.isBurstRunning()) info << "  " << cls::text("morning_rush.lunge");
     const float spdMul = std::abs(game.getRunSpeed()) / 120.0f;
     if (spdMul > 1.05f || spdMul < 0.95f) {
-        info << "  Spd x" << std::fixed << std::setprecision(1) << spdMul;
+        std::ostringstream speedValue;
+        speedValue << std::fixed << std::setprecision(1) << spdMul;
+        info << "  " << cls::format("morning_rush.speed", {{"speed", speedValue.str()}});
     }
     drawText(window, info.str(), {44.0f, 72.0f}, 11, sf::Color(190, 210, 220));
 
@@ -693,9 +698,9 @@ void MorningRushRenderer::drawHud(sf::RenderWindow& window) const {
     drawPixelBlock(window, {682.0f, 54.0f}, {112.0f, 8.0f}, sf::Color(35, 46, 58));
     drawPixelBlock(window, {684.0f, 56.0f}, {108.0f * staminaPct, 4.0f},
                    game.isBurstRunning() ? sf::Color(255, 210, 86) : sf::Color(92, 190, 220));
-    drawText(window, "STAMINA", {682.0f, 36.0f}, 10, sf::Color(160, 180, 190));
+    drawText(window, cls::text("morning_rush.stamina"), {682.0f, 36.0f}, 10, sf::Color(160, 180, 190));
 
-    drawText(window, game.hasBicycle() ? "K READY" : "K LOCKED",
+    drawText(window, game.hasBicycle() ? cls::text("morning_rush.k_ready") : cls::text("morning_rush.k_locked"),
              {818.0f, 72.0f}, 10,
              game.hasBicycle() ? sf::Color(112, 224, 152) : sf::Color(190, 150, 140));
 }
@@ -801,7 +806,7 @@ void MorningRushRenderer::drawRunner(sf::RenderWindow& window) const {
     drawActionEffect(window, visualAction, runnerFoot, lift);
 
     if (game.isWallContact()) {
-        drawText(window, "WALL!", {game.getRunnerScreenX() - 8.0f, ground - lift - 150.0f},
+        drawText(window, cls::text("morning_rush.wall"), {game.getRunnerScreenX() - 8.0f, ground - lift - 150.0f},
                  12, sf::Color(255, 230, 120));
     }
 }
@@ -1087,9 +1092,9 @@ void MorningRushRenderer::drawLuckBanner(sf::RenderWindow& window) const {
     drawPixelFrame(window, {254.0f, 110.0f}, {452.0f, 72.0f}, sf::Color(24, 34, 46, 238), border);
     drawText(window, event.title, {278.0f, 126.0f}, 16, sf::Color(255, 235, 180));
     if (event.d20 > 0) {
-        std::ostringstream roll;
-        roll << "d20 " << event.d20 << " / DC " << event.dc;
-        drawText(window, roll.str(), {588.0f, 126.0f}, 14,
+        const std::string roll = cls::format("morning_rush.roll",
+            {{"d20", std::to_string(event.d20)}, {"dc", std::to_string(event.dc)}});
+        drawText(window, roll, {588.0f, 126.0f}, 14,
                  event.success ? sf::Color(138, 242, 158) : sf::Color(255, 150, 120));
     }
     drawText(window, event.text, {278.0f, 154.0f}, 13, sf::Color(222, 232, 236));
@@ -1101,26 +1106,26 @@ void MorningRushRenderer::drawFinal(sf::RenderWindow& window) const {
     drawPixelFrame(window, {190.0f, 154.0f}, {580.0f, 236.0f},
                    sf::Color(18, 31, 42, 244), sf::Color(238, 200, 110));
 
-    std::string title = "ARRIVED";
+    std::string title = cls::text("morning_rush.final.arrived");
     sf::Color titleColor(120, 240, 150);
-    if (game.getOutcome() == MorningRushOutcome::GreatSuccess) title = "PERFECT ARRIVAL";
+    if (game.getOutcome() == MorningRushOutcome::GreatSuccess) title = cls::text("morning_rush.final.perfect");
     if (game.getOutcome() == MorningRushOutcome::Failure) {
-        title = "LATE ARRIVAL";  titleColor = sf::Color(255, 175, 110);
+        title = cls::text("morning_rush.final.late");  titleColor = sf::Color(255, 175, 110);
     }
     if (game.getOutcome() == MorningRushOutcome::CriticalFailure) {
-        title = "BELL MISSED";  titleColor = sf::Color(255, 110, 110);
+        title = cls::text("morning_rush.final.missed");  titleColor = sf::Color(255, 110, 110);
     }
 
     drawText(window, title, {236.0f, 190.0f}, 25, titleColor);
     drawText(window, game.getResultText(), {236.0f, 246.0f}, 14, sf::Color(232, 238, 230));
-    std::ostringstream stats;
-    stats << "Distance " << static_cast<int>(game.getDistance()) << "/"
-          << static_cast<int>(game.getTargetDistance())
-          << "   Collisions " << game.getCollisionCount()
-          << "   Combo " << game.getComboCount();
-    drawText(window, stats.str(), {236.0f, 298.0f}, 14, sf::Color(190, 212, 230));
+    const std::string stats = cls::format("morning_rush.final.stats",
+        {{"distance", std::to_string(static_cast<int>(game.getDistance()))},
+         {"target", std::to_string(static_cast<int>(game.getTargetDistance()))},
+         {"collisions", std::to_string(game.getCollisionCount())},
+         {"combo", std::to_string(game.getComboCount())}});
+    drawText(window, stats, {236.0f, 298.0f}, 14, sf::Color(190, 212, 230));
     drawPixelFrame(window, {236.0f, 334.0f}, {284.0f, 42.0f}, sf::Color(36, 55, 60), sf::Color(8, 8, 10));
-    drawText(window, "ENTER  return to class", {260.0f, 346.0f}, 14, sf::Color(255, 240, 210));
+    drawText(window, cls::text("morning_rush.return_class"), {260.0f, 346.0f}, 14, sf::Color(255, 240, 210));
 }
 
 void MorningRushRenderer::drawText(sf::RenderWindow& window, const std::string& text,
