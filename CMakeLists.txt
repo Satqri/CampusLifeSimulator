@@ -29,8 +29,8 @@ find_package(TGUI CONFIG REQUIRED)
 option(CLS_LANG_CHINESE "Build with Chinese UI (default: English)" OFF)
 
 # ── Source files ─────────────────────────────────────────
-file(GLOB_RECURSE CLS_HEADERS "src/*.h")
-file(GLOB_RECURSE CLS_SOURCES "src/*.cpp")
+file(GLOB_RECURSE CLS_HEADERS CONFIGURE_DEPENDS "src/*.h")
+file(GLOB_RECURSE CLS_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 add_executable(CampusLifeSimulator ${CLS_SOURCES} ${CLS_HEADERS})
 
