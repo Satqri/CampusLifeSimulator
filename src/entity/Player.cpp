@@ -12,6 +12,8 @@ constexpr float kDefaultDeceleration = 1200.0f;
 constexpr float kDefaultStopThreshold = 8.0f;
 constexpr float kMoveTargetArrivalRadius = 10.0f;
 constexpr float kCharacterSpriteHeight = 38.0f;
+constexpr float kWalkFramesPerSecond = 8.0f;
+constexpr float kWalkCyclePi = 6.28318530718f;
 
 int frameIndex(int direction, bool walking) {
     return direction * 2 + (walking ? 1 : 0);
@@ -25,19 +27,6 @@ struct CharacterFrame {
 
 float vectorLength(const sf::Vector2f& value) {
     return std::sqrt(value.x * value.x + value.y * value.y);
-}
-
-void applyVelocityTowardsTarget(sf::Vector2f& velocity, sf::Vector2f targetVelocity,
-                                float acceleration, float deltaTime) {
-    float accelStep = acceleration * deltaTime;
-    sf::Vector2f velocityDelta(targetVelocity.x - velocity.x, targetVelocity.y - velocity.y);
-    float velocityDeltaLength = vectorLength(velocityDelta);
-    if (velocityDeltaLength <= accelStep || velocityDeltaLength == 0.0f) {
-        velocity = targetVelocity;
-    } else {
-        velocity.x += velocityDelta.x / velocityDeltaLength * accelStep;
-        velocity.y += velocityDelta.y / velocityDeltaLength * accelStep;
-    }
 }
 
 std::array<CharacterFrame, 8>& playerCharacterFrames() {
@@ -118,23 +107,55 @@ Player::Player(float x, float y)
 }
 
 void Player::update(float deltaTime) {
-    (void)deltaTime;
+    if (deltaTime <= 0.0f) return;
+
+    const float currentSpeed = vectorLength(velocity);
+    if (currentSpeed > stopSpeedThreshold) {
+        const float speedScale = moveSpeed > 0.0f
+            ? std::clamp(currentSpeed / moveSpeed, 0.45f, 1.5f)
+            : 1.0f;
+        walkAnimationTime += deltaTime * speedScale;
+    } else {
+        walkAnimationTime = 0.0f;
+    }
 }
 
 void Player::render(sf::RenderWindow& window) {
     if (!visible) return;
-    const bool walking = vectorLength(velocity) > stopSpeedThreshold;
+    const float currentSpeed = vectorLength(velocity);
+    const bool walking = currentSpeed > stopSpeedThreshold;
     const int direction = static_cast<int>(facingDirection);
-    if (const CharacterFrame* frame = selectCharacterFrame(direction, walking)) {
+    const int stepFrame = walking
+        ? static_cast<int>(walkAnimationTime * kWalkFramesPerSecond) % 4
+        : 0;
+    const bool useWalkPose = walking && (stepFrame == 1 || stepFrame == 3);
+    if (const CharacterFrame* frame = selectCharacterFrame(direction, useWalkPose)) {
+        const float phase = walkAnimationTime * kWalkFramesPerSecond * 0.25f * kWalkCyclePi;
+        const float bodyBob = walking ? -std::abs(std::sin(phase)) * 1.4f : 0.0f;
+        const float bodySway = walking ? std::sin(phase) * 0.45f : 0.0f;
+        const bool mirrorStep = walking
+            && stepFrame == 3
+            && (facingDirection == FacingDirection::Front || facingDirection == FacingDirection::Back);
+
+        sf::CircleShape shadow(1.0f, 24);
+        shadow.setOrigin({1.0f, 1.0f});
+        shadow.setScale({8.0f, 2.2f});
+        shadow.setFillColor(sf::Color(0, 0, 0, walking ? 58 : 48));
+        shadow.setPosition({posX, posY + kCharacterSpriteHeight * 0.43f});
+        window.draw(shadow);
+
         sf::Sprite character(frame->texture);
         character.setTextureRect(frame->source);
         character.setOrigin({
             static_cast<float>(frame->source.size.x) * 0.5f,
-            static_cast<float>(frame->source.size.y) * 0.5f
+            static_cast<float>(frame->source.size.y)
         });
         const float scale = kCharacterSpriteHeight / static_cast<float>(frame->source.size.y);
-        character.setScale({scale, scale});
-        character.setPosition({posX, posY});
+        character.setScale({mirrorStep ? -scale : scale, scale});
+        character.setPosition({
+            posX + bodySway,
+            posY + kCharacterSpriteHeight * 0.5f + bodyBob
+        });
         window.draw(character);
         return;
     }
@@ -147,7 +168,6 @@ void Player::move(float directionX, float directionY, float deltaTime) {
     if (deltaTime <= 0.0f) return;
 
     sf::Vector2f inputDirection(directionX, directionY);
-    sf::Vector2f targetVelocity(0.0f, 0.0f);
     float inputLength = vectorLength(inputDirection);
 
     if (inputLength > 0.0f) {
@@ -164,21 +184,9 @@ void Player::move(float directionX, float directionY, float deltaTime) {
                 ? FacingDirection::Back
                 : FacingDirection::Front;
         }
-        targetVelocity = {inputDirection.x * moveSpeed, inputDirection.y * moveSpeed};
-        applyVelocityTowardsTarget(velocity, targetVelocity, acceleration, deltaTime);
+        velocity = {inputDirection.x * moveSpeed, inputDirection.y * moveSpeed};
     } else {
-        float currentSpeed = vectorLength(velocity);
-        if (currentSpeed > 0.0f) {
-            float decelStep = deceleration * deltaTime;
-            float nextSpeed = std::max(0.0f, currentSpeed - decelStep);
-            if (nextSpeed <= stopSpeedThreshold) {
-                velocity = {0.0f, 0.0f};
-            } else {
-                float scale = nextSpeed / currentSpeed;
-                velocity.x *= scale;
-                velocity.y *= scale;
-            }
-        }
+        velocity = {0.0f, 0.0f};
     }
 
     float currentSpeed = vectorLength(velocity);
@@ -210,7 +218,10 @@ void Player::moveToTarget(float deltaTime) {
     const sf::Vector2f currentPos(posX, posY);
     sf::Vector2f toTarget(moveTarget.x - currentPos.x, moveTarget.y - currentPos.y);
     const float distance = vectorLength(toTarget);
-    if (distance <= kMoveTargetArrivalRadius) {
+    const float maxStep = moveSpeed * deltaTime;
+    if (distance <= kMoveTargetArrivalRadius || distance <= maxStep) {
+        posX = moveTarget.x;
+        posY = moveTarget.y;
         clearMoveTarget();
         stopMovement();
         return;
@@ -343,5 +354,6 @@ void Player::clearBuffs() {
 
 void Player::stopMovement() {
     velocity = {0.0f, 0.0f};
+    walkAnimationTime = 0.0f;
     clearMoveTarget();
 }
