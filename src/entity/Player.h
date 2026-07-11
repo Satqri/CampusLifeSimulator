@@ -148,6 +148,7 @@ private:
     bool moveTargetActive = false; ///< 鼠标点击移动目标是否有效
     sf::Vector2f moveTarget;    ///< 鼠标点击移动目标坐标
     FacingDirection facingDirection = FacingDirection::Front;
+    float walkAnimationTime = 0.0f;
 };
 
 #endif // CLS_ENTITY_PLAYER_H
